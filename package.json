@@ -10,6 +10,7 @@
     "format": "biome format --write"
   },
   "dependencies": {
+    "@google/genai": "^1.33.0",
     "next": "16.0.10",
     "onnxruntime-node": "^1.23.2",
     "react": "19.2.1",

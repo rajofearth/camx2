@@ -4,6 +4,7 @@ import type React from "react";
 import { useRef, useState } from "react";
 import Webcam from "react-webcam";
 import { useWebcamDetect } from "@/app/hooks/useWebcamDetect";
+import { useWebcamWatch } from "@/app/hooks/useWebcamWatch";
 import { SITE_NAME, SITE_TAGLINE } from "@/app/lib/branding";
 import { OverlayCanvas } from "./OverlayCanvas";
 
@@ -14,20 +15,34 @@ export function DetectView(): React.JSX.Element {
   const webcamRef = useRef<Webcam>(null);
   const [isCameraActive, setIsCameraActive] = useState(true);
   const [isDetectionActive, setIsDetectionActive] = useState(true);
+  const [isWatchActive, setIsWatchActive] = useState(false);
 
   const {
     detections,
     detectionCount,
-    lastLatency,
-    isProcessing,
-    error,
+    lastLatency: detectLatency,
+    isProcessing: isDetectProcessing,
+    error: detectError,
     frameDimensions,
   } = useWebcamDetect(webcamRef, isDetectionActive && isCameraActive);
+
+  const {
+    latest: watchLatest,
+    lastLatency: watchLatency,
+    isProcessing: isWatchProcessing,
+    error: watchError,
+  } = useWebcamWatch(webcamRef, isWatchActive && isCameraActive);
 
   const toggleDetection = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDetectionActive((prev) => !prev);
+  };
+
+  const toggleWatch = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsWatchActive((prev) => !prev);
   };
 
   const toggleCamera = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -37,6 +52,7 @@ export function DetectView(): React.JSX.Element {
       const newState = !prev;
       if (!newState) {
         setIsDetectionActive(false);
+        setIsWatchActive(false);
       }
       return newState;
     });
@@ -73,6 +89,8 @@ export function DetectView(): React.JSX.Element {
           justifyContent: "center",
           alignItems: "center",
           width: "100%",
+          gap: "14px",
+          flexWrap: "wrap",
         }}
       >
         <div style={{ position: "relative", display: "inline-block" }}>
@@ -81,6 +99,7 @@ export function DetectView(): React.JSX.Element {
               ref={webcamRef}
               width={VIDEO_WIDTH}
               height={VIDEO_HEIGHT}
+              screenshotFormat="image/jpeg"
               videoConstraints={{
                 width: VIDEO_WIDTH,
                 height: VIDEO_HEIGHT,
@@ -136,18 +155,27 @@ export function DetectView(): React.JSX.Element {
                 transition: "background-color 0.2s",
                 opacity: isCameraActive ? 1 : 0.5,
               }}
-              onMouseEnter={(e) => {
-                if (isCameraActive) {
-                  e.currentTarget.style.opacity = "0.9";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (isCameraActive) {
-                  e.currentTarget.style.opacity = "1";
-                }
-              }}
             >
               {isDetectionActive ? "Stop Detection" : "Start Detection"}
+            </button>
+            <button
+              type="button"
+              onClick={toggleWatch}
+              disabled={!isCameraActive}
+              style={{
+                padding: "10px 20px",
+                backgroundColor: isWatchActive ? "#ef4444" : "#22c55e",
+                color: "#fff",
+                border: "none",
+                borderRadius: "6px",
+                cursor: isCameraActive ? "pointer" : "not-allowed",
+                fontSize: "14px",
+                fontWeight: "600",
+                transition: "background-color 0.2s",
+                opacity: isCameraActive ? 1 : 0.5,
+              }}
+            >
+              {isWatchActive ? "Stop Watch" : "Start Watch"}
             </button>
             <button
               type="button"
@@ -162,12 +190,6 @@ export function DetectView(): React.JSX.Element {
                 fontSize: "14px",
                 fontWeight: "600",
                 transition: "background-color 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = "0.9";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = "1";
               }}
             >
               {isCameraActive ? "Stop Camera" : "Start Camera"}
@@ -185,19 +207,54 @@ export function DetectView(): React.JSX.Element {
               borderRadius: "4px",
               fontFamily: "monospace",
               fontSize: "12px",
+              maxWidth: 320,
             }}
           >
             <div>Detections: {detectionCount}</div>
-            {lastLatency !== null && (
-              <div>Latency: {lastLatency.toFixed(0)}ms</div>
+            {detectLatency !== null && (
+              <div>Detect: {detectLatency.toFixed(0)}ms</div>
             )}
-            {isProcessing && <div>Processing...</div>}
-            {error && (
+            {watchLatency !== null && (
+              <div>Watch: {watchLatency.toFixed(0)}ms</div>
+            )}
+            {(isDetectProcessing || isWatchProcessing) && (
+              <div>Processing...</div>
+            )}
+            {detectError && (
               <div style={{ color: "#ff4444", marginTop: "4px" }}>
-                Error: {error}
+                Detect error: {detectError}
+              </div>
+            )}
+            {watchError && (
+              <div style={{ color: "#ff4444", marginTop: "4px" }}>
+                Watch error: {watchError}
               </div>
             )}
           </div>
+        </div>
+
+        <div
+          style={{
+            width: 520,
+            maxWidth: "100%",
+            borderRadius: 8,
+            border: "1px solid rgba(255,255,255,0.12)",
+            background: "rgba(0,0,0,0.25)",
+            padding: 12,
+            fontFamily:
+              "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+            fontSize: 12,
+            lineHeight: 1.4,
+            whiteSpace: "pre-wrap",
+            overflow: "auto",
+            maxHeight: VIDEO_HEIGHT,
+          }}
+        >
+          {watchLatest
+            ? JSON.stringify(watchLatest, null, 2)
+            : isWatchActive
+              ? "Waiting for first watch response..."
+              : "Watch is stopped."}
         </div>
       </div>
     </div>
