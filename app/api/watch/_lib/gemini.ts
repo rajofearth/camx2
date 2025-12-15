@@ -61,7 +61,10 @@ export async function runWatchGemini(
     },
   });
 
-  const rawText = response.text.trim();
+  const rawText = response?.text?.trim();
+  if (!rawText) {
+    throw new Error("Gemini returned empty response");
+  }
   let parsed: unknown;
   try {
     parsed = JSON.parse(rawText);

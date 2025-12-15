@@ -11,7 +11,7 @@ export interface UseWebcamWatchResult {
   readonly error: string | null;
 }
 
-const FRAME_INTERVAL_MS = 2000;
+const FRAME_INTERVAL_MS = 3000;
 
 export function useWebcamWatch(
   webcamRef: React.RefObject<Webcam | null>,
@@ -25,9 +25,11 @@ export function useWebcamWatch(
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isActiveRef = useRef(isActive);
+  isActiveRef.current = isActive;
 
   const processFrame = useCallback(async () => {
-    if (!isActive || !webcamRef.current) {
+    if (!isActiveRef.current || !webcamRef.current) {
       return;
     }
 
@@ -83,7 +85,7 @@ export function useWebcamWatch(
       setIsProcessing(false);
       abortControllerRef.current = null;
 
-      if (isActive) {
+      if (isActiveRef.current) {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         timeoutRef.current = setTimeout(() => {
           void processFrame();
