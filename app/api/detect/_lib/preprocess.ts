@@ -2,21 +2,25 @@ import * as ort from "onnxruntime-node";
 import sharp from "sharp";
 import { BadRequestError, UnsupportedMediaError } from "./errors";
 
-export interface LetterboxInfo {
-  readonly ratio: number;
-  readonly padX: number;
-  readonly padY: number;
+export interface ImageInfo {
   readonly origWidth: number;
   readonly origHeight: number;
+  readonly inputWidth: number;
+  readonly inputHeight: number;
 }
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
-const MODEL_SIZE = 640;
+const MODEL_WIDTH = 384;
+const MODEL_HEIGHT = 384;
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+
+// RF-DETR uses ImageNet-style normalization.
+const MEAN = [0.485, 0.456, 0.406] as const;
+const STD = [0.229, 0.224, 0.225] as const;
 
 export async function preprocess(
   imageBuffer: Buffer,
-): Promise<{ tensor: ort.Tensor; letterbox: LetterboxInfo }> {
+): Promise<{ tensor: ort.Tensor; image: ImageInfo }> {
   if (imageBuffer.length === 0) {
     throw new BadRequestError("Empty image buffer");
   }
@@ -44,11 +48,12 @@ export async function preprocess(
   ) {
     throw new UnsupportedMediaError(
       `Unsupported image format: ${metadata.format ?? "unknown"}`,
+      undefined,
     );
   }
 
-  const origWidth = metadata.width ?? 640;
-  const origHeight = metadata.height ?? 480;
+  const origWidth = metadata.width ?? 0;
+  const origHeight = metadata.height ?? 0;
 
   if (
     origWidth <= 0 ||
@@ -61,27 +66,14 @@ export async function preprocess(
     );
   }
 
-  // Letterbox preprocessing: maintain aspect ratio with padding
-  const ratio = Math.min(MODEL_SIZE / origWidth, MODEL_SIZE / origHeight);
-  const newWidth = Math.round(origWidth * ratio);
-  const newHeight = Math.round(origHeight * ratio);
-  const padLeft = Math.floor((MODEL_SIZE - newWidth) / 2);
-  const padTop = Math.floor((MODEL_SIZE - newHeight) / 2);
-  const padRight = MODEL_SIZE - newWidth - padLeft;
-  const padBottom = MODEL_SIZE - newHeight - padTop;
-
   let resized: Buffer;
   try {
     resized = await sharp(imageBuffer)
-      .resize(newWidth, newHeight, { fit: "contain" })
-      .extend({
-        top: padTop,
-        bottom: padBottom,
-        left: padLeft,
-        right: padRight,
-        background: { r: 114, g: 114, b: 114 }, // YOLO-style gray padding
+      .removeAlpha()
+      .resize(MODEL_WIDTH, MODEL_HEIGHT, {
+        fit: "fill",
+        kernel: sharp.kernel.lanczos3,
       })
-      .ensureAlpha()
       .raw()
       .toBuffer();
   } catch (error) {
@@ -92,39 +84,50 @@ export async function preprocess(
     );
   }
 
-  // Convert RGBA to RGB and normalize to [0, 1] range
-  // YOLO expects CHW format: [batch, channels, height, width]
-  const floatData = new Float32Array(3 * MODEL_SIZE * MODEL_SIZE);
-  for (let i = 0; i < resized.length; i += 4) {
-    const pixelIndex = i / 4;
-    if (pixelIndex >= MODEL_SIZE * MODEL_SIZE) break;
-    const r = resized[i];
-    const g = resized[i + 1];
-    const b = resized[i + 2];
-    if (r !== undefined && g !== undefined && b !== undefined) {
-      // RGB channels normalized to [0, 1]
-      floatData[pixelIndex] = r / 255; // R
-      floatData[pixelIndex + MODEL_SIZE * MODEL_SIZE] = g / 255; // G
-      floatData[pixelIndex + 2 * MODEL_SIZE * MODEL_SIZE] = b / 255; // B
+  if (resized.length !== MODEL_WIDTH * MODEL_HEIGHT * 3) {
+    throw new UnsupportedMediaError(
+      `Unexpected preprocessed image size: ${resized.length}`,
+      {
+        expected: MODEL_WIDTH * MODEL_HEIGHT * 3,
+        width: MODEL_WIDTH,
+        height: MODEL_HEIGHT,
+      },
+    );
+  }
+
+  // Convert HWC RGB to CHW float32 tensor with ImageNet normalization.
+  const floatData = new Float32Array(3 * MODEL_WIDTH * MODEL_HEIGHT);
+  const planeSize = MODEL_WIDTH * MODEL_HEIGHT;
+
+  for (let i = 0; i < planeSize; i++) {
+    const base = i * 3;
+    const r = resized[base];
+    const g = resized[base + 1];
+    const b = resized[base + 2];
+
+    if (r === undefined || g === undefined || b === undefined) {
+      continue;
     }
-    // Skip alpha channel (resized[i + 3])
+
+    floatData[i] = (r / 255 - MEAN[0]) / STD[0];
+    floatData[i + planeSize] = (g / 255 - MEAN[1]) / STD[1];
+    floatData[i + 2 * planeSize] = (b / 255 - MEAN[2]) / STD[2];
   }
 
   const tensor = new ort.Tensor("float32", floatData, [
     1,
     3,
-    MODEL_SIZE,
-    MODEL_SIZE,
+    MODEL_HEIGHT,
+    MODEL_WIDTH,
   ]);
 
   return {
     tensor,
-    letterbox: {
-      ratio,
-      padX: padLeft,
-      padY: padTop,
+    image: {
       origWidth,
       origHeight,
+      inputWidth: MODEL_WIDTH,
+      inputHeight: MODEL_HEIGHT,
     },
   };
 }

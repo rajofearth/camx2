@@ -1,4 +1,5 @@
-export const COCO_CLASSES = [
+export const RF_DETR_COCO_CLASSES = [
+  "__background__",
   "person",
   "bicycle",
   "car",
@@ -10,6 +11,7 @@ export const COCO_CLASSES = [
   "boat",
   "traffic light",
   "fire hydrant",
+  "__unused_12__",
   "stop sign",
   "parking meter",
   "bench",
@@ -23,8 +25,11 @@ export const COCO_CLASSES = [
   "bear",
   "zebra",
   "giraffe",
+  "__unused_26__",
   "backpack",
   "umbrella",
+  "__unused_29__",
+  "__unused_30__",
   "handbag",
   "tie",
   "suitcase",
@@ -39,6 +44,7 @@ export const COCO_CLASSES = [
   "surfboard",
   "tennis racket",
   "bottle",
+  "__unused_45__",
   "wine glass",
   "cup",
   "fork",
@@ -59,8 +65,12 @@ export const COCO_CLASSES = [
   "couch",
   "potted plant",
   "bed",
+  "__unused_66__",
   "dining table",
+  "__unused_68__",
+  "__unused_69__",
   "toilet",
+  "__unused_71__",
   "tv",
   "laptop",
   "mouse",
@@ -72,6 +82,7 @@ export const COCO_CLASSES = [
   "toaster",
   "sink",
   "refrigerator",
+  "__unused_83__",
   "book",
   "clock",
   "vase",
@@ -81,8 +92,8 @@ export const COCO_CLASSES = [
   "toothbrush",
 ] as const;
 
-export type CocoClassName = (typeof COCO_CLASSES)[number];
+export type CocoClassName = (typeof RF_DETR_COCO_CLASSES)[number];
 
 export function cocoClassName(classId: number): string {
-  return COCO_CLASSES[classId] ?? `class_${classId}`;
+  return RF_DETR_COCO_CLASSES[classId] ?? `class_${classId}`;
 }

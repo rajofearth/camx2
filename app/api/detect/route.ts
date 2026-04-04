@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
-import { BadRequestError } from "./_lib/errors";
-import { getInputName, getOutputName, getSession } from "./_lib/model";
+import { BadRequestError, InferenceError } from "./_lib/errors";
+import { getSession } from "./_lib/model";
 import { postprocess } from "./_lib/postprocess";
 import { preprocess } from "./_lib/preprocess";
 import {
@@ -16,7 +16,6 @@ export async function POST(req: NextRequest): Promise<Response> {
   const startTime = performance.now();
 
   try {
-    // Validate Content-Type
     const contentType = req.headers.get("content-type");
     if (!contentType || !contentType.includes("multipart/form-data")) {
       return createErrorResponse(
@@ -26,7 +25,6 @@ export async function POST(req: NextRequest): Promise<Response> {
       );
     }
 
-    // Parse form data
     let formData: FormData;
     try {
       formData = await req.formData();
@@ -36,7 +34,6 @@ export async function POST(req: NextRequest): Promise<Response> {
       return createErrorResponse(requestId, "BAD_REQUEST", message);
     }
 
-    // Validate frame file
     const file = formData.get("frame");
     if (!file || !(file instanceof Blob)) {
       return createErrorResponse(
@@ -50,7 +47,6 @@ export async function POST(req: NextRequest): Promise<Response> {
       return createErrorResponse(requestId, "BAD_REQUEST", "Empty frame file");
     }
 
-    // Convert to buffer
     let buffer: Buffer;
     try {
       buffer = Buffer.from(await file.arrayBuffer());
@@ -60,35 +56,34 @@ export async function POST(req: NextRequest): Promise<Response> {
       return createErrorResponse(requestId, "BAD_REQUEST", message);
     }
 
-    // Preprocess image
-    const { tensor, letterbox } = await preprocess(buffer);
+    const { tensor, image } = await preprocess(buffer);
 
-    // Get model session and run inference
     const session = await getSession();
-    const inputName = getInputName(session);
-    const results = await session.run({ [inputName]: tensor });
+    const results = await session.run({ pixel_values: tensor });
 
-    // Get output
-    const outputName = getOutputName(session);
-    const output = results[outputName];
-    if (!output) {
+    const predBoxes = results.pred_boxes;
+    const logits = results.logits;
+
+    if (!predBoxes || !logits) {
       return createErrorResponse(
         requestId,
         "INFERENCE_ERROR",
-        `No output found with name '${outputName}'`,
-        { availableOutputs: session.outputNames },
+        "RF-DETR output tensors not found",
+        {
+          availableOutputs: Object.keys(results),
+          expectedOutputs: ["pred_boxes", "logits"],
+        },
       );
     }
 
-    // Postprocess detections
-    const detections = postprocess(output, letterbox);
+    const detections = postprocess(predBoxes, logits, image);
 
     const latencyMs = performance.now() - startTime;
 
     return createSuccessResponse(
       requestId,
       detections,
-      { width: letterbox.origWidth, height: letterbox.origHeight },
+      { width: image.origWidth, height: image.origHeight },
       { latencyMs },
     );
   } catch (error) {
@@ -103,7 +98,15 @@ export async function POST(req: NextRequest): Promise<Response> {
       );
     }
 
-    // Check if it's one of our custom errors
+    if (error instanceof InferenceError) {
+      return createErrorResponse(
+        requestId,
+        error.errorCode,
+        error.message,
+        error.details,
+      );
+    }
+
     if (
       error &&
       typeof error === "object" &&
@@ -115,6 +118,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         message?: string;
         details?: unknown;
       };
+
       return createErrorResponse(
         requestId,
         detectError.errorCode as BadRequestError["errorCode"],
@@ -123,9 +127,8 @@ export async function POST(req: NextRequest): Promise<Response> {
       );
     }
 
-    // Log unexpected errors with requestId for debugging
     console.error(
-      `[YOLO] [${requestId}] Unexpected error (${latencyMs.toFixed(0)}ms):`,
+      `[RF-DETR] [${requestId}] Unexpected error (${latencyMs.toFixed(0)}ms):`,
       error,
     );
 
