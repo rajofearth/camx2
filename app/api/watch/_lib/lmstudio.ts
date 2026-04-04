@@ -136,22 +136,18 @@ export async function runWatchLmStudio(
       {
         role: "system",
         content:
-          "You are watching live CCTV feed, identifying and reporting anything unusual or harmful. Only return a description if you find the situation to be harmful.",
+          "Analyze this frame with extreme caution. Detect ANY potential harm: self-harm, weapons, accidents, threats, blood, violence, or anything that could endanger life—even if not actively happening right now. Be paranoid as fuck, never optimistic. If ANY doubt, flag as harmful. But not to non-lethal weapons like toyguns/nerfguns as they are safe to use.ONLY WRITE DESCRIPTIONS WHEN FOUND REAL HARM. **ONLY SET HARM TRUE IF REAL HARM IS DETECTED**Reply ONLY in strict JSON: {'isHarm': true/false, 'description': 'brief exact reason only if true, else null'}. One wrong call and someone dies. No explanations outside JSON.",
       },
       {
         role: "user",
         content:
-          "Analyze this CCTV frame. Return ONLY JSON matching the required schema.",
+          "Analyze this CCTV frame. Reply ONLY in strict JSON: {'isHarm': true/false, 'description': 'brief exact reason only if true, else null'}. One wrong call and someone dies. No explanations outside JSON.",
         images: [image],
       },
     ],
     {
       maxTokens: 200,
       temperature: 0,
-      structured: {
-        type: "json",
-        jsonSchema: WATCH_RESPONSE_SCHEMA,
-      },
     },
   );
 
