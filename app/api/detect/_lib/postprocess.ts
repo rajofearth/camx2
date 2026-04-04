@@ -3,10 +3,12 @@ import type { Detection } from "@/app/lib/types";
 import { InferenceError } from "./errors";
 import type { ImageInfo } from "./preprocess";
 
-const CONFIDENCE_THRESHOLD = 0.5;
+const RF_DETR_CONFIDENCE_THRESHOLD = 0.5;
+const YOLO_CONFIDENCE_THRESHOLD = 0.25;
+const YOLO_NMS_IOU_THRESHOLD = 0.45;
 const MAX_DETECTIONS = 100;
-const NUM_OUTPUT_CLASSES = 91;
-const BACKGROUND_CLASS_INDEX = NUM_OUTPUT_CLASSES - 1;
+const NUM_RF_DETR_OUTPUT_CLASSES = 91;
+const RF_DETR_BACKGROUND_CLASS_INDEX = NUM_RF_DETR_OUTPUT_CLASSES - 1;
 
 function softmax(logits: readonly number[]): number[] {
   if (logits.length === 0) return [];
@@ -73,7 +75,7 @@ function validateShape(
   return shape;
 }
 
-export function postprocess(
+export function postprocessRfDetr(
   predBoxes: ort.Tensor,
   logits: ort.Tensor,
   imageInfo: ImageInfo,
@@ -132,7 +134,9 @@ export function postprocess(
   const batchIndex = 0;
   const detections: Detection[] = [];
   const effectiveClassCount =
-    numClasses === NUM_OUTPUT_CLASSES ? BACKGROUND_CLASS_INDEX : numClasses;
+    numClasses === NUM_RF_DETR_OUTPUT_CLASSES
+      ? RF_DETR_BACKGROUND_CLASS_INDEX
+      : numClasses;
 
   for (let queryIndex = 0; queryIndex < numQueriesBoxes; queryIndex++) {
     const boxOffset = (batchIndex * numQueriesBoxes + queryIndex) * 4;
@@ -180,7 +184,7 @@ export function postprocess(
 
     if (
       !Number.isFinite(maxConfidence) ||
-      maxConfidence < CONFIDENCE_THRESHOLD
+      maxConfidence < RF_DETR_CONFIDENCE_THRESHOLD
     ) {
       continue;
     }
@@ -222,4 +226,139 @@ export function postprocess(
 
   detections.sort((a, b) => b.confidence - a.confidence);
   return detections.slice(0, MAX_DETECTIONS);
+}
+
+function intersectionOverUnion(a: Detection, b: Detection): number {
+  const x1 = Math.max(a.x1, b.x1);
+  const y1 = Math.max(a.y1, b.y1);
+  const x2 = Math.min(a.x2, b.x2);
+  const y2 = Math.min(a.y2, b.y2);
+
+  const intersectionWidth = Math.max(0, x2 - x1);
+  const intersectionHeight = Math.max(0, y2 - y1);
+  const intersectionArea = intersectionWidth * intersectionHeight;
+
+  if (intersectionArea <= 0) {
+    return 0;
+  }
+
+  const areaA = Math.max(0, a.x2 - a.x1) * Math.max(0, a.y2 - a.y1);
+  const areaB = Math.max(0, b.x2 - b.x1) * Math.max(0, b.y2 - b.y1);
+  const unionArea = areaA + areaB - intersectionArea;
+
+  if (unionArea <= 0) {
+    return 0;
+  }
+
+  return intersectionArea / unionArea;
+}
+
+function applyClassAwareNms(
+  detections: readonly Detection[],
+  iouThreshold: number,
+): Detection[] {
+  const sorted = [...detections].sort((a, b) => b.confidence - a.confidence);
+  const kept: Detection[] = [];
+
+  for (const candidate of sorted) {
+    const overlapsKeptDetection = kept.some(
+      (existing) =>
+        existing.class === candidate.class &&
+        intersectionOverUnion(existing, candidate) > iouThreshold,
+    );
+
+    if (!overlapsKeptDetection) {
+      kept.push(candidate);
+    }
+
+    if (kept.length >= MAX_DETECTIONS) {
+      break;
+    }
+  }
+
+  return kept;
+}
+
+export function postprocessYolo(
+  output: ort.Tensor,
+  imageInfo: ImageInfo,
+): Detection[] {
+  const outputShape = validateShape(output.dims, 3, "output0");
+  const batchSize = Number(outputShape[0]);
+  const channelCount = Number(outputShape[1]);
+  const anchorCount = Number(outputShape[2]);
+
+  if (
+    !Number.isFinite(batchSize) ||
+    !Number.isFinite(channelCount) ||
+    !Number.isFinite(anchorCount) ||
+    batchSize < 1 ||
+    channelCount < 5 ||
+    anchorCount < 1
+  ) {
+    throw new InferenceError(
+      `Unexpected YOLO output shape: ${JSON.stringify(output.dims)}`,
+    );
+  }
+
+  const classCount = channelCount - 4;
+  const outputData = getTensorData(output, "output0");
+  const xScale = imageInfo.origWidth / imageInfo.inputWidth;
+  const yScale = imageInfo.origHeight / imageInfo.inputHeight;
+  const detections: Detection[] = [];
+
+  for (let anchorIndex = 0; anchorIndex < anchorCount; anchorIndex++) {
+    let maxConfidence = -Infinity;
+    let maxClass = 0;
+
+    for (let classIndex = 0; classIndex < classCount; classIndex++) {
+      const scoreIndex = (classIndex + 4) * anchorCount + anchorIndex;
+      const score = Number(outputData[scoreIndex] ?? 0);
+      if (score > maxConfidence) {
+        maxConfidence = score;
+        maxClass = classIndex;
+      }
+    }
+
+    if (
+      !Number.isFinite(maxConfidence) ||
+      maxConfidence < YOLO_CONFIDENCE_THRESHOLD
+    ) {
+      continue;
+    }
+
+    const cx = Number(outputData[anchorIndex]);
+    const cy = Number(outputData[anchorCount + anchorIndex]);
+    const width = Number(outputData[2 * anchorCount + anchorIndex]);
+    const height = Number(outputData[3 * anchorCount + anchorIndex]);
+
+    if (
+      !Number.isFinite(cx) ||
+      !Number.isFinite(cy) ||
+      !Number.isFinite(width) ||
+      !Number.isFinite(height)
+    ) {
+      continue;
+    }
+
+    const x1 = clamp((cx - width / 2) * xScale, 0, imageInfo.origWidth);
+    const y1 = clamp((cy - height / 2) * yScale, 0, imageInfo.origHeight);
+    const x2 = clamp((cx + width / 2) * xScale, 0, imageInfo.origWidth);
+    const y2 = clamp((cy + height / 2) * yScale, 0, imageInfo.origHeight);
+
+    if (x2 <= x1 || y2 <= y1) {
+      continue;
+    }
+
+    detections.push({
+      x1,
+      y1,
+      x2,
+      y2,
+      confidence: maxConfidence,
+      class: maxClass,
+    });
+  }
+
+  return applyClassAwareNms(detections, YOLO_NMS_IOU_THRESHOLD);
 }

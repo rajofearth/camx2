@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type Webcam from "react-webcam";
 import { fetchDetect } from "@/app/lib/detect-client";
-import type { Detection, FrameDimensions } from "@/app/lib/types";
+import type {
+  Detection,
+  DetectionModel,
+  FrameDimensions,
+} from "@/app/lib/types";
 
 export interface UseWebcamDetectOptions {
   readonly maxFps?: number;
   readonly minConfidence?: number;
+  readonly model?: DetectionModel;
 }
 
 export interface UseWebcamDetectResult {
@@ -19,6 +24,7 @@ export interface UseWebcamDetectResult {
 
 const DEFAULT_MAX_FPS = 5;
 const DEFAULT_MIN_CONFIDENCE = 0.5;
+const DEFAULT_MODEL: DetectionModel = "rfdetr";
 const MIN_FRAME_INTERVAL_MS = 1000 / DEFAULT_MAX_FPS;
 
 export function useWebcamDetect(
@@ -28,6 +34,7 @@ export function useWebcamDetect(
 ): UseWebcamDetectResult {
   const maxFps = options?.maxFps ?? DEFAULT_MAX_FPS;
   const minConfidence = options?.minConfidence ?? DEFAULT_MIN_CONFIDENCE;
+  const detectionModel = options?.model ?? DEFAULT_MODEL;
   const minIntervalMs = 1000 / maxFps;
 
   const [detections, setDetections] = useState<readonly Detection[]>([]);
@@ -46,6 +53,13 @@ export function useWebcamDetect(
   useEffect(() => {
     isActiveRef.current = isActive;
   }, [isActive]);
+
+  useEffect(() => {
+    setDetections([]);
+    setLastLatency(null);
+    setError(null);
+    setFrameDimensions(null);
+  }, [detectionModel]);
 
   const processFrame = useCallback(async () => {
     if (!isActiveRef.current || !webcamRef.current) {
@@ -85,6 +99,7 @@ export function useWebcamDetect(
       const blob = await fetch(imageSrc).then((r) => r.blob());
       const result = await fetchDetect(blob, {
         signal: abortControllerRef.current.signal,
+        model: detectionModel,
       });
 
       if (!result.success) {
@@ -121,7 +136,7 @@ export function useWebcamDetect(
         }, MIN_FRAME_INTERVAL_MS);
       }
     }
-  }, [webcamRef, minIntervalMs, minConfidence]);
+  }, [webcamRef, minIntervalMs, minConfidence, detectionModel]);
 
   useEffect(() => {
     if (!isActive) {

@@ -6,6 +6,7 @@ import Webcam from "react-webcam";
 import { useWebcamDetect } from "@/app/hooks/useWebcamDetect";
 import { useWebcamWatch } from "@/app/hooks/useWebcamWatch";
 import { useCameraDevices } from "@/app/hooks/useCameraDevices";
+import type { DetectionModel } from "@/app/lib/types";
 import { OverlayCanvas } from "./OverlayCanvas";
 import type { WatchResult } from "@/app/lib/watch-types";
 
@@ -18,19 +19,28 @@ export interface CameraCardProps {
   readonly onHarmDetected?: (result: WatchResult, cameraLabel: string) => void;
 }
 
+function formatDetectionModel(model: DetectionModel): string {
+  return model === "yolo" ? "YOLO" : "RF-DETR";
+}
+
 export function CameraCard({
   label,
   cameraIndex,
   onHarmDetected,
 }: CameraCardProps): React.JSX.Element {
   const webcamRef = useRef<Webcam>(null);
-  const { devices, isLoading: isLoadingDevices, error: devicesError } =
-    useCameraDevices();
+  const {
+    devices,
+    isLoading: isLoadingDevices,
+    error: devicesError,
+  } = useCameraDevices();
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [isDetectionActive, setIsDetectionActive] = useState(true);
   const [isWatchActive, setIsWatchActive] = useState(false);
+  const [detectionModel, setDetectionModel] =
+    useState<DetectionModel>("rfdetr");
 
   // Auto-select device by index when devices are loaded
   useEffect(() => {
@@ -51,7 +61,9 @@ export function CameraCard({
     isProcessing: isDetectProcessing,
     error: detectError,
     frameDimensions,
-  } = useWebcamDetect(webcamRef, isDetectionActive && isCameraActive);
+  } = useWebcamDetect(webcamRef, isDetectionActive && isCameraActive, {
+    model: detectionModel,
+  });
 
   const {
     latest: watchLatest,
@@ -93,6 +105,12 @@ export function CameraCard({
       }
       return newState;
     });
+  };
+
+  const toggleDetectionModel = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDetectionModel((prev) => (prev === "rfdetr" ? "yolo" : "rfdetr"));
   };
 
   const handleDeviceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -293,6 +311,7 @@ export function CameraCard({
             webcamRef={webcamRef}
             detections={detections}
             frameDimensions={frameDimensions}
+            detectionModel={detectionModel}
           />
         )}
         {/* Control Buttons */}
@@ -318,7 +337,9 @@ export function CameraCard({
                 border: "none",
                 borderRadius: "6px",
                 cursor:
-                  isCameraActive && selectedDeviceId ? "pointer" : "not-allowed",
+                  isCameraActive && selectedDeviceId
+                    ? "pointer"
+                    : "not-allowed",
                 fontSize: "11px",
                 fontWeight: "600",
                 transition: "all 0.2s",
@@ -328,15 +349,45 @@ export function CameraCard({
               onMouseEnter={(e) => {
                 if (isCameraActive && selectedDeviceId) {
                   e.currentTarget.style.transform = "translateY(-1px)";
-                  e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.3)";
+                  e.currentTarget.style.boxShadow =
+                    "0 4px 6px rgba(0, 0, 0, 0.3)";
                 }
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.2)";
+                e.currentTarget.style.boxShadow =
+                  "0 2px 4px rgba(0, 0, 0, 0.2)";
               }}
             >
               {isDetectionActive ? "Stop Detect" : "Start Detect"}
+            </button>
+            <button
+              type="button"
+              onClick={toggleDetectionModel}
+              style={{
+                padding: "8px 14px",
+                backgroundColor: "#2563eb",
+                color: "#fff",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontSize: "11px",
+                fontWeight: "600",
+                transition: "all 0.2s",
+                boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-1px)";
+                e.currentTarget.style.boxShadow =
+                  "0 4px 6px rgba(0, 0, 0, 0.3)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow =
+                  "0 2px 4px rgba(0, 0, 0, 0.2)";
+              }}
+            >
+              Switch to {detectionModel === "rfdetr" ? "YOLO" : "RF-DETR"}
             </button>
             <button
               type="button"
@@ -349,7 +400,9 @@ export function CameraCard({
                 border: "none",
                 borderRadius: "6px",
                 cursor:
-                  isCameraActive && selectedDeviceId ? "pointer" : "not-allowed",
+                  isCameraActive && selectedDeviceId
+                    ? "pointer"
+                    : "not-allowed",
                 fontSize: "11px",
                 fontWeight: "600",
                 transition: "all 0.2s",
@@ -359,12 +412,14 @@ export function CameraCard({
               onMouseEnter={(e) => {
                 if (isCameraActive && selectedDeviceId) {
                   e.currentTarget.style.transform = "translateY(-1px)";
-                  e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.3)";
+                  e.currentTarget.style.boxShadow =
+                    "0 4px 6px rgba(0, 0, 0, 0.3)";
                 }
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.2)";
+                e.currentTarget.style.boxShadow =
+                  "0 2px 4px rgba(0, 0, 0, 0.2)";
               }}
             >
               {isWatchActive ? "Stop Watch" : "Start Watch"}
@@ -389,12 +444,14 @@ export function CameraCard({
               onMouseEnter={(e) => {
                 if (selectedDeviceId) {
                   e.currentTarget.style.transform = "translateY(-1px)";
-                  e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.3)";
+                  e.currentTarget.style.boxShadow =
+                    "0 4px 6px rgba(0, 0, 0, 0.3)";
                 }
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.2)";
+                e.currentTarget.style.boxShadow =
+                  "0 2px 4px rgba(0, 0, 0, 0.2)";
               }}
             >
               {isCameraActive ? "Stop" : "Start"}
@@ -440,6 +497,9 @@ export function CameraCard({
                 ⚠ {cameraError}
               </div>
             )}
+            <div style={{ opacity: 0.9 }}>
+              Model: {formatDetectionModel(detectionModel)}
+            </div>
             <div style={{ opacity: 0.9 }}>Detections: {detectionCount}</div>
             {detectLatency !== null && (
               <div style={{ opacity: 0.9 }}>
@@ -457,12 +517,16 @@ export function CameraCard({
               </div>
             )}
             {detectError && (
-              <div style={{ color: "#ff4444", marginTop: "4px", fontSize: "10px" }}>
+              <div
+                style={{ color: "#ff4444", marginTop: "4px", fontSize: "10px" }}
+              >
                 Detect: {detectError}
               </div>
             )}
             {watchError && (
-              <div style={{ color: "#ff4444", marginTop: "4px", fontSize: "10px" }}>
+              <div
+                style={{ color: "#ff4444", marginTop: "4px", fontSize: "10px" }}
+              >
                 Watch: {watchError}
               </div>
             )}

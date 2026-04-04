@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   },
   description: SITE_TAGLINE,
   applicationName: SITE_NAME,
-  authors: [{ name: "YOLO WebGPU Local Detector" }],
+  authors: [{ name: "yashraj maher" }],
 };
 
 export default function RootLayout({

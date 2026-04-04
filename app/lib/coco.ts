@@ -1,3 +1,5 @@
+import type { DetectionModel } from "./types";
+
 export const RF_DETR_COCO_CLASSES = [
   "__background__",
   "person",
@@ -92,8 +94,97 @@ export const RF_DETR_COCO_CLASSES = [
   "toothbrush",
 ] as const;
 
-export type CocoClassName = (typeof RF_DETR_COCO_CLASSES)[number];
+export const YOLO_COCO_CLASSES = [
+  "person",
+  "bicycle",
+  "car",
+  "motorcycle",
+  "airplane",
+  "bus",
+  "train",
+  "truck",
+  "boat",
+  "traffic light",
+  "fire hydrant",
+  "stop sign",
+  "parking meter",
+  "bench",
+  "bird",
+  "cat",
+  "dog",
+  "horse",
+  "sheep",
+  "cow",
+  "elephant",
+  "bear",
+  "zebra",
+  "giraffe",
+  "backpack",
+  "umbrella",
+  "handbag",
+  "tie",
+  "suitcase",
+  "frisbee",
+  "skis",
+  "snowboard",
+  "sports ball",
+  "kite",
+  "baseball bat",
+  "baseball glove",
+  "skateboard",
+  "surfboard",
+  "tennis racket",
+  "bottle",
+  "wine glass",
+  "cup",
+  "fork",
+  "knife",
+  "spoon",
+  "bowl",
+  "banana",
+  "apple",
+  "sandwich",
+  "orange",
+  "broccoli",
+  "carrot",
+  "hot dog",
+  "pizza",
+  "donut",
+  "cake",
+  "chair",
+  "couch",
+  "potted plant",
+  "bed",
+  "dining table",
+  "toilet",
+  "tv",
+  "laptop",
+  "mouse",
+  "remote",
+  "keyboard",
+  "cell phone",
+  "microwave",
+  "oven",
+  "toaster",
+  "sink",
+  "refrigerator",
+  "book",
+  "clock",
+  "vase",
+  "scissors",
+  "teddy bear",
+  "hair drier",
+  "toothbrush",
+] as const;
 
-export function cocoClassName(classId: number): string {
-  return RF_DETR_COCO_CLASSES[classId] ?? `class_${classId}`;
+export type CocoClassName =
+  | (typeof RF_DETR_COCO_CLASSES)[number]
+  | (typeof YOLO_COCO_CLASSES)[number];
+
+export function cocoClassName(
+  classId: number,
+  model: DetectionModel = "rfdetr",
+): string {
+  const classes = model === "yolo" ? YOLO_COCO_CLASSES : RF_DETR_COCO_CLASSES;
+  return classes[classId] ?? `class_${classId}`;
 }

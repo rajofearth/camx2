@@ -1,3 +1,5 @@
+export type DetectionModel = "rfdetr" | "yolo";
+
 export interface Detection {
   readonly x1: number;
   readonly y1: number;

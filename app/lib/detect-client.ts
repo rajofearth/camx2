@@ -3,6 +3,7 @@ import { parseDetectResponse } from "./types";
 
 export interface FetchDetectOptions {
   readonly signal?: AbortSignal;
+  readonly model?: "rfdetr" | "yolo";
 }
 
 export interface FetchDetectResult {
@@ -25,6 +26,10 @@ export async function fetchDetect(
   try {
     const formData = new FormData();
     formData.append("frame", imageBlob);
+
+    if (options?.model) {
+      formData.append("model", options.model);
+    }
 
     const response = await fetch("/api/detect", {
       method: "POST",

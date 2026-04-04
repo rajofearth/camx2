@@ -1,5 +1,6 @@
 import * as ort from "onnxruntime-node";
 import sharp from "sharp";
+import type { DetectionModel } from "@/app/lib/types";
 import { BadRequestError, UnsupportedMediaError } from "./errors";
 
 export interface ImageInfo {
@@ -10,16 +11,23 @@ export interface ImageInfo {
 }
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
-const MODEL_WIDTH = 384;
-const MODEL_HEIGHT = 384;
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 
 // RF-DETR uses ImageNet-style normalization.
 const MEAN = [0.485, 0.456, 0.406] as const;
 const STD = [0.229, 0.224, 0.225] as const;
 
+const MODEL_DIMENSIONS: Record<
+  DetectionModel,
+  { readonly width: number; readonly height: number }
+> = {
+  rfdetr: { width: 384, height: 384 },
+  yolo: { width: 640, height: 640 },
+};
+
 export async function preprocess(
   imageBuffer: Buffer,
+  modelType: DetectionModel,
 ): Promise<{ tensor: ort.Tensor; image: ImageInfo }> {
   if (imageBuffer.length === 0) {
     throw new BadRequestError("Empty image buffer");
@@ -66,11 +74,14 @@ export async function preprocess(
     );
   }
 
+  const { width: modelWidth, height: modelHeight } =
+    MODEL_DIMENSIONS[modelType];
+
   let resized: Buffer;
   try {
     resized = await sharp(imageBuffer)
       .removeAlpha()
-      .resize(MODEL_WIDTH, MODEL_HEIGHT, {
+      .resize(modelWidth, modelHeight, {
         fit: "fill",
         kernel: sharp.kernel.lanczos3,
       })
@@ -84,20 +95,21 @@ export async function preprocess(
     );
   }
 
-  if (resized.length !== MODEL_WIDTH * MODEL_HEIGHT * 3) {
+  if (resized.length !== modelWidth * modelHeight * 3) {
     throw new UnsupportedMediaError(
       `Unexpected preprocessed image size: ${resized.length}`,
       {
-        expected: MODEL_WIDTH * MODEL_HEIGHT * 3,
-        width: MODEL_WIDTH,
-        height: MODEL_HEIGHT,
+        expected: modelWidth * modelHeight * 3,
+        width: modelWidth,
+        height: modelHeight,
+        modelType,
       },
     );
   }
 
-  // Convert HWC RGB to CHW float32 tensor with ImageNet normalization.
-  const floatData = new Float32Array(3 * MODEL_WIDTH * MODEL_HEIGHT);
-  const planeSize = MODEL_WIDTH * MODEL_HEIGHT;
+  // Convert HWC RGB to CHW float32 tensor.
+  const floatData = new Float32Array(3 * modelWidth * modelHeight);
+  const planeSize = modelWidth * modelHeight;
 
   for (let i = 0; i < planeSize; i++) {
     const base = i * 3;
@@ -109,16 +121,22 @@ export async function preprocess(
       continue;
     }
 
-    floatData[i] = (r / 255 - MEAN[0]) / STD[0];
-    floatData[i + planeSize] = (g / 255 - MEAN[1]) / STD[1];
-    floatData[i + 2 * planeSize] = (b / 255 - MEAN[2]) / STD[2];
+    if (modelType === "rfdetr") {
+      floatData[i] = (r / 255 - MEAN[0]) / STD[0];
+      floatData[i + planeSize] = (g / 255 - MEAN[1]) / STD[1];
+      floatData[i + 2 * planeSize] = (b / 255 - MEAN[2]) / STD[2];
+    } else {
+      floatData[i] = r / 255;
+      floatData[i + planeSize] = g / 255;
+      floatData[i + 2 * planeSize] = b / 255;
+    }
   }
 
   const tensor = new ort.Tensor("float32", floatData, [
     1,
     3,
-    MODEL_HEIGHT,
-    MODEL_WIDTH,
+    modelHeight,
+    modelWidth,
   ]);
 
   return {
@@ -126,8 +144,8 @@ export async function preprocess(
     image: {
       origWidth,
       origHeight,
-      inputWidth: MODEL_WIDTH,
-      inputHeight: MODEL_HEIGHT,
+      inputWidth: modelWidth,
+      inputHeight: modelHeight,
     },
   };
 }

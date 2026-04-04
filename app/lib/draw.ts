@@ -1,9 +1,10 @@
 import { cocoClassName } from "./coco";
-import type { Detection } from "./types";
+import type { Detection, DetectionModel } from "./types";
 
 export interface DrawDetectionsOptions {
   readonly frameW: number;
   readonly frameH: number;
+  readonly model: DetectionModel;
 }
 
 export function drawDetections(
@@ -11,7 +12,7 @@ export function drawDetections(
   detections: readonly Detection[],
   options: DrawDetectionsOptions,
 ): void {
-  const { frameW, frameH } = options;
+  const { frameW, frameH, model } = options;
   const sx = ctx.canvas.width / frameW;
   const sy = ctx.canvas.height / frameH;
 
@@ -37,7 +38,7 @@ export function drawDetections(
     // Draw label background
     ctx.fillStyle = "#00ff00";
     ctx.font = "16px Arial";
-    const label = `${cocoClassName(det.class)} ${(det.confidence * 100).toFixed(1)}%`;
+    const label = `${cocoClassName(det.class, model)} ${(det.confidence * 100).toFixed(1)}%`;
     const textMetrics = ctx.measureText(label);
     const labelHeight = 20;
     ctx.fillRect(x1, y1 - labelHeight, textMetrics.width + 4, labelHeight);

@@ -4,7 +4,7 @@ import type React from "react";
 import { useEffect, useRef } from "react";
 import type Webcam from "react-webcam";
 import { drawDetections, syncCanvasSize } from "@/app/lib/draw";
-import type { Detection } from "@/app/lib/types";
+import type { Detection, DetectionModel } from "@/app/lib/types";
 
 export interface OverlayCanvasProps {
   readonly webcamRef: React.RefObject<Webcam | null>;
@@ -13,12 +13,14 @@ export interface OverlayCanvasProps {
     readonly width: number;
     readonly height: number;
   } | null;
+  readonly detectionModel: DetectionModel;
 }
 
 export function OverlayCanvas({
   webcamRef,
   detections,
   frameDimensions,
+  detectionModel,
 }: OverlayCanvasProps): React.JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -56,8 +58,9 @@ export function OverlayCanvas({
     drawDetections(ctx, detections, {
       frameW: frameDimensions.width,
       frameH: frameDimensions.height,
+      model: detectionModel,
     });
-  }, [detections, frameDimensions]);
+  }, [detections, frameDimensions, detectionModel]);
 
   return (
     <canvas

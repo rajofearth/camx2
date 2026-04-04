@@ -1,7 +1,8 @@
 import type { NextRequest } from "next/server";
+import type { DetectionModel } from "@/app/lib/types";
 import { BadRequestError, InferenceError } from "./_lib/errors";
-import { getSession } from "./_lib/model";
-import { postprocess } from "./_lib/postprocess";
+import { getInputName, getOutputNames, getSession } from "./_lib/model";
+import { postprocessRfDetr, postprocessYolo } from "./_lib/postprocess";
 import { preprocess } from "./_lib/preprocess";
 import {
   createErrorResponse,
@@ -10,6 +11,31 @@ import {
 } from "./_lib/response";
 
 export const runtime = "nodejs";
+
+function parseDetectionModel(value: FormDataEntryValue | null): DetectionModel {
+  if (value === null) {
+    return "rfdetr";
+  }
+
+  if (typeof value !== "string") {
+    throw new BadRequestError("Invalid 'model' field");
+  }
+
+  const normalized = value.trim().toLowerCase();
+
+  if (normalized === "" || normalized === "rfdetr") {
+    return "rfdetr";
+  }
+
+  if (normalized === "yolo") {
+    return "yolo";
+  }
+
+  throw new BadRequestError("Unsupported detection model", {
+    model: value,
+    supportedModels: ["rfdetr", "yolo"],
+  });
+}
 
 export async function POST(req: NextRequest): Promise<Response> {
   const requestId = generateRequestId();
@@ -34,6 +60,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       return createErrorResponse(requestId, "BAD_REQUEST", message);
     }
 
+    const detectionModel = parseDetectionModel(formData.get("model"));
     const file = formData.get("frame");
     if (!file || !(file instanceof Blob)) {
       return createErrorResponse(
@@ -56,27 +83,55 @@ export async function POST(req: NextRequest): Promise<Response> {
       return createErrorResponse(requestId, "BAD_REQUEST", message);
     }
 
-    const { tensor, image } = await preprocess(buffer);
+    const { tensor, image } = await preprocess(buffer, detectionModel);
 
-    const session = await getSession();
-    const results = await session.run({ pixel_values: tensor });
+    const session = await getSession(detectionModel);
+    const inputName = getInputName(session, detectionModel);
+    const results = await session.run({ [inputName]: tensor });
 
-    const predBoxes = results.pred_boxes;
-    const logits = results.logits;
+    const detections =
+      detectionModel === "rfdetr"
+        ? (() => {
+            const outputNames = getOutputNames(session, "rfdetr");
+            const predBoxes = results[outputNames.boxes];
+            const logits = results[outputNames.logits];
 
-    if (!predBoxes || !logits) {
-      return createErrorResponse(
-        requestId,
-        "INFERENCE_ERROR",
-        "RF-DETR output tensors not found",
-        {
-          availableOutputs: Object.keys(results),
-          expectedOutputs: ["pred_boxes", "logits"],
-        },
-      );
+            if (!predBoxes || !logits) {
+              return createErrorResponse(
+                requestId,
+                "INFERENCE_ERROR",
+                "RF-DETR output tensors not found",
+                {
+                  availableOutputs: Object.keys(results),
+                  expectedOutputs: [outputNames.boxes, outputNames.logits],
+                },
+              );
+            }
+
+            return postprocessRfDetr(predBoxes, logits, image);
+          })()
+        : (() => {
+            const outputNames = getOutputNames(session, "yolo");
+            const output = results[outputNames.output];
+
+            if (!output) {
+              return createErrorResponse(
+                requestId,
+                "INFERENCE_ERROR",
+                "YOLO output tensor not found",
+                {
+                  availableOutputs: Object.keys(results),
+                  expectedOutputs: [outputNames.output],
+                },
+              );
+            }
+
+            return postprocessYolo(output, image);
+          })();
+
+    if (detections instanceof Response) {
+      return detections;
     }
-
-    const detections = postprocess(predBoxes, logits, image);
 
     const latencyMs = performance.now() - startTime;
 
@@ -128,7 +183,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     }
 
     console.error(
-      `[RF-DETR] [${requestId}] Unexpected error (${latencyMs.toFixed(0)}ms):`,
+      `[DETECT] [${requestId}] Unexpected error (${latencyMs.toFixed(0)}ms):`,
       error,
     );
 
