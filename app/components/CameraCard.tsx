@@ -28,7 +28,16 @@ export function CameraCard({
   cameraIndex,
   onHarmDetected,
 }: CameraCardProps): React.JSX.Element {
-  const webcamRef = useRef<Webcam>(null);
+  // The `webcamRef` may point to either a `Webcam` instance or a lightweight
+  // wrapper around a local HTMLVideoElement when using a test video file.
+  const webcamRef = useRef<any>(null);
+  // If a local video file is selected for testing, `localVideoRef` points at
+  // the HTMLVideoElement and `webcamRef.current` will be a small wrapper that
+  // implements `getScreenshot()` and exposes `video`.
+  const localVideoRef = useRef<HTMLVideoElement | null>(null);
+  const [useLocalVideo, setUseLocalVideo] = useState(false);
+  const [localVideoSrc, setLocalVideoSrc] = useState<string | null>(null);
+
   const {
     devices,
     isLoading: isLoadingDevices,
@@ -132,7 +141,89 @@ export function CameraCard({
   const handleUserMedia = () => {
     // Camera successfully accessed
     setCameraError(null);
+    // If we successfully access a real camera, prefer it over any local video.
+    setUseLocalVideo(false);
   };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) {
+      // Clear local video selection
+      if (localVideoSrc) {
+        try {
+          URL.revokeObjectURL(localVideoSrc);
+        } catch {
+          /* ignore */
+        }
+      }
+      setLocalVideoSrc(null);
+      setUseLocalVideo(false);
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    // If previously had a blob URL, revoke it
+    if (localVideoSrc) {
+      try {
+        URL.revokeObjectURL(localVideoSrc);
+      } catch {
+        /* ignore */
+      }
+    }
+
+    setLocalVideoSrc(url);
+    setUseLocalVideo(true);
+    // When using a local video we don't use a camera device
+    setSelectedDeviceId(null);
+    setIsCameraActive(true);
+    setCameraError(null);
+  };
+
+  // When using a local video, create a tiny wrapper so the existing hooks
+  // (`useWebcamDetect` / `useWebcamWatch`) can call `getScreenshot()` and access
+  // a `.video` property like they would on the `react-webcam` instance.
+  useEffect(() => {
+    if (useLocalVideo && localVideoRef.current) {
+      webcamRef.current = {
+        video: localVideoRef.current,
+        // `getScreenshot()` produces a JPEG data URL sized to VIDEO_WIDTH x VIDEO_HEIGHT.
+        getScreenshot: () => {
+          const videoEl = localVideoRef.current;
+          if (!videoEl) return null;
+
+          const canvas = document.createElement("canvas");
+          canvas.width = VIDEO_WIDTH;
+          canvas.height = VIDEO_HEIGHT;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return null;
+
+          // Draw current frame scaled to the configured video size so the rest of
+          // the pipeline receives consistent frames.
+          try {
+            ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL("image/jpeg");
+          } catch {
+            return null;
+          }
+        },
+      };
+    } else {
+      // If we stopped using local video, clear wrapper so the real Webcam can be used.
+      if (
+        webcamRef.current &&
+        webcamRef.current.getScreenshot &&
+        (!localVideoRef.current ||
+          webcamRef.current.video !== localVideoRef.current)
+      ) {
+        webcamRef.current = null;
+      }
+    }
+
+    // Clean up blob URL on unmount or when localVideoSrc changes
+    return () => {
+      // no-op here; revocation is handled when replacing the URL
+    };
+  }, [useLocalVideo, localVideoSrc]);
 
   // Monitor webcam video element for errors
   useEffect(() => {
@@ -205,35 +296,74 @@ export function CameraCard({
           >
             Camera:
           </label>
-          <select
-            value={selectedDeviceId || ""}
-            onChange={handleDeviceChange}
-            disabled={isLoadingDevices}
+          <div
             style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
               flex: 1,
-              padding: "6px 10px",
-              backgroundColor: "#1f2937",
-              color: "#fff",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
-              borderRadius: "6px",
-              fontSize: "12px",
-              cursor: isLoadingDevices ? "not-allowed" : "pointer",
-              opacity: isLoadingDevices ? 0.5 : 1,
             }}
           >
-            {isLoadingDevices ? (
-              <option>Loading cameras...</option>
-            ) : (
-              <>
-                <option value="">Select camera...</option>
-                {devices.map((device) => (
-                  <option key={device.deviceId} value={device.deviceId}>
-                    {device.label}
-                  </option>
-                ))}
-              </>
-            )}
-          </select>
+            <select
+              value={selectedDeviceId || ""}
+              onChange={handleDeviceChange}
+              disabled={isLoadingDevices}
+              style={{
+                flex: 1,
+                padding: "6px 10px",
+                backgroundColor: "#1f2937",
+                color: "#fff",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                borderRadius: "6px",
+                fontSize: "12px",
+                cursor: isLoadingDevices ? "not-allowed" : "pointer",
+                opacity: isLoadingDevices ? 0.5 : 1,
+              }}
+            >
+              {isLoadingDevices ? (
+                <option>Loading cameras...</option>
+              ) : (
+                <>
+                  <option value="">Select camera...</option>
+                  {devices.map((device) => (
+                    <option key={device.deviceId} value={device.deviceId}>
+                      {device.label}
+                    </option>
+                  ))}
+                </>
+              )}
+            </select>
+
+            {/* File input for local video testing */}
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <label
+                htmlFor={`video-file-input-${cameraIndex}`}
+                style={{
+                  fontSize: "12px",
+                  color: "#9ca3af",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Or use video:
+              </label>
+              <input
+                id={`video-file-input-${cameraIndex}`}
+                type="file"
+                accept="video/*"
+                onChange={handleFileChange}
+                style={{
+                  backgroundColor: "#1f2937",
+                  color: "#fff",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "6px",
+                  fontSize: "12px",
+                  padding: "6px 10px",
+                  cursor: "pointer",
+                }}
+                title="Use a local video file as the camera source for testing"
+              />
+            </div>
+          </div>
         </div>
       )}
 
@@ -296,6 +426,18 @@ export function CameraCard({
               )}
             </div>
           </div>
+        ) : isCameraActive && useLocalVideo && localVideoSrc ? (
+          <video
+            ref={localVideoRef}
+            src={localVideoSrc ?? undefined}
+            width={VIDEO_WIDTH}
+            height={VIDEO_HEIGHT}
+            style={{ display: "block" }}
+            autoPlay
+            loop
+            muted
+            playsInline
+          />
         ) : isCameraActive && selectedDeviceId ? (
           <Webcam
             ref={webcamRef}
