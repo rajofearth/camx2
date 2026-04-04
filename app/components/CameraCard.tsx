@@ -42,6 +42,9 @@ export function CameraCard({
   const [detectionModel, setDetectionModel] =
     useState<DetectionModel>("rfdetr");
 
+  // New state: whether to show watch debug panel
+  const [showWatchDebug, setShowWatchDebug] = useState(false);
+
   // Auto-select device by index when devices are loaded
   useEffect(() => {
     if (!isLoadingDevices && devices.length > 0) {
@@ -65,9 +68,11 @@ export function CameraCard({
     model: detectionModel,
   });
 
+  // Include lastRequestId so we can display request-level debug info.
   const {
     latest: watchLatest,
     lastLatency: watchLatency,
+    lastRequestId: watchRequestId,
     isProcessing: isWatchProcessing,
     error: watchError,
   } = useWebcamWatch(webcamRef, isWatchActive && isCameraActive);
@@ -160,6 +165,17 @@ export function CameraCard({
   const showEmptyState =
     !isLoadingDevices &&
     (!hasDevices || devicesError || (!selectedDeviceId && !isCameraActive));
+
+  // Small helper to produce debug JSON for watch API
+  const getWatchDebugObject = () => {
+    return {
+      requestId: watchRequestId ?? null,
+      latencyMs: watchLatency ?? null,
+      isProcessing: isWatchProcessing,
+      error: watchError ?? null,
+      result: watchLatest ?? null,
+    };
+  };
 
   return (
     <div
@@ -426,6 +442,30 @@ export function CameraCard({
             </button>
             <button
               type="button"
+              onClick={() => setShowWatchDebug((s) => !s)}
+              disabled={!isCameraActive || !selectedDeviceId}
+              title="Toggle Watch API debug info"
+              style={{
+                padding: "8px 10px",
+                backgroundColor: showWatchDebug ? "#7c3aed" : "#374151",
+                color: "#fff",
+                border: "none",
+                borderRadius: "6px",
+                cursor:
+                  isCameraActive && selectedDeviceId
+                    ? "pointer"
+                    : "not-allowed",
+                fontSize: "11px",
+                fontWeight: "600",
+                transition: "all 0.2s",
+                opacity: isCameraActive && selectedDeviceId ? 1 : 0.5,
+                boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+              }}
+            >
+              {showWatchDebug ? "Hide Debug" : "Watch Debug"}
+            </button>
+            <button
+              type="button"
               onClick={toggleCamera}
               disabled={!selectedDeviceId}
               style={{
@@ -471,7 +511,7 @@ export function CameraCard({
               borderRadius: "6px",
               fontFamily: "monospace",
               fontSize: "11px",
-              maxWidth: 280,
+              maxWidth: 320,
               backdropFilter: "blur(4px)",
               border: "1px solid rgba(255, 255, 255, 0.1)",
             }}
@@ -528,6 +568,78 @@ export function CameraCard({
                 style={{ color: "#ff4444", marginTop: "4px", fontSize: "10px" }}
               >
                 Watch: {watchError}
+              </div>
+            )}
+
+            {/* Watch debug panel (collapsible) */}
+            {showWatchDebug && (
+              <div
+                style={{
+                  marginTop: "8px",
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.04)",
+                  padding: "8px",
+                  borderRadius: "6px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "#c7d2fe",
+                    marginBottom: "6px",
+                    fontWeight: 600,
+                  }}
+                >
+                  Watch API Debug
+                </div>
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "#9ca3af",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Request:{" "}
+                  <span style={{ color: "#fff" }}>{watchRequestId ?? "—"}</span>
+                </div>
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "#9ca3af",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Latency:{" "}
+                  <span style={{ color: "#fff" }}>
+                    {watchLatency !== null
+                      ? `${watchLatency.toFixed(0)}ms`
+                      : "—"}
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    maxHeight: 160,
+                    overflowY: "auto",
+                    background: "rgba(0,0,0,0.5)",
+                    padding: "8px",
+                    borderRadius: "4px",
+                    border: "1px solid rgba(255,255,255,0.02)",
+                  }}
+                >
+                  <pre
+                    style={{
+                      margin: 0,
+                      fontFamily: "monospace",
+                      fontSize: "11px",
+                      color: "#e5e7eb",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {JSON.stringify(getWatchDebugObject(), null, 2)}
+                  </pre>
+                </div>
               </div>
             )}
           </div>

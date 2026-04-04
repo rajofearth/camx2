@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { BadRequestError } from "./_lib/errors";
-import { runWatchGemini } from "./_lib/gemini";
+import { runWatchLmStudio } from "./_lib/lmstudio";
 import {
   createErrorResponse,
   createSuccessResponse,
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     const base64Image = buffer.toString("base64");
 
-    const { result } = await runWatchGemini({
+    const { result } = await runWatchLmStudio({
       base64Image,
       mimeType,
     });

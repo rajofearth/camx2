@@ -1,20 +1,20 @@
-import { Type } from "@google/genai";
 import type { WatchResult } from "@/app/lib/watch-types";
 
 export const WATCH_RESPONSE_SCHEMA = {
-  type: Type.OBJECT,
+  type: "object",
   required: ["DescriptionOfSituationOnlyIfFoundHarm", "isHarm"],
   properties: {
     isHarm: {
-      type: Type.ARRAY,
+      type: "array",
       items: {
-        type: Type.BOOLEAN,
+        type: "boolean",
       },
     },
     DescriptionOfSituationOnlyIfFoundHarm: {
-      type: Type.STRING,
+      type: "string",
     },
   },
+  additionalProperties: false,
 } as const;
 
 function isBooleanArray(value: unknown): value is boolean[] {
