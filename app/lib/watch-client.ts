@@ -5,11 +5,17 @@ export interface FetchWatchOptions {
   readonly signal?: AbortSignal;
 }
 
+/**
+ * Result when the fetch is successful (parsed WatchOk)
+ */
 export interface FetchWatchResult {
   readonly success: true;
   readonly data: WatchOk;
 }
 
+/**
+ * Error result
+ */
 export interface FetchWatchError {
   readonly success: false;
   readonly error: string;
@@ -18,13 +24,24 @@ export interface FetchWatchError {
 
 export type FetchWatchResultType = FetchWatchResult | FetchWatchError;
 
+/**
+ * Send both the original captured frame and the processed frame (smaller) to the server.
+ * - `originalBlob` is the raw capture from the camera/input.
+ * - `processedBlob` is the (optional) reduced/compressed image you want the server to analyze.
+ *
+ * The server will save both and can use processedBlob for analysis while keeping original for debugging.
+ */
 export async function fetchWatch(
-  imageBlob: Blob,
+  originalBlob: Blob,
+  processedBlob?: Blob,
   options?: FetchWatchOptions,
 ): Promise<FetchWatchResultType> {
   try {
     const formData = new FormData();
-    formData.append("frame", imageBlob);
+    // Attach the original capture for debugging/audit purposes.
+    formData.append("original_frame", originalBlob);
+    // Attach the processed frame for analysis. If none provided, fall back to original.
+    formData.append("frame", processedBlob ?? originalBlob);
 
     const response = await fetch("/api/watch", {
       method: "POST",

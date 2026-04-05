@@ -1,44 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type Webcam from "react-webcam";
+import { makeSquareAndCompress } from "@/app/lib/image-utils";
 import { fetchWatch } from "@/app/lib/watch-client";
 import type { WatchResult } from "@/app/lib/watch-types";
 
-/**
- * Ensure a Blob is PNG. If the blob is already PNG, return it unchanged.
- * Otherwise load it into an Image and redraw to a canvas, then export as PNG.
- */
-async function ensurePng(blob: Blob): Promise<Blob> {
-  if (blob.type === "image/png") return blob;
-
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const url = URL.createObjectURL(blob);
-    const image = new Image();
-    image.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(image);
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Failed to load image for PNG conversion"));
-    };
-    image.src = url;
-  });
-
-  const canvas = document.createElement("canvas");
-  canvas.width = img.naturalWidth || img.width;
-  canvas.height = img.naturalHeight || img.height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    throw new Error("Could not get canvas context for PNG conversion");
-  }
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-  const pngBlob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, "image/png"),
-  );
-  if (!pngBlob) throw new Error("Failed to convert image to PNG");
-  return pngBlob;
-}
+// Use the shared image utility to produce a square, compressed PNG.
+// The heavy lifting is delegated to `makeSquareAndCompress` which uses
+// fast browser APIs (createImageBitmap, OffscreenCanvas where available).
+// No local conversion helper is required here.
 
 export interface UseWebcamWatchResult {
   readonly latest: WatchResult | null;
@@ -93,9 +62,206 @@ export function useWebcamWatch(
     setError(null);
 
     try {
-      const initialBlob = await fetch(imageSrc).then((r) => r.blob());
-      const blob = await ensurePng(initialBlob);
-      const result = await fetchWatch(blob, {
+      const originalBlob = await fetch(imageSrc).then((r) => r.blob());
+
+      // We will try to produce a WebP processed blob that is small (target <= 100KB).
+      // Strategy:
+      // 1) Try worker-based processing to avoid blocking the UI thread.
+      // 2) If worker is unavailable or fails, fall back to in-thread processing.
+      // 3) If produced blob is too large (or larger than the original), retry with reduced size/quality.
+      // 4) If all attempts fail, fall back to sending the processed blob we have (or original).
+      let processedBlob: Blob | null = null;
+      let workerTimings: unknown = null;
+
+      // Helper: process once via worker (returns Blob or throws)
+      async function processOnceWithWorker(opts: {
+        quality: number;
+        targetSize: number;
+      }): Promise<Blob> {
+        return new Promise<Blob>((resolve, reject) => {
+          try {
+            const worker = new Worker(
+              new URL("../workers/imageWorker.ts", import.meta.url),
+              {
+                type: "module",
+              },
+            );
+
+            const id = String(Math.random()).slice(2);
+            const onMessage = (ev: MessageEvent) => {
+              const d = ev.data;
+              if (!d) return;
+              // accept matching id or single-response workers
+              if (d.id !== undefined && d.id !== id) return;
+              worker.removeEventListener("message", onMessage);
+              worker.removeEventListener("error", onError);
+              if (d.success) {
+                const ab: ArrayBuffer = d.arrayBuffer;
+                const mime: string = d.mimeType || "image/webp";
+                workerTimings = d.timings ?? null;
+                resolve(new Blob([ab], { type: mime }));
+              } else {
+                reject(new Error(d.error || "Worker processing failed"));
+              }
+            };
+            const onError = (err: ErrorEvent) => {
+              worker.removeEventListener("message", onMessage);
+              worker.removeEventListener("error", onError);
+              reject(err.error || new Error("Worker error"));
+            };
+
+            worker.addEventListener("message", onMessage);
+            worker.addEventListener("error", onError);
+
+            // Post the image data URL to the worker
+            worker.postMessage({
+              id,
+              imageDataUrl: imageSrc,
+              options: {
+                quality: 0.45,
+                mode: "crop",
+                targetSize: 160,
+                output: "png",
+              },
+            });
+
+            // Safety timeout in case worker hangs
+            const timeout = setTimeout(() => {
+              try {
+                worker.removeEventListener("message", onMessage);
+                worker.removeEventListener("error", onError);
+                worker.terminate();
+              } catch {}
+              reject(new Error("Image worker timeout"));
+            }, 3000);
+
+            // Clear timeout on resolution/rejection
+            const wrapResolve =
+              (fn: Function) =>
+              (...args: any[]) => {
+                clearTimeout(timeout);
+                // @ts-ignore
+                return fn(...args);
+              };
+            const originalResolve = resolve;
+            const originalReject = reject;
+            // replace resolve/reject to clear timeout
+            resolve = wrapResolve(originalResolve) as any;
+            reject = wrapResolve(originalReject) as any;
+          } catch (err) {
+            reject(err);
+          }
+        });
+      }
+
+      // Helper: synchronous/in-thread processing attempt
+      async function processInThread(opts: {
+        quality: number;
+        targetSize: number;
+      }) {
+        return makeSquareAndCompress(originalBlob, {
+          quality: opts.quality,
+          mode: "crop",
+          output: "png",
+          targetSize: opts.targetSize,
+        });
+      }
+
+      // Retry strategy parameters (descending quality/size)
+      const MAX_SIZE = 100 * 1024; // 100 KB desired upper bound
+      const attempts = [
+        { quality: 0.45, targetSize: 160 },
+        { quality: 0.35, targetSize: 128 },
+        { quality: 0.25, targetSize: 96 },
+        { quality: 0.18, targetSize: 64 },
+      ];
+
+      // Iterate attempts until we get a webp under MAX_SIZE (prefer smaller than original)
+      let lastError: unknown = null;
+      for (const attempt of attempts) {
+        try {
+          // Prefer worker if available
+          if (typeof Worker !== "undefined") {
+            try {
+              processedBlob = await processOnceWithWorker({
+                quality: attempt.quality,
+                targetSize: attempt.targetSize,
+              });
+            } catch (workerErr) {
+              // worker failed for this attempt, try in-thread fallback for the same params
+              try {
+                processedBlob = await processInThread({
+                  quality: attempt.quality,
+                  targetSize: attempt.targetSize,
+                });
+              } catch (convErr) {
+                lastError = convErr;
+                processedBlob = null;
+              }
+            }
+          } else {
+            // No worker available: process in-thread
+            processedBlob = await processInThread({
+              quality: attempt.quality,
+              targetSize: attempt.targetSize,
+            });
+          }
+
+          if (processedBlob) {
+            // Ensure it's WebP (we requested webp, but double-check)
+            const isWebp = (processedBlob.type || "")
+              .toLowerCase()
+              .includes("webp");
+            const sizeOk = processedBlob.size <= MAX_SIZE;
+            const smallerThanOriginal = processedBlob.size < originalBlob.size;
+
+            if (isWebp && (sizeOk || smallerThanOriginal)) {
+              // Accept this processed blob
+              break;
+            }
+
+            // If not acceptable, continue to next attempt (possibly with lower size/quality)
+            // Keep the smallest seen blob as a fallback.
+            // If processedBlob is larger than original and there are more attempts, continue.
+          }
+        } catch (err) {
+          // record error and continue
+          lastError = err;
+          processedBlob = null;
+        }
+      }
+
+      // If after attempts we still don't have a processedBlob, try a final fast in-thread pass with very small params
+      if (!processedBlob) {
+        try {
+          processedBlob = await processInThread({
+            quality: 0.15,
+            targetSize: 64,
+          });
+        } catch (finalErr) {
+          // Give up and fall back to original
+          processedBlob = originalBlob;
+        }
+      }
+
+      // Final safeguard: ensure we at least have a Blob
+      if (!processedBlob) {
+        processedBlob = originalBlob;
+      }
+
+      // Log sizes and optional timings for debugging
+      try {
+        // eslint-disable-next-line no-console
+        console.debug(
+          `[watch] sending frame sizes: original=${originalBlob.size} bytes, processed=${processedBlob.size} bytes`,
+          workerTimings ? { workerTimings } : undefined,
+        );
+      } catch (e) {
+        // ignore logging failures
+      }
+
+      // Send both original (for audit) and processed (for analysis)
+      const result = await fetchWatch(originalBlob, processedBlob, {
         signal: abortControllerRef.current.signal,
       });
 

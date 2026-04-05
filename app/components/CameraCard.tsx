@@ -89,8 +89,8 @@ export function CameraCard({
   // Check for harm detection and trigger callback
   useEffect(() => {
     if (watchLatest && onHarmDetected) {
-      const hasHarm = watchLatest.isHarm.some((harm) => harm === true);
-      if (hasHarm && watchLatest.DescriptionOfSituationOnlyIfFoundHarm) {
+      const isHarm = watchLatest.isHarm === true;
+      if (isHarm && watchLatest.description) {
         onHarmDetected(watchLatest, label);
       }
     }

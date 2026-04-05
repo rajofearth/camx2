@@ -20,8 +20,8 @@ export function AlertPopup({
     return null;
   }
 
-  const hasHarm = watchResult.isHarm.some((harm) => harm === true);
-  const description = watchResult.DescriptionOfSituationOnlyIfFoundHarm;
+  const hasHarm = watchResult.isHarm === true;
+  const description = watchResult.description;
 
   if (!hasHarm || !description) {
     return null;
@@ -110,7 +110,8 @@ export function AlertPopup({
               transition: "background-color 0.2s",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.1)";
+              e.currentTarget.style.backgroundColor =
+                "rgba(255, 255, 255, 0.1)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = "transparent";
