@@ -78,71 +78,28 @@ function drawMask(
   const pixelCount = mask.width * mask.height;
 
   for (let pixelIndex = 0; pixelIndex < pixelCount; pixelIndex++) {
-    const intensity = bytes[pixelIndex] ?? 0;
-    const rgbaIndex = pixelIndex * 4;
-    imageData.data[rgbaIndex] = intensity;
-    imageData.data[rgbaIndex + 1] = intensity;
-    imageData.data[rgbaIndex + 2] = intensity;
-    imageData.data[rgbaIndex + 3] = 255;
-  }
-
-  offscreenCtx.putImageData(imageData, 0, 0);
-  const scaledMask = document.createElement("canvas");
-  scaledMask.width = Math.max(1, Math.round(ctx.canvas.width));
-  scaledMask.height = Math.max(1, Math.round(ctx.canvas.height));
-  const scaledCtx = scaledMask.getContext("2d");
-
-  if (!scaledCtx) {
-    return;
-  }
-
-  scaledCtx.imageSmoothingEnabled = true;
-  scaledCtx.imageSmoothingQuality = "high";
-  scaledCtx.drawImage(offscreen, 0, 0, scaledMask.width, scaledMask.height);
-
-  const scaledImageData = scaledCtx.getImageData(
-    0,
-    0,
-    scaledMask.width,
-    scaledMask.height,
-  );
-  const overlayImageData = scaledCtx.createImageData(
-    scaledMask.width,
-    scaledMask.height,
-  );
-
-  for (
-    let rgbaIndex = 0;
-    rgbaIndex < scaledImageData.data.length;
-    rgbaIndex += 4
-  ) {
-    const intensity = scaledImageData.data[rgbaIndex] ?? 0;
-    const centered = intensity - 128;
-    if (centered <= 0) {
+    const byteIndex = pixelIndex >> 3;
+    const bitIndex = pixelIndex & 7;
+    const isForeground = ((bytes[byteIndex] ?? 0) & (1 << bitIndex)) !== 0;
+    if (!isForeground) {
       continue;
     }
 
-    overlayImageData.data[rgbaIndex] = 0;
-    overlayImageData.data[rgbaIndex + 1] = 255;
-    overlayImageData.data[rgbaIndex + 2] = 0;
-    overlayImageData.data[rgbaIndex + 3] = Math.min(
-      150,
-      Math.round((centered / 127) * 140),
-    );
+    const rgbaIndex = pixelIndex * 4;
+    imageData.data[rgbaIndex] = 0;
+    imageData.data[rgbaIndex + 1] = 255;
+    imageData.data[rgbaIndex + 2] = 0;
+    imageData.data[rgbaIndex + 3] = 88;
   }
 
-  scaledCtx.clearRect(0, 0, scaledMask.width, scaledMask.height);
-  scaledCtx.putImageData(overlayImageData, 0, 0);
-
+  offscreenCtx.putImageData(imageData, 0, 0);
   ctx.save();
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
   ctx.drawImage(
-    scaledMask,
+    offscreen,
     0,
     0,
-    scaledMask.width,
-    scaledMask.height,
+    mask.width,
+    mask.height,
     0,
     0,
     ctx.canvas.width,
