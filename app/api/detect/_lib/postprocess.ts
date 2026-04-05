@@ -321,35 +321,35 @@ function compressMask(
 ): DetectionMask | undefined {
   const planeSize = width * height;
   const offset = (batchIndex * numQueries + queryIndex) * planeSize;
+  const LOGIT_CLIP = 8;
 
   if (offset + planeSize > maskData.length) {
     return undefined;
   }
 
-  const packed = new Uint8Array(Math.ceil(planeSize / 8));
-  let hasForeground = false;
+  const quantized = new Uint8Array(planeSize);
+  let hasPositiveLogit = false;
 
   for (let pixelIndex = 0; pixelIndex < planeSize; pixelIndex++) {
     const rawValue = Number(maskData[offset + pixelIndex] ?? 0);
-    const probability =
-      rawValue >= 0 && rawValue <= 1 ? rawValue : sigmoid(rawValue);
-
-    if (probability >= 0.5) {
-      const byteIndex = pixelIndex >> 3;
-      const bitIndex = pixelIndex & 7;
-      packed[byteIndex] = packed[byteIndex] | (1 << bitIndex);
-      hasForeground = true;
+    const clippedValue = clamp(rawValue, -LOGIT_CLIP, LOGIT_CLIP);
+    const quantizedValue = Math.round(
+      ((clippedValue + LOGIT_CLIP) / (LOGIT_CLIP * 2)) * 255,
+    );
+    quantized[pixelIndex] = quantizedValue;
+    if (rawValue > 0) {
+      hasPositiveLogit = true;
     }
   }
 
-  if (!hasForeground) {
+  if (!hasPositiveLogit) {
     return undefined;
   }
 
   return {
     width,
     height,
-    data: Buffer.from(packed).toString("base64"),
+    data: Buffer.from(quantized).toString("base64"),
   };
 }
 

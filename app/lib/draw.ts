@@ -56,8 +56,8 @@ export function drawDetections(
 function drawMask(
   ctx: CanvasRenderingContext2D,
   detection: Detection,
-  frameW: number,
-  frameH: number,
+  _frameW: number,
+  _frameH: number,
 ): void {
   const { mask } = detection;
   if (!mask) {
@@ -78,31 +78,18 @@ function drawMask(
   const pixelCount = mask.width * mask.height;
 
   for (let pixelIndex = 0; pixelIndex < pixelCount; pixelIndex++) {
-    const byteIndex = pixelIndex >> 3;
-    const bitIndex = pixelIndex & 7;
-    const isForeground = ((bytes[byteIndex] ?? 0) & (1 << bitIndex)) !== 0;
-
-    if (!isForeground) {
-      continue;
-    }
-
+    const intensity = bytes[pixelIndex] ?? 0;
     const rgbaIndex = pixelIndex * 4;
-    imageData.data[rgbaIndex] = 0;
-    imageData.data[rgbaIndex + 1] = 255;
-    imageData.data[rgbaIndex + 2] = 0;
-    imageData.data[rgbaIndex + 3] = 76;
+    imageData.data[rgbaIndex] = intensity;
+    imageData.data[rgbaIndex + 1] = intensity;
+    imageData.data[rgbaIndex + 2] = intensity;
+    imageData.data[rgbaIndex + 3] = 255;
   }
 
   offscreenCtx.putImageData(imageData, 0, 0);
-  const sx = ctx.canvas.width / frameW;
-  const sy = ctx.canvas.height / frameH;
-  const destX = detection.x1 * sx;
-  const destY = detection.y1 * sy;
-  const destWidth = Math.max(1, (detection.x2 - detection.x1) * sx);
-  const destHeight = Math.max(1, (detection.y2 - detection.y1) * sy);
   const scaledMask = document.createElement("canvas");
-  scaledMask.width = Math.max(1, Math.round(destWidth));
-  scaledMask.height = Math.max(1, Math.round(destHeight));
+  scaledMask.width = Math.max(1, Math.round(ctx.canvas.width));
+  scaledMask.height = Math.max(1, Math.round(ctx.canvas.height));
   const scaledCtx = scaledMask.getContext("2d");
 
   if (!scaledCtx) {
@@ -113,20 +100,53 @@ function drawMask(
   scaledCtx.imageSmoothingQuality = "high";
   scaledCtx.drawImage(offscreen, 0, 0, scaledMask.width, scaledMask.height);
 
+  const scaledImageData = scaledCtx.getImageData(
+    0,
+    0,
+    scaledMask.width,
+    scaledMask.height,
+  );
+  const overlayImageData = scaledCtx.createImageData(
+    scaledMask.width,
+    scaledMask.height,
+  );
+
+  for (
+    let rgbaIndex = 0;
+    rgbaIndex < scaledImageData.data.length;
+    rgbaIndex += 4
+  ) {
+    const intensity = scaledImageData.data[rgbaIndex] ?? 0;
+    const centered = intensity - 128;
+    if (centered <= 0) {
+      continue;
+    }
+
+    overlayImageData.data[rgbaIndex] = 0;
+    overlayImageData.data[rgbaIndex + 1] = 255;
+    overlayImageData.data[rgbaIndex + 2] = 0;
+    overlayImageData.data[rgbaIndex + 3] = Math.min(
+      150,
+      Math.round((centered / 127) * 140),
+    );
+  }
+
+  scaledCtx.clearRect(0, 0, scaledMask.width, scaledMask.height);
+  scaledCtx.putImageData(overlayImageData, 0, 0);
+
   ctx.save();
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
-  ctx.globalAlpha = 0.7;
   ctx.drawImage(
     scaledMask,
     0,
     0,
     scaledMask.width,
     scaledMask.height,
-    destX,
-    destY,
-    destWidth,
-    destHeight,
+    0,
+    0,
+    ctx.canvas.width,
+    ctx.canvas.height,
   );
   ctx.restore();
 }
