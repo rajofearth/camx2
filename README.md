@@ -6,8 +6,8 @@ Real-time object detection using **YOLOv11x**/**rfdetr** exported to **ONNX**, r
 
 A webcam demo that runs a YOLO/rfdetr model on your own machine:
 
-- **Client**: captures frames from your webcam and draws bounding boxes.
-- **Server (Next.js route)**: preprocesses the frame, runs ONNX inference with **WebGPU** via `onnxruntime-node`, then returns detections.
+- **Client**: captures frames from your webcam and draws bounding boxes and RF-DETR segmentation masks when available.
+- **Server (Next.js route)**: preprocesses the frame, runs ONNX inference with **WebGPU** via `onnxruntime-node`, then returns detections (and masks for seg-capable RF-DETR exports).
 
 ## The vibe (my fun take)
 
@@ -56,6 +56,8 @@ Models live in:
 - `public/models/yolo11x.onnx`
 - `public/models/yolo11n.onnx`
 - `public/models/rfdetr-nano.onnx`
+
+If your RF-DETR ONNX export exposes a third mask output (commonly `masks`), the app now renders instance masks automatically. Detection-only RF-DETR exports still work unchanged.
 
 To switch the model, update the path in `app/api/detect/_lib/model.ts`.
 

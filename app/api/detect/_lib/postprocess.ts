@@ -1,5 +1,5 @@
 import type * as ort from "onnxruntime-node";
-import type { Detection } from "@/app/lib/types";
+import type { Detection, DetectionMask } from "@/app/lib/types";
 import { InferenceError } from "./errors";
 import type { ImageInfo } from "./preprocess";
 
@@ -38,8 +38,36 @@ function softmax(logits: readonly number[]): number[] {
   return exps;
 }
 
+function argmaxSigmoid(logits: readonly number[]): {
+  readonly confidence: number;
+  readonly classIndex: number;
+} {
+  let maxConfidence = -Infinity;
+  let maxClass = 0;
+
+  for (let classIndex = 0; classIndex < logits.length; classIndex++) {
+    const confidence = sigmoid(logits[classIndex] ?? 0);
+    if (confidence > maxConfidence) {
+      maxConfidence = confidence;
+      maxClass = classIndex;
+    }
+  }
+
+  return { confidence: maxConfidence, classIndex: maxClass };
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function sigmoid(value: number): number {
+  if (value >= 0) {
+    const z = Math.exp(-value);
+    return 1 / (1 + z);
+  }
+
+  const z = Math.exp(value);
+  return z / (1 + z);
 }
 
 function getTensorData(
@@ -79,6 +107,7 @@ export function postprocessRfDetr(
   predBoxes: ort.Tensor,
   logits: ort.Tensor,
   imageInfo: ImageInfo,
+  masks?: ort.Tensor,
 ): Detection[] {
   const boxShape = validateShape(predBoxes.dims, 3, "pred_boxes");
   const logitShape = validateShape(logits.dims, 3, "logits");
@@ -130,6 +159,39 @@ export function postprocessRfDetr(
 
   const boxData = getTensorData(predBoxes, "pred_boxes");
   const logitData = getTensorData(logits, "logits");
+  let maskData:
+    | Float32Array
+    | Float64Array
+    | Int32Array
+    | Uint8Array
+    | undefined;
+  let maskHeight = 0;
+  let maskWidth = 0;
+
+  if (masks) {
+    const maskShape = validateShape(masks.dims, 4, "masks");
+    const batchSizeMasks = Number(maskShape[0]);
+    const numQueriesMasks = Number(maskShape[1]);
+    maskHeight = Number(maskShape[2]);
+    maskWidth = Number(maskShape[3]);
+
+    if (
+      !Number.isFinite(batchSizeMasks) ||
+      !Number.isFinite(numQueriesMasks) ||
+      !Number.isFinite(maskHeight) ||
+      !Number.isFinite(maskWidth) ||
+      batchSizeMasks < 1 ||
+      numQueriesMasks !== numQueriesBoxes ||
+      maskHeight < 1 ||
+      maskWidth < 1
+    ) {
+      throw new InferenceError(
+        `Unexpected masks shape: ${JSON.stringify(masks.dims)}`,
+      );
+    }
+
+    maskData = getTensorData(masks, "masks");
+  }
 
   const batchIndex = 0;
   const detections: Detection[] = [];
@@ -137,6 +199,7 @@ export function postprocessRfDetr(
     numClasses === NUM_RF_DETR_OUTPUT_CLASSES
       ? RF_DETR_BACKGROUND_CLASS_INDEX
       : numClasses;
+  const useSigmoidScoring = Boolean(maskData);
 
   for (let queryIndex = 0; queryIndex < numQueriesBoxes; queryIndex++) {
     const boxOffset = (batchIndex * numQueriesBoxes + queryIndex) * 4;
@@ -169,16 +232,22 @@ export function postprocessRfDetr(
       row[classIndex] = Number(logitData[logitOffset + classIndex] ?? 0);
     }
 
-    const probabilities = softmax(row);
-
     let maxConfidence = -Infinity;
     let maxClass = 0;
 
-    for (let classIndex = 0; classIndex < effectiveClassCount; classIndex++) {
-      const probability = probabilities[classIndex] ?? 0;
-      if (probability > maxConfidence) {
-        maxConfidence = probability;
-        maxClass = classIndex;
+    if (useSigmoidScoring) {
+      const result = argmaxSigmoid(row.slice(0, effectiveClassCount));
+      maxConfidence = result.confidence;
+      maxClass = result.classIndex;
+    } else {
+      const probabilities = softmax(row);
+
+      for (let classIndex = 0; classIndex < effectiveClassCount; classIndex++) {
+        const probability = probabilities[classIndex] ?? 0;
+        if (probability > maxConfidence) {
+          maxConfidence = probability;
+          maxClass = classIndex;
+        }
       }
     }
 
@@ -214,18 +283,74 @@ export function postprocessRfDetr(
       continue;
     }
 
-    detections.push({
+    const mask = maskData
+      ? compressMask(
+          maskData,
+          batchIndex,
+          queryIndex,
+          numQueriesBoxes,
+          maskWidth,
+          maskHeight,
+        )
+      : undefined;
+
+    const detection: Detection = {
       x1,
       y1,
       x2,
       y2,
       confidence: maxConfidence,
       class: maxClass,
-    });
+      ...(mask ? { mask } : {}),
+    };
+
+    detections.push(detection);
   }
 
   detections.sort((a, b) => b.confidence - a.confidence);
   return detections.slice(0, MAX_DETECTIONS);
+}
+
+function compressMask(
+  maskData: Float32Array | Float64Array | Int32Array | Uint8Array,
+  batchIndex: number,
+  queryIndex: number,
+  numQueries: number,
+  width: number,
+  height: number,
+): DetectionMask | undefined {
+  const planeSize = width * height;
+  const offset = (batchIndex * numQueries + queryIndex) * planeSize;
+
+  if (offset + planeSize > maskData.length) {
+    return undefined;
+  }
+
+  const packed = new Uint8Array(Math.ceil(planeSize / 8));
+  let hasForeground = false;
+
+  for (let pixelIndex = 0; pixelIndex < planeSize; pixelIndex++) {
+    const rawValue = Number(maskData[offset + pixelIndex] ?? 0);
+    const probability =
+      rawValue >= 0 && rawValue <= 1 ? rawValue : sigmoid(rawValue);
+
+    if (probability >= 0.5) {
+      const byteIndex = pixelIndex >> 3;
+      const bitIndex = pixelIndex & 7;
+      packed[byteIndex] = packed[byteIndex] | (1 << bitIndex);
+      hasForeground = true;
+    }
+  }
+
+  if (!hasForeground) {
+    return undefined;
+  }
+
+  return {
+    width,
+    height,
+    data: Buffer.from(packed).toString("base64"),
+  };
 }
 
 function intersectionOverUnion(a: Detection, b: Detection): number {

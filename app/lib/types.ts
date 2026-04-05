@@ -1,5 +1,11 @@
 export type DetectionModel = "rfdetr" | "yolo";
 
+export interface DetectionMask {
+  readonly width: number;
+  readonly height: number;
+  readonly data: string;
+}
+
 export interface Detection {
   readonly x1: number;
   readonly y1: number;
@@ -7,6 +13,7 @@ export interface Detection {
   readonly y2: number;
   readonly confidence: number;
   readonly class: number;
+  readonly mask?: DetectionMask;
 }
 
 export interface FrameDimensions {
@@ -41,6 +48,20 @@ export interface DetectErr {
 
 export type DetectResponse = DetectOk | DetectErr;
 
+function isDetectionMask(value: unknown): value is DetectionMask {
+  if (typeof value !== "object" || value === null) return false;
+  const mask = value as Record<string, unknown>;
+  return (
+    typeof mask.width === "number" &&
+    typeof mask.height === "number" &&
+    typeof mask.data === "string" &&
+    mask.width > 0 &&
+    mask.height > 0 &&
+    Number.isInteger(mask.width) &&
+    Number.isInteger(mask.height)
+  );
+}
+
 function isDetection(value: unknown): value is Detection {
   if (typeof value !== "object" || value === null) return false;
   const d = value as Record<string, unknown>;
@@ -54,7 +75,8 @@ function isDetection(value: unknown): value is Detection {
     d.confidence >= 0 &&
     d.confidence <= 1 &&
     d.class >= 0 &&
-    Number.isInteger(d.class)
+    Number.isInteger(d.class) &&
+    (d.mask === undefined || isDetectionMask(d.mask))
   );
 }
 

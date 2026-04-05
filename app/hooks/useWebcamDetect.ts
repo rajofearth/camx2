@@ -79,9 +79,13 @@ export function useWebcamDetect(
 
     const imageSrc = webcamRef.current.getScreenshot();
     if (!imageSrc) {
+      const retryDelay = Math.max(
+        16,
+        minIntervalMs - (performance.now() - lastRequestTimeRef.current),
+      );
       timeoutRef.current = setTimeout(() => {
         void processFrame();
-      }, MIN_FRAME_INTERVAL_MS);
+      }, retryDelay);
       return;
     }
 
@@ -131,9 +135,13 @@ export function useWebcamDetect(
       abortControllerRef.current = null;
 
       if (isActiveRef.current) {
+        const nextDelay = Math.max(
+          0,
+          minIntervalMs - (performance.now() - lastRequestTimeRef.current),
+        );
         timeoutRef.current = setTimeout(() => {
           void processFrame();
-        }, MIN_FRAME_INTERVAL_MS);
+        }, nextDelay);
       }
     }
   }, [webcamRef, minIntervalMs, minConfidence, detectionModel]);

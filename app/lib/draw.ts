@@ -1,5 +1,5 @@
 import { cocoClassName } from "./coco";
-import type { Detection, DetectionModel } from "./types";
+import type { Detection, DetectionMask, DetectionModel } from "./types";
 
 export interface DrawDetectionsOptions {
   readonly frameW: number;
@@ -20,6 +20,10 @@ export function drawDetections(
 
   if (detections.length === 0) {
     return;
+  }
+
+  for (const det of detections) {
+    drawMask(ctx, det, frameW, frameH);
   }
 
   for (const det of detections) {
@@ -47,6 +51,95 @@ export function drawDetections(
     ctx.fillStyle = "#000000";
     ctx.fillText(label, x1 + 2, y1 - 4);
   }
+}
+
+function drawMask(
+  ctx: CanvasRenderingContext2D,
+  detection: Detection,
+  frameW: number,
+  frameH: number,
+): void {
+  const { mask } = detection;
+  if (!mask) {
+    return;
+  }
+
+  const bytes = decodeMask(mask.data);
+  const offscreen = document.createElement("canvas");
+  offscreen.width = mask.width;
+  offscreen.height = mask.height;
+  const offscreenCtx = offscreen.getContext("2d");
+
+  if (!offscreenCtx) {
+    return;
+  }
+
+  const imageData = offscreenCtx.createImageData(mask.width, mask.height);
+  const pixelCount = mask.width * mask.height;
+
+  for (let pixelIndex = 0; pixelIndex < pixelCount; pixelIndex++) {
+    const byteIndex = pixelIndex >> 3;
+    const bitIndex = pixelIndex & 7;
+    const isForeground = ((bytes[byteIndex] ?? 0) & (1 << bitIndex)) !== 0;
+
+    if (!isForeground) {
+      continue;
+    }
+
+    const rgbaIndex = pixelIndex * 4;
+    imageData.data[rgbaIndex] = 0;
+    imageData.data[rgbaIndex + 1] = 255;
+    imageData.data[rgbaIndex + 2] = 0;
+    imageData.data[rgbaIndex + 3] = 76;
+  }
+
+  offscreenCtx.putImageData(imageData, 0, 0);
+  const sx = ctx.canvas.width / frameW;
+  const sy = ctx.canvas.height / frameH;
+  const destX = detection.x1 * sx;
+  const destY = detection.y1 * sy;
+  const destWidth = Math.max(1, (detection.x2 - detection.x1) * sx);
+  const destHeight = Math.max(1, (detection.y2 - detection.y1) * sy);
+  const scaledMask = document.createElement("canvas");
+  scaledMask.width = Math.max(1, Math.round(destWidth));
+  scaledMask.height = Math.max(1, Math.round(destHeight));
+  const scaledCtx = scaledMask.getContext("2d");
+
+  if (!scaledCtx) {
+    return;
+  }
+
+  scaledCtx.imageSmoothingEnabled = true;
+  scaledCtx.imageSmoothingQuality = "high";
+  scaledCtx.drawImage(offscreen, 0, 0, scaledMask.width, scaledMask.height);
+
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.globalAlpha = 0.7;
+  ctx.drawImage(
+    scaledMask,
+    0,
+    0,
+    scaledMask.width,
+    scaledMask.height,
+    destX,
+    destY,
+    destWidth,
+    destHeight,
+  );
+  ctx.restore();
+}
+
+function decodeMask(encoded: string): Uint8Array {
+  const binary = atob(encoded);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index++) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return bytes;
 }
 
 export function syncCanvasSize(

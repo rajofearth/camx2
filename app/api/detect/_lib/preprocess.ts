@@ -21,7 +21,7 @@ const MODEL_DIMENSIONS: Record<
   DetectionModel,
   { readonly width: number; readonly height: number }
 > = {
-  rfdetr: { width: 384, height: 384 },
+  rfdetr: { width: 312, height: 312 },
   yolo: { width: 640, height: 640 },
 };
 

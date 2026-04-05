@@ -95,6 +95,9 @@ export async function POST(req: NextRequest): Promise<Response> {
             const outputNames = getOutputNames(session, "rfdetr");
             const predBoxes = results[outputNames.boxes];
             const logits = results[outputNames.logits];
+            const masks = outputNames.masks
+              ? results[outputNames.masks]
+              : undefined;
 
             if (!predBoxes || !logits) {
               return createErrorResponse(
@@ -108,7 +111,7 @@ export async function POST(req: NextRequest): Promise<Response> {
               );
             }
 
-            return postprocessRfDetr(predBoxes, logits, image);
+            return postprocessRfDetr(predBoxes, logits, image, masks);
           })()
         : (() => {
             const outputNames = getOutputNames(session, "yolo");

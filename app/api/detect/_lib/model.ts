@@ -5,12 +5,8 @@ import { ModelError } from "./errors";
 
 const MODEL_CONFIG = {
   rfdetr: {
-    fileName: "rfdetr-nano.onnx",
-    inputName: "pixel_values",
-    outputNames: {
-      boxes: "pred_boxes",
-      logits: "logits",
-    },
+    fileName: "rf-detr-seg-nano.onnx",
+    inputName: "input",
     logLabel: "RF-DETR",
   },
   yolo: {
@@ -84,6 +80,7 @@ export function getOutputNames(
 ): {
   readonly boxes: string;
   readonly logits: string;
+  readonly masks?: string;
 };
 export function getOutputNames(
   session: ort.InferenceSession,
@@ -98,19 +95,52 @@ export function getOutputNames(
   | {
       readonly boxes: string;
       readonly logits: string;
+      readonly masks?: string;
     }
   | {
       readonly output: string;
     } {
   if (modelType === "rfdetr") {
-    const boxes =
+    let boxes: string | undefined;
+    let logits: string | undefined;
+    let masks: string | undefined;
+
+    for (const metadata of session.outputMetadata) {
+      const shape = metadata.shape;
+      if (!Array.isArray(shape)) {
+        continue;
+      }
+
+      if (shape.length === 4) {
+        masks = metadata.name;
+        continue;
+      }
+
+      if (shape.length === 3) {
+        const lastDim = Number(shape[2]);
+        if (Number.isFinite(lastDim) && lastDim === 4) {
+          boxes = metadata.name;
+          continue;
+        }
+
+        if (Number.isFinite(lastDim) && lastDim > 4) {
+          logits = metadata.name;
+        }
+      }
+    }
+
+    boxes ??=
+      session.outputNames.find((name) => name.toLowerCase().includes("box")) ??
+      session.outputNames[0];
+    logits ??=
       session.outputNames.find(
-        (name) => name === MODEL_CONFIG.rfdetr.outputNames.boxes,
-      ) ?? session.outputNames[0];
-    const logits =
-      session.outputNames.find(
-        (name) => name === MODEL_CONFIG.rfdetr.outputNames.logits,
+        (name) =>
+          name.toLowerCase().includes("logit") ||
+          name.toLowerCase().includes("label"),
       ) ?? session.outputNames[1];
+    masks ??=
+      session.outputNames.find((name) => name.toLowerCase().includes("mask")) ??
+      session.outputNames[2];
 
     if (!boxes || !logits) {
       throw new ModelError("Model must expose both box and logit outputs", {
@@ -119,7 +149,7 @@ export function getOutputNames(
       });
     }
 
-    return { boxes, logits };
+    return { boxes, logits, masks };
   }
 
   const output =
