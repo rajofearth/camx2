@@ -3,6 +3,43 @@ import type Webcam from "react-webcam";
 import { fetchWatch } from "@/app/lib/watch-client";
 import type { WatchResult } from "@/app/lib/watch-types";
 
+/**
+ * Ensure a Blob is PNG. If the blob is already PNG, return it unchanged.
+ * Otherwise load it into an Image and redraw to a canvas, then export as PNG.
+ */
+async function ensurePng(blob: Blob): Promise<Blob> {
+  if (blob.type === "image/png") return blob;
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Failed to load image for PNG conversion"));
+    };
+    image.src = url;
+  });
+
+  const canvas = document.createElement("canvas");
+  canvas.width = img.naturalWidth || img.width;
+  canvas.height = img.naturalHeight || img.height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    throw new Error("Could not get canvas context for PNG conversion");
+  }
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  const pngBlob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/png"),
+  );
+  if (!pngBlob) throw new Error("Failed to convert image to PNG");
+  return pngBlob;
+}
+
 export interface UseWebcamWatchResult {
   readonly latest: WatchResult | null;
   readonly lastLatency: number | null;
@@ -56,7 +93,8 @@ export function useWebcamWatch(
     setError(null);
 
     try {
-      const blob = await fetch(imageSrc).then((r) => r.blob());
+      const initialBlob = await fetch(imageSrc).then((r) => r.blob());
+      const blob = await ensurePng(initialBlob);
       const result = await fetchWatch(blob, {
         signal: abortControllerRef.current.signal,
       });
