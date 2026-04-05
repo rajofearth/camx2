@@ -1,6 +1,6 @@
 export interface WatchResult {
-  readonly isHarm: boolean[];
-  readonly DescriptionOfSituationOnlyIfFoundHarm: string;
+  readonly isHarm: boolean | null;
+  readonly description: string | null;
 }
 
 export type WatchErrorCode =
@@ -28,17 +28,15 @@ export interface WatchErr {
 
 export type WatchResponse = WatchOk | WatchErr;
 
-function isBooleanArray(value: unknown): value is boolean[] {
-  return Array.isArray(value) && value.every((v) => typeof v === "boolean");
-}
-
 function isWatchResult(value: unknown): value is WatchResult {
   if (typeof value !== "object" || value === null) return false;
   const obj = value as Record<string, unknown>;
-  return (
-    isBooleanArray(obj.isHarm) &&
-    typeof obj.DescriptionOfSituationOnlyIfFoundHarm === "string"
-  );
+
+  const isValidIsHarm = typeof obj.isHarm === "boolean" || obj.isHarm === null;
+  const isValidDescription =
+    typeof obj.description === "string" || obj.description === null;
+
+  return isValidIsHarm && isValidDescription;
 }
 
 function isWatchErrorCode(value: unknown): value is WatchErrorCode {

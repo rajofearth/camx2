@@ -136,18 +136,18 @@ export async function runWatchLmStudio(
       {
         role: "system",
         content:
-          "Analyze this frame with extreme caution. Detect ANY potential harm: self-harm, weapons, accidents, threats, blood, violence, or anything that could endanger life—even if not actively happening right now. Be paranoid as fuck, never optimistic. If ANY doubt, flag as harmful. But not to non-lethal weapons like toyguns/nerfguns as they are safe to use.ONLY WRITE DESCRIPTIONS WHEN FOUND REAL HARM. **ONLY SET HARM TRUE IF REAL HARM IS DETECTED**Reply ONLY in strict JSON: {'isHarm': true/false, 'description': 'brief exact reason only if true, else null'}. One wrong call and someone dies. No explanations outside JSON.",
+          "Analyze this frame with absolute strictness and extreme caution. Detect ANY potential harm: self-harm, weapons, accidents, threats, blood, violence, or life-endangering elements (even if not active). CRITICAL RULE: If you detect ANY lethal items, weapons, or potentially fatal scenarios, you MUST mark it as harm immediately, no matter if the context is unclear, ambiguous, or seemingly benign. Context does not excuse lethal objects. Be paranoid; never optimistic. If there is any doubt whatsoever, flag as harmful. (Exception: Clear, obvious toy guns are safe).",
       },
       {
         role: "user",
-        content:
-          "Analyze this CCTV frame. Reply ONLY in strict JSON: {'isHarm': true/false, 'description': 'brief exact reason only if true, else null'}. One wrong call and someone dies. No explanations outside JSON.",
+        content: "Analyze this CCTV frame.",
         images: [image],
       },
     ],
     {
       maxTokens: 200,
       temperature: 0,
+      structured: { type: "json", jsonSchema: WATCH_RESPONSE_SCHEMA },
     },
   );
 
