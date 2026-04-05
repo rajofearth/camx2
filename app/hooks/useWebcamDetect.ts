@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import type Webcam from "react-webcam";
 import { fetchDetect } from "@/app/lib/detect-client";
 import type {
@@ -107,18 +113,22 @@ export function useWebcamDetect(
       });
 
       if (!result.success) {
-        setError(result.error);
-        setDetections([]);
-        setLastLatency(null);
-        setFrameDimensions(null);
+        startTransition(() => {
+          setError(result.error);
+          setDetections([]);
+          setLastLatency(null);
+          setFrameDimensions(null);
+        });
       } else {
         const filtered = result.data.detections.filter(
           (det) => det.confidence >= minConfidence,
         );
-        setDetections(filtered);
-        setLastLatency(result.data.meta?.latencyMs ?? null);
-        setFrameDimensions(result.data.frame);
-        setError(null);
+        startTransition(() => {
+          setDetections(filtered);
+          setLastLatency(result.data.meta?.latencyMs ?? null);
+          setFrameDimensions(result.data.frame);
+          setError(null);
+        });
       }
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") {
@@ -126,10 +136,12 @@ export function useWebcamDetect(
         return;
       }
       const message = err instanceof Error ? err.message : "Unknown error";
-      setError(`Detection failed: ${message}`);
-      setDetections([]);
-      setLastLatency(null);
-      setFrameDimensions(null);
+      startTransition(() => {
+        setError(`Detection failed: ${message}`);
+        setDetections([]);
+        setLastLatency(null);
+        setFrameDimensions(null);
+      });
     } finally {
       setIsProcessing(false);
       abortControllerRef.current = null;
