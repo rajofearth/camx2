@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
-import type Webcam from "react-webcam";
+import type { CameraSourceRef } from "@/app/lib/camera-source";
 import { fetchDetect } from "@/app/lib/detect-client";
 import type {
   Detection,
@@ -31,10 +31,9 @@ export interface UseWebcamDetectResult {
 const DEFAULT_MAX_FPS = 5;
 const DEFAULT_MIN_CONFIDENCE = 0.5;
 const DEFAULT_MODEL: DetectionModel = "rfdetr";
-const MIN_FRAME_INTERVAL_MS = 1000 / DEFAULT_MAX_FPS;
 
 export function useWebcamDetect(
-  webcamRef: React.RefObject<Webcam | null>,
+  webcamRef: React.RefObject<CameraSourceRef | null>,
   isActive: boolean,
   options?: UseWebcamDetectOptions,
 ): UseWebcamDetectResult {
@@ -60,6 +59,7 @@ export function useWebcamDetect(
     isActiveRef.current = isActive;
   }, [isActive]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: resetting when the model changes keeps the UI state aligned with the active detector.
   useEffect(() => {
     setDetections([]);
     setLastLatency(null);

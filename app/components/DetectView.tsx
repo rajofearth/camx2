@@ -6,6 +6,7 @@ import { SITE_NAME, SITE_TAGLINE } from "@/app/lib/branding";
 import type { WatchResult } from "@/app/lib/watch-types";
 import { AlertPopup } from "./AlertPopup";
 import { CameraCard } from "./CameraCard";
+import { useRouteActivity } from "./RouteActivityProvider";
 import { SiteNav } from "./SiteNav";
 
 export function DetectView(): React.JSX.Element {
@@ -14,6 +15,7 @@ export function DetectView(): React.JSX.Element {
     cameraLabel: string;
   } | null>(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const { isCameraPaused } = useRouteActivity();
 
   const handleHarmDetected = (result: WatchResult, cameraLabel: string) => {
     setAlertData({ watchResult: result, cameraLabel });
@@ -70,21 +72,25 @@ export function DetectView(): React.JSX.Element {
           <CameraCard
             cameraIndex={0}
             label="Camera 1"
+            isPaused={isCameraPaused}
             onHarmDetected={handleHarmDetected}
           />
           <CameraCard
             cameraIndex={1}
             label="Camera 2"
+            isPaused={isCameraPaused}
             onHarmDetected={handleHarmDetected}
           />
           <CameraCard
             cameraIndex={2}
             label="Camera 3"
+            isPaused={isCameraPaused}
             onHarmDetected={handleHarmDetected}
           />
           <CameraCard
             cameraIndex={3}
             label="Camera 4"
+            isPaused={isCameraPaused}
             onHarmDetected={handleHarmDetected}
           />
         </div>

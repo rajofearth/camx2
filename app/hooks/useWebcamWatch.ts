@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type Webcam from "react-webcam";
+import type { CameraSourceRef } from "@/app/lib/camera-source";
 import { makeSquareAndCompress } from "@/app/lib/image-utils";
 import { fetchWatch } from "@/app/lib/watch-client";
 import type { WatchResult } from "@/app/lib/watch-types";
@@ -20,7 +20,7 @@ export interface UseWebcamWatchResult {
 const FRAME_INTERVAL_MS = 3000;
 
 export function useWebcamWatch(
-  webcamRef: React.RefObject<Webcam | null>,
+  webcamRef: React.RefObject<CameraSourceRef | null>,
   isActive: boolean,
 ): UseWebcamWatchResult {
   const [latest, setLatest] = useState<WatchResult | null>(null);
@@ -34,6 +34,7 @@ export function useWebcamWatch(
   const isActiveRef = useRef(isActive);
   isActiveRef.current = isActive;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the ref-backed guard keeps the loop stable while state changes.
   const processFrame = useCallback(async () => {
     if (!isActiveRef.current || !webcamRef.current) {
       return;
@@ -74,7 +75,7 @@ export function useWebcamWatch(
       let workerTimings: unknown = null;
 
       // Helper: process once via worker (returns Blob or throws)
-      async function processOnceWithWorker(opts: {
+      async function processOnceWithWorker(_opts: {
         quality: number;
         targetSize: number;
       }): Promise<Blob> {
@@ -137,17 +138,18 @@ export function useWebcamWatch(
 
             // Clear timeout on resolution/rejection
             const wrapResolve =
-              (fn: Function) =>
-              (...args: any[]) => {
+              <TArgs extends unknown[], TResult>(
+                fn: (...args: TArgs) => TResult,
+              ) =>
+              (...args: TArgs) => {
                 clearTimeout(timeout);
-                // @ts-ignore
                 return fn(...args);
               };
             const originalResolve = resolve;
             const originalReject = reject;
             // replace resolve/reject to clear timeout
-            resolve = wrapResolve(originalResolve) as any;
-            reject = wrapResolve(originalReject) as any;
+            resolve = wrapResolve(originalResolve);
+            reject = wrapResolve(originalReject);
           } catch (err) {
             reject(err);
           }
@@ -177,7 +179,6 @@ export function useWebcamWatch(
       ];
 
       // Iterate attempts until we get a webp under MAX_SIZE (prefer smaller than original)
-      let lastError: unknown = null;
       for (const attempt of attempts) {
         try {
           // Prefer worker if available
@@ -187,15 +188,14 @@ export function useWebcamWatch(
                 quality: attempt.quality,
                 targetSize: attempt.targetSize,
               });
-            } catch (workerErr) {
+            } catch {
               // worker failed for this attempt, try in-thread fallback for the same params
               try {
                 processedBlob = await processInThread({
                   quality: attempt.quality,
                   targetSize: attempt.targetSize,
                 });
-              } catch (convErr) {
-                lastError = convErr;
+              } catch {
                 processedBlob = null;
               }
             }
@@ -224,9 +224,8 @@ export function useWebcamWatch(
             // Keep the smallest seen blob as a fallback.
             // If processedBlob is larger than original and there are more attempts, continue.
           }
-        } catch (err) {
-          // record error and continue
-          lastError = err;
+        } catch {
+          // keep trying lower-quality attempts
           processedBlob = null;
         }
       }
@@ -238,7 +237,7 @@ export function useWebcamWatch(
             quality: 0.15,
             targetSize: 64,
           });
-        } catch (finalErr) {
+        } catch {
           // Give up and fall back to original
           processedBlob = originalBlob;
         }
@@ -256,7 +255,7 @@ export function useWebcamWatch(
           `[watch] sending frame sizes: original=${originalBlob.size} bytes, processed=${processedBlob.size} bytes`,
           workerTimings ? { workerTimings } : undefined,
         );
-      } catch (e) {
+      } catch {
         // ignore logging failures
       }
 

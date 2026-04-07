@@ -1,14 +1,15 @@
 "use client";
 
 import type React from "react";
-import { useRef, useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import Webcam from "react-webcam";
+import { useCameraDevices } from "@/app/hooks/useCameraDevices";
 import { useWebcamDetect } from "@/app/hooks/useWebcamDetect";
 import { useWebcamWatch } from "@/app/hooks/useWebcamWatch";
-import { useCameraDevices } from "@/app/hooks/useCameraDevices";
+import type { CameraSourceRef } from "@/app/lib/camera-source";
 import type { DetectionModel } from "@/app/lib/types";
-import { OverlayCanvas } from "./OverlayCanvas";
 import type { WatchResult } from "@/app/lib/watch-types";
+import { OverlayCanvas } from "./OverlayCanvas";
 
 const VIDEO_WIDTH = 640;
 const VIDEO_HEIGHT = 480;
@@ -16,6 +17,7 @@ const VIDEO_HEIGHT = 480;
 export interface CameraCardProps {
   readonly label: string;
   readonly cameraIndex: number;
+  readonly isPaused?: boolean;
   readonly onHarmDetected?: (result: WatchResult, cameraLabel: string) => void;
 }
 
@@ -26,13 +28,13 @@ function formatDetectionModel(model: DetectionModel): string {
 export function CameraCard({
   label,
   cameraIndex,
+  isPaused = false,
   onHarmDetected,
 }: CameraCardProps): React.JSX.Element {
-  // The `webcamRef` may point to either a `Webcam` instance or a lightweight
-  // wrapper around a local HTMLVideoElement when using a test video file.
-  const webcamRef = useRef<any>(null);
+  const webcamRef = useRef<InstanceType<typeof Webcam> | null>(null);
+  const cameraSourceRef = useRef<CameraSourceRef | null>(null);
   // If a local video file is selected for testing, `localVideoRef` points at
-  // the HTMLVideoElement and `webcamRef.current` will be a small wrapper that
+  // the HTMLVideoElement and `cameraSourceRef.current` becomes a wrapper that
   // implements `getScreenshot()` and exposes `video`.
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const [useLocalVideo, setUseLocalVideo] = useState(false);
@@ -50,21 +52,107 @@ export function CameraCard({
   const [isWatchActive, setIsWatchActive] = useState(false);
   const [detectionModel, setDetectionModel] =
     useState<DetectionModel>("rfdetr");
+  const [isSessionReady, setIsSessionReady] = useState(false);
 
   // New state: whether to show watch debug panel
   const [showWatchDebug, setShowWatchDebug] = useState(false);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const storageKey = `camx2.camera-card.${cameraIndex}`;
+
+    try {
+      const stored = window.sessionStorage.getItem(storageKey);
+      if (!stored) {
+        return;
+      }
+
+      const parsed = JSON.parse(stored) as Partial<{
+        selectedDeviceId: string | null;
+        isCameraActive: boolean;
+        isDetectionActive: boolean;
+        isWatchActive: boolean;
+        detectionModel: DetectionModel;
+      }>;
+
+      setSelectedDeviceId(parsed.selectedDeviceId ?? null);
+      setIsCameraActive(Boolean(parsed.isCameraActive));
+      setIsDetectionActive(parsed.isDetectionActive ?? true);
+      setIsWatchActive(Boolean(parsed.isWatchActive));
+      if (
+        parsed.detectionModel === "yolo" ||
+        parsed.detectionModel === "rfdetr"
+      ) {
+        setDetectionModel(parsed.detectionModel);
+      }
+    } catch {
+      // Ignore malformed session state and continue with defaults.
+    }
+
+    setIsSessionReady(true);
+  }, [cameraIndex]);
+
+  useEffect(() => {
+    if (!isSessionReady) {
+      return;
+    }
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const storageKey = `camx2.camera-card.${cameraIndex}`;
+    const snapshot = {
+      selectedDeviceId,
+      isCameraActive,
+      isDetectionActive,
+      isWatchActive,
+      detectionModel,
+    };
+
+    try {
+      window.sessionStorage.setItem(storageKey, JSON.stringify(snapshot));
+    } catch {
+      // Ignore storage quota / access failures.
+    }
+  }, [
+    cameraIndex,
+    detectionModel,
+    isCameraActive,
+    isDetectionActive,
+    isWatchActive,
+    selectedDeviceId,
+    isSessionReady,
+  ]);
+
+  const isCameraRunning = isCameraActive && !isPaused;
+
   // Auto-select device by index when devices are loaded
   useEffect(() => {
-    if (!isLoadingDevices && devices.length > 0) {
-      const targetIndex = Math.min(cameraIndex, devices.length - 1);
-      const targetDevice = devices[targetIndex];
-      if (targetDevice && selectedDeviceId !== targetDevice.deviceId) {
-        setSelectedDeviceId(targetDevice.deviceId);
-        setIsCameraActive(true);
-      }
+    if (!isSessionReady || isLoadingDevices || devices.length === 0) {
+      return;
     }
-  }, [devices, isLoadingDevices, cameraIndex, selectedDeviceId]);
+
+    if (selectedDeviceId) {
+      return;
+    }
+
+    const targetIndex = Math.min(cameraIndex, devices.length - 1);
+    const targetDevice = devices[targetIndex];
+    if (targetDevice) {
+      setSelectedDeviceId(targetDevice.deviceId);
+      setIsCameraActive(true);
+    }
+  }, [
+    devices,
+    isLoadingDevices,
+    cameraIndex,
+    selectedDeviceId,
+    isSessionReady,
+  ]);
 
   const {
     detections,
@@ -73,7 +161,7 @@ export function CameraCard({
     isProcessing: isDetectProcessing,
     error: detectError,
     frameDimensions,
-  } = useWebcamDetect(webcamRef, isDetectionActive && isCameraActive, {
+  } = useWebcamDetect(cameraSourceRef, isDetectionActive && isCameraRunning, {
     model: detectionModel,
   });
 
@@ -84,7 +172,7 @@ export function CameraCard({
     lastRequestId: watchRequestId,
     isProcessing: isWatchProcessing,
     error: watchError,
-  } = useWebcamWatch(webcamRef, isWatchActive && isCameraActive);
+  } = useWebcamWatch(cameraSourceRef, isWatchActive && isCameraRunning);
 
   // Check for harm detection and trigger callback
   useEffect(() => {
@@ -179,14 +267,11 @@ export function CameraCard({
     setCameraError(null);
   };
 
-  // When using a local video, create a tiny wrapper so the existing hooks
-  // (`useWebcamDetect` / `useWebcamWatch`) can call `getScreenshot()` and access
-  // a `.video` property like they would on the `react-webcam` instance.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the camera source ref must stay in sync with route and local-video state.
   useEffect(() => {
     if (useLocalVideo && localVideoRef.current) {
-      webcamRef.current = {
+      cameraSourceRef.current = {
         video: localVideoRef.current,
-        // `getScreenshot()` produces a JPEG data URL sized to VIDEO_WIDTH x VIDEO_HEIGHT.
         getScreenshot: () => {
           const videoEl = localVideoRef.current;
           if (!videoEl) return null;
@@ -197,8 +282,6 @@ export function CameraCard({
           const ctx = canvas.getContext("2d");
           if (!ctx) return null;
 
-          // Draw current frame scaled to the configured video size so the rest of
-          // the pipeline receives consistent frames.
           try {
             ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
             return canvas.toDataURL("image/jpeg");
@@ -207,27 +290,15 @@ export function CameraCard({
           }
         },
       };
-    } else {
-      // If we stopped using local video, clear wrapper so the real Webcam can be used.
-      if (
-        webcamRef.current &&
-        webcamRef.current.getScreenshot &&
-        (!localVideoRef.current ||
-          webcamRef.current.video !== localVideoRef.current)
-      ) {
-        webcamRef.current = null;
-      }
+      return;
     }
 
-    // Clean up blob URL on unmount or when localVideoSrc changes
-    return () => {
-      // no-op here; revocation is handled when replacing the URL
-    };
-  }, [useLocalVideo, localVideoSrc]);
+    cameraSourceRef.current = webcamRef.current;
+  }, [isCameraRunning, selectedDeviceId, useLocalVideo, localVideoSrc]);
 
-  // Monitor webcam video element for errors
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the listener must follow the active video source.
   useEffect(() => {
-    const video = webcamRef.current?.video;
+    const video = cameraSourceRef.current?.video;
     if (!video) return;
 
     const handleError = () => {
@@ -239,7 +310,7 @@ export function CameraCard({
     return () => {
       video.removeEventListener("error", handleError);
     };
-  }, [isCameraActive, selectedDeviceId]);
+  }, [isCameraRunning, selectedDeviceId]);
 
   const videoConstraints = selectedDeviceId
     ? {
@@ -287,6 +358,7 @@ export function CameraCard({
           }}
         >
           <label
+            htmlFor={`camera-select-${cameraIndex}`}
             style={{
               fontSize: "12px",
               fontWeight: "600",
@@ -305,6 +377,7 @@ export function CameraCard({
             }}
           >
             <select
+              id={`camera-select-${cameraIndex}`}
               value={selectedDeviceId || ""}
               onChange={handleDeviceChange}
               disabled={isLoadingDevices}
@@ -426,7 +499,7 @@ export function CameraCard({
               )}
             </div>
           </div>
-        ) : isCameraActive && useLocalVideo && localVideoSrc ? (
+        ) : isCameraRunning && useLocalVideo && localVideoSrc ? (
           <video
             ref={localVideoRef}
             src={localVideoSrc ?? undefined}
@@ -438,7 +511,7 @@ export function CameraCard({
             muted
             playsInline
           />
-        ) : isCameraActive && selectedDeviceId ? (
+        ) : isCameraRunning && selectedDeviceId ? (
           <Webcam
             ref={webcamRef}
             width={VIDEO_WIDTH}
@@ -464,9 +537,9 @@ export function CameraCard({
             Camera Stopped
           </div>
         )}
-        {isCameraActive && isDetectionActive && (
+        {isCameraRunning && isDetectionActive && (
           <OverlayCanvas
-            webcamRef={webcamRef}
+            webcamRef={cameraSourceRef}
             detections={detections}
             frameDimensions={frameDimensions}
             detectionModel={detectionModel}
@@ -487,7 +560,7 @@ export function CameraCard({
             <button
               type="button"
               onClick={toggleDetection}
-              disabled={!isCameraActive || !selectedDeviceId}
+              disabled={!isCameraRunning || !selectedDeviceId}
               style={{
                 padding: "8px 14px",
                 backgroundColor: isDetectionActive ? "#ef4444" : "#22c55e",
@@ -495,17 +568,17 @@ export function CameraCard({
                 border: "none",
                 borderRadius: "6px",
                 cursor:
-                  isCameraActive && selectedDeviceId
+                  isCameraRunning && selectedDeviceId
                     ? "pointer"
                     : "not-allowed",
                 fontSize: "11px",
                 fontWeight: "600",
                 transition: "all 0.2s",
-                opacity: isCameraActive && selectedDeviceId ? 1 : 0.5,
+                opacity: isCameraRunning && selectedDeviceId ? 1 : 0.5,
                 boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
               }}
               onMouseEnter={(e) => {
-                if (isCameraActive && selectedDeviceId) {
+                if (isCameraRunning && selectedDeviceId) {
                   e.currentTarget.style.transform = "translateY(-1px)";
                   e.currentTarget.style.boxShadow =
                     "0 4px 6px rgba(0, 0, 0, 0.3)";
@@ -550,7 +623,7 @@ export function CameraCard({
             <button
               type="button"
               onClick={toggleWatch}
-              disabled={!isCameraActive || !selectedDeviceId}
+              disabled={!isCameraRunning || !selectedDeviceId}
               style={{
                 padding: "8px 14px",
                 backgroundColor: isWatchActive ? "#ef4444" : "#22c55e",
@@ -558,17 +631,17 @@ export function CameraCard({
                 border: "none",
                 borderRadius: "6px",
                 cursor:
-                  isCameraActive && selectedDeviceId
+                  isCameraRunning && selectedDeviceId
                     ? "pointer"
                     : "not-allowed",
                 fontSize: "11px",
                 fontWeight: "600",
                 transition: "all 0.2s",
-                opacity: isCameraActive && selectedDeviceId ? 1 : 0.5,
+                opacity: isCameraRunning && selectedDeviceId ? 1 : 0.5,
                 boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
               }}
               onMouseEnter={(e) => {
-                if (isCameraActive && selectedDeviceId) {
+                if (isCameraRunning && selectedDeviceId) {
                   e.currentTarget.style.transform = "translateY(-1px)";
                   e.currentTarget.style.boxShadow =
                     "0 4px 6px rgba(0, 0, 0, 0.3)";
@@ -585,7 +658,7 @@ export function CameraCard({
             <button
               type="button"
               onClick={() => setShowWatchDebug((s) => !s)}
-              disabled={!isCameraActive || !selectedDeviceId}
+              disabled={!isCameraRunning || !selectedDeviceId}
               title="Toggle Watch API debug info"
               style={{
                 padding: "8px 10px",
@@ -594,13 +667,13 @@ export function CameraCard({
                 border: "none",
                 borderRadius: "6px",
                 cursor:
-                  isCameraActive && selectedDeviceId
+                  isCameraRunning && selectedDeviceId
                     ? "pointer"
                     : "not-allowed",
                 fontSize: "11px",
                 fontWeight: "600",
                 transition: "all 0.2s",
-                opacity: isCameraActive && selectedDeviceId ? 1 : 0.5,
+                opacity: isCameraRunning && selectedDeviceId ? 1 : 0.5,
                 boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
               }}
             >

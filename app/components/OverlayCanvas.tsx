@@ -2,12 +2,12 @@
 
 import type React from "react";
 import { useEffect, useRef } from "react";
-import type Webcam from "react-webcam";
+import type { CameraSourceRef } from "@/app/lib/camera-source";
 import { drawDetections, syncCanvasSize } from "@/app/lib/draw";
 import type { Detection, DetectionModel } from "@/app/lib/types";
 
 export interface OverlayCanvasProps {
-  readonly webcamRef: React.RefObject<Webcam | null>;
+  readonly webcamRef: React.RefObject<CameraSourceRef | null>;
   readonly detections: readonly Detection[];
   readonly frameDimensions: {
     readonly width: number;
