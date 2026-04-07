@@ -12,6 +12,8 @@
   "dependencies": {
     "@google/genai": "^1.33.0",
     "@lmstudio/sdk": "^1.5.0",
+    "lucide-react": "^1.7.0",
+    "motion": "^12.38.0",
     "next": "16.0.10",
     "onnxruntime-node": "^1.23.2",
     "react": "19.2.1",
