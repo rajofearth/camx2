@@ -3,9 +3,10 @@
 import type React from "react";
 import { useState } from "react";
 import { SITE_NAME, SITE_TAGLINE } from "@/app/lib/branding";
-import { CameraCard } from "./CameraCard";
-import { AlertPopup } from "./AlertPopup";
 import type { WatchResult } from "@/app/lib/watch-types";
+import { AlertPopup } from "./AlertPopup";
+import { CameraCard } from "./CameraCard";
+import { SiteNav } from "./SiteNav";
 
 export function DetectView(): React.JSX.Element {
   const [alertData, setAlertData] = useState<{
@@ -39,8 +40,10 @@ export function DetectView(): React.JSX.Element {
           width: "100%",
           gap: "14px",
           padding: "20px",
+          boxSizing: "border-box",
         }}
       >
+        <SiteNav />
         <header style={{ textAlign: "center" }}>
           <div
             style={{
