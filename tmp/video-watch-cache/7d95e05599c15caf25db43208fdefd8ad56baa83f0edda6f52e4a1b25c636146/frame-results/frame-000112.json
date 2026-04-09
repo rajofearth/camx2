@@ -1,0 +1,11 @@
+{
+  "frameIndex": 112,
+  "timestampMs": 112000,
+  "timestampLabel": "01:52.000",
+  "description": "The interior of a car with a white circular object in the center of the dashboard.",
+  "rawText": "{\"description\":\"The interior of a car with a white circular object in the center of the dashboard.\"}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 11164.858600000036,
+  "error": null,
+  "fromCache": false
+}

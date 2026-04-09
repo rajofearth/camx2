@@ -1,0 +1,11 @@
+{
+  "frameIndex": 109,
+  "timestampMs": 109000,
+  "timestampLabel": "01:49.000",
+  "description": "A person wearing a black jacket with a hood is seen standing in front of a window, looking out. The room has white walls and a door on the left side.",
+  "rawText": "{\"description\":\"A person wearing a black jacket with a hood is seen standing in front of a window, looking out. The room has white walls and a door on the left side.\"}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 16598.28609999991,
+  "error": null,
+  "fromCache": false
+}

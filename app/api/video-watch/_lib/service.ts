@@ -1002,12 +1002,11 @@ export async function answerQuestionAboutVideo(input: {
     [
       {
         role: "system",
-        content:
-          "Answer questions about analyzed CCTV footage using only the supplied timeline and summary. If the answer is not supported, say so clearly.",
+        content: `Answer questions about analyzed CCTV footage using only the supplied timeline and summary. If the answer is not supported, say so clearly.Timeline:\n${summary.timelineText}\n\nSummary:\n${summary.summaryText}`,
       },
       {
         role: "user",
-        content: `Timeline:\n${summary.timelineText}\n\nSummary:\n${summary.summaryText}\n\nQuestion: ${input.question}`,
+        content: `${input.question}`,
       },
     ],
     {

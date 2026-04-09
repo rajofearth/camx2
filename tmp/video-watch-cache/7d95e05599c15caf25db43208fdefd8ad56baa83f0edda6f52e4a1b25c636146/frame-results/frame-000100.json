@@ -1,0 +1,11 @@
+{
+  "frameIndex": 100,
+  "timestampMs": 100000,
+  "timestampLabel": "01:40.000",
+  "description": "The dashboard features a round display with a white background and black text. The time reads '2022-10-18' in large, bold letters, indicating the date of the video capture.",
+  "rawText": "{\"description\":\"The dashboard features a round display with a white background and black text. The time reads '2022-10-18' in large, bold letters, indicating the date of the video capture.\"}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 16597.005200000014,
+  "error": null,
+  "fromCache": false
+}

@@ -1,0 +1,11 @@
+{
+  "frameIndex": 119,
+  "timestampMs": 119000,
+  "timestampLabel": "01:59.000",
+  "description": "A person wearing a white hoodie with their head turned to the side, looking down at something on the floor. The background shows a room with furniture and a window.",
+  "rawText": "{\n  \"description\": \"A person wearing a white hoodie with their head turned to the side, looking down at something on the floor. The background shows a room with furniture and a window.\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 42372.08389999997,
+  "error": null,
+  "fromCache": false
+}

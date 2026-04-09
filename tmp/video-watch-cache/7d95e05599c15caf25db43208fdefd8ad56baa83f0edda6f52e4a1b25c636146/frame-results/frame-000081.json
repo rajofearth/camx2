@@ -1,0 +1,11 @@
+{
+  "frameIndex": 81,
+  "timestampMs": 81000,
+  "timestampLabel": "01:21.000",
+  "description": "The interior of a car with two seats visible in the foreground. The driver's seat has a black headrest and armrests, while the passenger seat is empty. There are no other objects or people present in this frame.",
+  "rawText": "{\n  \"description\": \"The interior of a car with two seats visible in the foreground. The driver's seat has a black headrest and armrests, while the passenger seat is empty. There are no other objects or people present in this frame.\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 19038.2929,
+  "error": null,
+  "fromCache": false
+}

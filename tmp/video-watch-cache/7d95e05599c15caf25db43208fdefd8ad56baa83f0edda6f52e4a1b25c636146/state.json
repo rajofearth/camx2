@@ -3,8 +3,9 @@
   "fingerprint": "7d95e05599c15caf25db43208fdefd8ad56baa83f0edda6f52e4a1b25c636146",
   "sourceFileName": "YTDown.com_YouTube_I-m-gonna-kill-you-Houston-police_720p_1fps.mp4",
   "totalFrames": 128,
-  "analyzedFrames": 74,
-  "status": "analyzing",
+  "analyzedFrames": 128,
+  "status": "error",
   "createdAt": "2026-04-09T14:40:29.810Z",
-  "updatedAt": "2026-04-09T14:44:06.629Z"
+  "updatedAt": "2026-04-09T14:46:33.329Z",
+  "error": "\u001b[91m The number of tokens to keep from the initial prompt is greater than the context length (n_keep: 4686>= n_ctx: 4096). Try to load the model with a larger context length, or provide a shorter input. \u001b[39m"
 }

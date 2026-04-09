@@ -1,0 +1,11 @@
+{
+  "frameIndex": 79,
+  "timestampMs": 79000,
+  "timestampLabel": "01:19.000",
+  "description": "The interior of a car with two passengers inside. The driver is wearing a blue shirt and the passenger is wearing a black jacket. There are no visible objects or people outside the window, indicating that they might be in a parking lot or on a street.",
+  "rawText": "{\n  \"description\": \"The interior of a car with two passengers inside. The driver is wearing a blue shirt and the passenger is wearing a black jacket. There are no visible objects or people outside the window, indicating that they might be in a parking lot or on a street.\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 18949.778900000034,
+  "error": null,
+  "fromCache": false
+}

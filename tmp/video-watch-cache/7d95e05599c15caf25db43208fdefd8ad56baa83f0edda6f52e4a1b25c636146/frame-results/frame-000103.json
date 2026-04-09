@@ -1,0 +1,11 @@
+{
+  "frameIndex": 103,
+  "timestampMs": 103000,
+  "timestampLabel": "01:43.000",
+  "description": "The car's dashboard is illuminated with a white light, indicating that it is in operation or has just been turned on,",
+  "rawText": "{\n    \"description\": \"The car's dashboard is illuminated with a white light, indicating that it is in operation or has just been turned on,\"\n    }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 13016.201699999976,
+  "error": null,
+  "fromCache": false
+}

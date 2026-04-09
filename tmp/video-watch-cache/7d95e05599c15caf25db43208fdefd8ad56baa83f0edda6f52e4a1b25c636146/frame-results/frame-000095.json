@@ -1,0 +1,11 @@
+{
+  "frameIndex": 95,
+  "timestampMs": 95000,
+  "timestampLabel": "01:35.000",
+  "description": "The interior of a car's center console with a white cup holder and a black remote control on it,",
+  "rawText": "{\n  \"description\": \"The interior of a car's center console with a white cup holder and a black remote control on it,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 37639.26860000007,
+  "error": null,
+  "fromCache": false
+}

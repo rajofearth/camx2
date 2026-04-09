@@ -1,0 +1,11 @@
+{
+  "frameIndex": 117,
+  "timestampMs": 117000,
+  "timestampLabel": "01:57.000",
+  "description": "Inside a car, the steering wheel is in focus with a white circle on it,",
+  "rawText": "{\n    \"description\": \"Inside a car, the steering wheel is in focus with a white circle on it,\"\n    }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 38233.0138999999,
+  "error": null,
+  "fromCache": false
+}

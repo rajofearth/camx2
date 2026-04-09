@@ -1,0 +1,11 @@
+{
+  "frameIndex": 102,
+  "timestampMs": 102000,
+  "timestampLabel": "01:42.000",
+  "description": "The interior of a car with a white light on top of the steering wheel,",
+  "rawText": "{\n    \"description\": \"The interior of a car with a white light on top of the steering wheel,\"\n    }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 9314.50529999996,
+  "error": null,
+  "fromCache": false
+}

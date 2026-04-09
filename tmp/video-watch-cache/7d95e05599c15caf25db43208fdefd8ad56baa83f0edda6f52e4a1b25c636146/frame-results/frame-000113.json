@@ -1,0 +1,11 @@
+{
+  "frameIndex": 113,
+  "timestampMs": 113000,
+  "timestampLabel": "01:53.000",
+  "description": "The dashboard of a car with a digital clock displaying '2022-10-16 10:08:50' and a speedometer reading '14.7'. The steering wheel is visible, along with the gear shift lever and other controls.",
+  "rawText": "{\"description\":\"The dashboard of a car with a digital clock displaying '2022-10-16 10:08:50' and a speedometer reading '14.7'. The steering wheel is visible, along with the gear shift lever and other controls.\"}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 38065.75970000005,
+  "error": null,
+  "fromCache": false
+}

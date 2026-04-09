@@ -1,0 +1,11 @@
+{
+  "frameIndex": 123,
+  "timestampMs": 123000,
+  "timestampLabel": "02:03.000",
+  "description": "A person in a black hoodie holding a gun in their hand while sitting inside a car, with another individual standing outside the vehicle,",
+  "rawText": "{\n    \"description\": \"A person in a black hoodie holding a gun in their hand while sitting inside a car, with another individual standing outside the vehicle,\"\n    }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 16685.59369999997,
+  "error": null,
+  "fromCache": false
+}

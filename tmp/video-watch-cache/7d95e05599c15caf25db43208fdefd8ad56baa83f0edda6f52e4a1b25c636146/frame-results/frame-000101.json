@@ -1,0 +1,11 @@
+{
+  "frameIndex": 101,
+  "timestampMs": 101000,
+  "timestampLabel": "01:41.000",
+  "description": "The car's interior is shown with a white cup placed on the center console. The time displayed is '2022-10-18 18:08:34' and the date is '2022-10-18'. The camera angle is from the driver's side, looking towards the steering wheel.",
+  "rawText": "{\"description\":\"The car's interior is shown with a white cup placed on the center console. The time displayed is '2022-10-18 18:08:34' and the date is '2022-10-18'. The camera angle is from the driver's side, looking towards the steering wheel.\"}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 22215.892200000002,
+  "error": null,
+  "fromCache": false
+}

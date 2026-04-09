@@ -1,0 +1,11 @@
+{
+  "frameIndex": 78,
+  "timestampMs": 78000,
+  "timestampLabel": "01:18.000",
+  "description": "The interior of a car with two passengers inside.",
+  "rawText": "{\"description\":\"The interior of a car with two passengers inside.\"}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 13821.5196,
+  "error": null,
+  "fromCache": false
+}

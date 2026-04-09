@@ -1,0 +1,11 @@
+{
+  "frameIndex": 125,
+  "timestampMs": 125000,
+  "timestampLabel": "02:05.000",
+  "description": "A person in a black hoodie holding a gun is seen inside a car with another individual wearing a white shirt and blue jeans, who appears to be looking out of the window.",
+  "rawText": "{\n    \"description\": \"A person in a black hoodie holding a gun is seen inside a car with another individual wearing a white shirt and blue jeans, who appears to be looking out of the window.\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 17807.993299999973,
+  "error": null,
+  "fromCache": false
+}

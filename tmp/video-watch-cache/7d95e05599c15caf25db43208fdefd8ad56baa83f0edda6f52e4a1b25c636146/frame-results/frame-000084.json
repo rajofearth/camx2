@@ -1,0 +1,11 @@
+{
+  "frameIndex": 84,
+  "timestampMs": 84000,
+  "timestampLabel": "01:24.000",
+  "description": "Inside a car with two passengers, one wearing a black shirt and another in a blue shirt,",
+  "rawText": "{\n  \"description\": \"Inside a car with two passengers, one wearing a black shirt and another in a blue shirt,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 11289.304000000004,
+  "error": null,
+  "fromCache": false
+}

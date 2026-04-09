@@ -1,0 +1,11 @@
+{
+  "frameIndex": 114,
+  "timestampMs": 114000,
+  "timestampLabel": "01:54.000",
+  "description": "The interior of a car with a circular display on the center console showing a time of 2022 at 16:08:37. The steering wheel is visible in the background, and there are no other objects or people present in this frame.",
+  "rawText": "{\n    \"description\": \"The interior of a car with a circular display on the center console showing a time of 2022 at 16:08:37. The steering wheel is visible in the background, and there are no other objects or people present in this frame.\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 40678.11100000003,
+  "error": null,
+  "fromCache": false
+}

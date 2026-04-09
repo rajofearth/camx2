@@ -1,0 +1,11 @@
+{
+  "frameIndex": 97,
+  "timestampMs": 97000,
+  "timestampLabel": "01:37.000",
+  "description": "The interior of a car with a steering wheel in the foreground and a dashboard in the background.",
+  "rawText": "{\"description\":\"The interior of a car with a steering wheel in the foreground and a dashboard in the background.\"}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 35640.851200000034,
+  "error": null,
+  "fromCache": false
+}

@@ -1,0 +1,11 @@
+{
+  "frameIndex": 82,
+  "timestampMs": 82000,
+  "timestampLabel": "01:22.000",
+  "description": "The interior of a car with two seats visible through the windshield.",
+  "rawText": "{\"description\":\"The interior of a car with two seats visible through the windshield.\"}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 10940.176399999997,
+  "error": null,
+  "fromCache": false
+}

@@ -1,0 +1,11 @@
+{
+  "frameIndex": 88,
+  "timestampMs": 88000,
+  "timestampLabel": "01:28.000",
+  "description": "The interior of a car with two seats visible in the foreground. The driver's seat has a black headrest and a blue blanket on it, while the passenger seat is empty. The dashboard is visible in the background, showing some text that reads 'NEXOR' and 'CUSTOMER SERVICE'. There are no other objects or people present in this frame.",
+  "rawText": "{\n  \"description\": \"The interior of a car with two seats visible in the foreground. The driver's seat has a black headrest and a blue blanket on it, while the passenger seat is empty. The dashboard is visible in the background, showing some text that reads 'NEXOR' and 'CUSTOMER SERVICE'. There are no other objects or people present in this frame.\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 45060.6703,
+  "error": null,
+  "fromCache": false
+}

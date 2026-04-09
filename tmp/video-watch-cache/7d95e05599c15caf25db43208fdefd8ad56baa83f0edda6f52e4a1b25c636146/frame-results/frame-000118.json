@@ -1,0 +1,11 @@
+{
+  "frameIndex": 118,
+  "timestampMs": 118000,
+  "timestampLabel": "01:58.000",
+  "description": "The dashboard of a car with a digital clock displaying '20:28' and '18:03:57'. The steering wheel is visible on the left side, and there's a small screen on the right side.",
+  "rawText": "{\"description\":\"The dashboard of a car with a digital clock displaying '20:28' and '18:03:57'. The steering wheel is visible on the left side, and there's a small screen on the right side.\"}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 40506.3003,
+  "error": null,
+  "fromCache": false
+}
