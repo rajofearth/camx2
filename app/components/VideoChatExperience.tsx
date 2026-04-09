@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import type React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import GridLoader from "@/components/grid-loader";
 import { SiteNav } from "./SiteNav";
 
@@ -29,12 +29,6 @@ type AnalysisPhase =
   | "ready";
 
 const TOTAL_ANALYSIS_FRAMES = 12;
-const READY_PHRASES = [
-  "Waiting for your command",
-  "Ready when you are",
-  "Ask about any moment",
-  "Footage is primed",
-] as const;
 
 const ATTACHMENT_ITEMS = [
   {
@@ -100,18 +94,6 @@ export function VideoChatExperience(): React.JSX.Element {
     TOTAL_ANALYSIS_FRAMES,
   );
 
-  const helperText = useMemo(() => {
-    if (!selectedVideo) {
-      return "Start by attaching a recorded footage file.";
-    }
-
-    if (!isVideoReady) {
-      return "We are simulating the analysis pipeline before chat unlocks.";
-    }
-
-    return `Video loaded: ${selectedVideo.name}`;
-  }, [isVideoReady, selectedVideo]);
-
   const hasVideo = !!selectedVideo;
   const isAnalyzing =
     hasVideo && analysisPhase !== "ready" && analysisPhase !== "idle";
@@ -125,24 +107,6 @@ export function VideoChatExperience(): React.JSX.Element {
       : "Replace video";
 
   const ButtonIcon = !hasVideo ? Paperclip : isAnalyzing ? Film : Paperclip;
-
-  const statusText = !hasVideo
-    ? "Waiting for video"
-    : analysisPhase === "preparing"
-      ? "Preparing"
-      : analysisPhase === "extracting"
-        ? "Extracting frames"
-        : analysisPhase === "analyzing"
-          ? `${analyzedFrames}/${TOTAL_ANALYSIS_FRAMES} ANALYZING`
-          : "Footage ready";
-
-  const statusColor = !hasVideo
-    ? "text-neutral-700"
-    : isAnalyzing
-      ? "text-blue-400"
-      : "text-emerald-400/90";
-
-  const [readyPhrase, setReadyPhrase] = useState(0);
 
   useEffect(() => {
     if (!messages.length) return;
@@ -212,19 +176,6 @@ export function VideoChatExperience(): React.JSX.Element {
       }
     };
   }, [selectedVideo]);
-
-  useEffect(() => {
-    if (!isVideoReady) {
-      setReadyPhrase(0);
-      return;
-    }
-
-    const id = window.setInterval(() => {
-      setReadyPhrase((current) => (current + 1) % READY_PHRASES.length);
-    }, 3000);
-
-    return () => window.clearInterval(id);
-  }, [isVideoReady]);
 
   const openVideoPicker = () => {
     hiddenFileInputRef.current?.click();
@@ -445,34 +396,12 @@ export function VideoChatExperience(): React.JSX.Element {
                       onClick={() =>
                         setIsAttachmentMenuOpen((current) => !current)
                       }
-                      animate={{
-                        boxShadow: !hasVideo
-                          ? [
-                              "0 0 0 1px rgba(59,130,246,0.30), inset 0 0 0.75px 0 rgba(255,255,255,0.06), 0 0 0 0 rgba(59,130,246,0)",
-                              "0 0 0 1px rgba(96,165,250,0.50), inset 0 0 0.75px 0 rgba(255,255,255,0.10), 0 0 10px 0 rgba(59,130,246,0.18)",
-                              "0 0 0 1px rgba(59,130,246,0.30), inset 0 0 0.75px 0 rgba(255,255,255,0.06), 0 0 0 0 rgba(59,130,246,0)",
-                            ]
-                          : isAnalyzing
-                            ? [
-                                "0 0 0 1px rgba(96,165,250,0.65), inset 0 0 0.75px 0 rgba(255,255,255,0.12), 0 0 12px 2px rgba(59,130,246,0.28)",
-                                "0 0 0 1px rgba(147,197,253,0.85), inset 0 0 0.75px 0 rgba(255,255,255,0.16), 0 0 20px 4px rgba(59,130,246,0.4)",
-                                "0 0 0 1px rgba(96,165,250,0.65), inset 0 0 0.75px 0 rgba(255,255,255,0.12), 0 0 12px 2px rgba(59,130,246,0.28)",
-                              ]
-                            : [
-                                "0 0 0 1px rgba(59,130,246,0.38), inset 0 0 0.75px 0 rgba(255,255,255,0.08)",
-                              ],
-                      }}
-                      transition={{
-                        duration: isAnalyzing ? 1.4 : 4,
-                        repeat: isAnalyzing || !hasVideo ? Infinity : 0,
-                        ease: "easeInOut",
-                      }}
                       className={`group relative flex items-center gap-2 rounded-full px-3 py-1.5 backdrop-blur-sm transition-all duration-300 hover:bg-white/3 hover:text-neutral-300 ${
                         !hasVideo
-                          ? "bg-[#0b0b12]/80 text-neutral-500"
+                          ? "bg-[#0b0b12]/80 text-neutral-500 shadow-[0_0_0_1px_rgba(59,130,246,0.28),inset_0_0.75px_0_rgba(255,255,255,0.06)]"
                           : isAnalyzing
-                            ? "bg-[#0e172a]/90 text-blue-200"
-                            : "bg-[#0b0b12]/80 text-neutral-300"
+                            ? "bg-[#0e172a]/90 text-blue-200 shadow-[0_0_0_1px_rgba(96,165,250,0.55),inset_0_0.75px_0_rgba(255,255,255,0.1),0_0_8px_rgba(59,130,246,0.2)]"
+                            : "bg-[#0b0b12]/80 text-neutral-300 shadow-[0_0_0_1px_rgba(59,130,246,0.32),inset_0_0.75px_0_rgba(255,255,255,0.06)] hover:shadow-[0_0_0_1px_rgba(96,165,250,0.45),inset_0_0.75px_0_rgba(255,255,255,0.08)]"
                       }`}
                     >
                       <AnimatePresence mode="wait" initial={false}>
@@ -551,64 +480,6 @@ export function VideoChatExperience(): React.JSX.Element {
                   </motion.div>
                 </div>
 
-                <AnimatePresence mode="wait">
-                  {isVideoReady ? (
-                    <motion.div
-                      key="ready"
-                      initial={{ opacity: 0, x: 8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -8 }}
-                      transition={{ duration: 0.25 }}
-                      className="flex items-center gap-2 pr-1"
-                    >
-                      <GridLoader
-                        pattern="sparkle"
-                        mode="stagger"
-                        color="blue"
-                        size="sm"
-                        blur={1}
-                        gap={1}
-                      />
-                      <div className="relative h-4 overflow-hidden">
-                        <AnimatePresence mode="wait">
-                          <motion.span
-                            key={readyPhrase}
-                            initial={{ y: 8, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: -8, opacity: 0 }}
-                            transition={{
-                              duration: 0.28,
-                              ease: [0.22, 1, 0.36, 1],
-                            }}
-                            className="absolute inset-0 whitespace-nowrap text-[13px] font-medium tracking-wide text-neutral-400"
-                          >
-                            {READY_PHRASES[readyPhrase]}
-                          </motion.span>
-                        </AnimatePresence>
-                      </div>
-                    </motion.div>
-                  ) : !hasVideo ? (
-                    <motion.div
-                      key="idle"
-                      initial={{ opacity: 0, x: 8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -8 }}
-                      className="flex items-center gap-2 pr-1"
-                    >
-                      <GridLoader
-                        pattern="plus-hollow"
-                        mode="stagger"
-                        color="white"
-                        size="sm"
-                        blur={0.8}
-                        gap={1}
-                      />
-                      <span className="whitespace-nowrap text-[13px] font-medium text-neutral-600">
-                        Waiting for footage
-                      </span>
-                    </motion.div>
-                  ) : null}
-                </AnimatePresence>
               </div>
             </div>
           </motion.div>
