@@ -7,6 +7,10 @@ const TARGET_MODEL_KEY = "lfm-2.5-ucf-1.6b";
 let cachedClient: LMStudioClient | null = null;
 let cachedResolvedModelKey: string | null = null;
 
+type LoadedLlmHandle = Awaited<
+  ReturnType<LMStudioClient["llm"]["listLoaded"]>
+>[number];
+
 function getClient(): LMStudioClient {
   if (cachedClient) return cachedClient;
 
@@ -47,11 +51,8 @@ function isConnectionError(error: unknown): boolean {
 }
 
 async function resolveWatchModelKey(): Promise<string> {
-  if (cachedResolvedModelKey) {
-    return cachedResolvedModelKey;
-  }
-
   const client = getClient();
+  const cached = cachedResolvedModelKey;
 
   const loadedModels = await (async () => {
     try {
@@ -66,20 +67,43 @@ async function resolveWatchModelKey(): Promise<string> {
     }
   })();
 
-  const loadedTarget = loadedModels.find(
-    (model) =>
-      model.modelKey === TARGET_MODEL_KEY ||
-      model.identifier === TARGET_MODEL_KEY,
-  );
+  const findLoadedTarget = (
+    candidateKey: string,
+  ): LoadedLlmHandle | undefined =>
+    loadedModels.find(
+      (model) =>
+        model.modelKey === candidateKey || model.identifier === candidateKey,
+    );
+
+  const loadedTarget = [cached, TARGET_MODEL_KEY]
+    .filter((value): value is string => !!value)
+    .map((candidateKey) => findLoadedTarget(candidateKey))
+    .find((value): value is LoadedLlmHandle => value !== undefined);
 
   if (loadedTarget) {
-    if (!loadedTarget.vision) {
+    const loadedInfo = await loadedTarget.getModelInfo();
+
+    if (!loadedInfo.vision) {
       throw new Error(
         `LM Studio model "${TARGET_MODEL_KEY}" is loaded but does not support image input`,
       );
     }
 
-    cachedResolvedModelKey = loadedTarget.modelKey;
+    if (loadedInfo.contextLength < loadedInfo.maxContextLength) {
+      await loadedTarget.unload();
+
+      const reloadedModel = await client.llm.load(loadedInfo.modelKey, {
+        identifier: loadedInfo.identifier,
+        config: {
+          contextLength: loadedInfo.maxContextLength,
+        },
+      });
+      const reloadedInfo = await reloadedModel.getModelInfo();
+      cachedResolvedModelKey = reloadedInfo.modelKey;
+      return cachedResolvedModelKey;
+    }
+
+    cachedResolvedModelKey = loadedInfo.modelKey;
     return cachedResolvedModelKey;
   }
 
@@ -94,7 +118,11 @@ async function resolveWatchModelKey(): Promise<string> {
     );
   }
 
-  const loadedModel = await client.llm.model(TARGET_MODEL_KEY);
+  const loadedModel = await client.llm.load(downloadedTarget.modelKey, {
+    config: {
+      contextLength: downloadedTarget.maxContextLength,
+    },
+  });
   const loadedInfo = await loadedModel.getModelInfo();
 
   if (!loadedInfo.vision) {

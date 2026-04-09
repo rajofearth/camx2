@@ -1,6 +1,7 @@
 import {
   parseVideoWatchChatResponse,
   parseVideoWatchResponse,
+  type VideoWatchChatMessage,
   type VideoWatchChatResponse,
   type VideoWatchResponse,
 } from "./video-watch-types";
@@ -87,6 +88,7 @@ export async function fetchVideoWatchStatus(input: {
 export async function askVideoWatchQuestion(input: {
   readonly jobId: string;
   readonly question: string;
+  readonly messages?: readonly VideoWatchChatMessage[];
 }): Promise<VideoWatchChatResponse> {
   const response = await fetch("/api/video-watch/chat", {
     method: "POST",

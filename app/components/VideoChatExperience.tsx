@@ -19,6 +19,7 @@ import {
   uploadVideoForWatch,
 } from "@/app/lib/video-watch-client";
 import type {
+  VideoWatchChatMessage,
   VideoWatchJob,
   VideoWatchPhase,
 } from "@/app/lib/video-watch-types";
@@ -446,9 +447,19 @@ export function VideoChatExperience(): React.JSX.Element {
     setIsReplyProcessing(true);
 
     try {
+      const conversation: VideoWatchChatMessage[] = [
+        ...messages
+          .filter((message) => !message.isThinking)
+          .map(({ content, role }) => ({ content, role })),
+        {
+          role: userMessage.role,
+          content: userMessage.content,
+        },
+      ];
       const response = await askVideoWatchQuestion({
         jobId: job.jobId,
         question,
+        messages: conversation,
       });
 
       setMessages((current) =>

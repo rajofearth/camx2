@@ -66,6 +66,11 @@ export interface VideoWatchChatOk {
   readonly modelKey: string;
 }
 
+export interface VideoWatchChatMessage {
+  readonly role: "user" | "assistant";
+  readonly content: string;
+}
+
 export interface VideoWatchChatError {
   readonly ok: false;
   readonly message: string;
