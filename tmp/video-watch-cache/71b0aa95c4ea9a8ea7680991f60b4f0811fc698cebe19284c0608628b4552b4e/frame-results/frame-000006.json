@@ -1,0 +1,11 @@
+{
+  "frameIndex": 6,
+  "timestampMs": 6000,
+  "timestampLabel": "00:06.000",
+  "description": "This page displays a preview of a video that has been uploaded to our website,",
+  "rawText": "{\n  \"description\": \"This page displays a preview of a video that has been uploaded to our website,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 16622.295400000003,
+  "error": null,
+  "fromCache": false
+}

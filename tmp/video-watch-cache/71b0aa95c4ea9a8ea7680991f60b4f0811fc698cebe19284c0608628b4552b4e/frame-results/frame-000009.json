@@ -1,0 +1,11 @@
+{
+  "frameIndex": 9,
+  "timestampMs": 9000,
+  "timestampLabel": "00:09.000",
+  "description": "Simple pricing for a new camera with a 12-megapixel sensor and an 8-megapixel lens, including a 3-inch LCD screen and a 5-megapixel camera,",
+  "rawText": "{\n  \"description\": \"Simple pricing for a new camera with a 12-megapixel sensor and an 8-megapixel lens, including a 3-inch LCD screen and a 5-megapixel camera,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 18206.35580000002,
+  "error": null,
+  "fromCache": false
+}

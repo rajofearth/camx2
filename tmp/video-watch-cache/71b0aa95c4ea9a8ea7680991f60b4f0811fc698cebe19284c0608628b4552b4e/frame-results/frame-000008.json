@@ -1,0 +1,11 @@
+{
+  "frameIndex": 8,
+  "timestampMs": 8000,
+  "timestampLabel": "00:08.000",
+  "description": "Simple pricing for a new car with a $5 price tag. The cost of this vehicle will be calculated based on your monthly payments, fuel costs, and other expenses,",
+  "rawText": "{\n  \"description\": \"Simple pricing for a new car with a $5 price tag. The cost of this vehicle will be calculated based on your monthly payments, fuel costs, and other expenses,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 15952.736900000018,
+  "error": null,
+  "fromCache": false
+}

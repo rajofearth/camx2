@@ -1,0 +1,11 @@
+{
+  "frameIndex": 21,
+  "timestampMs": 21000,
+  "timestampLabel": "00:21.000",
+  "description": "The interior of a car with three seats visible through the window.",
+  "rawText": "{\"description\":\"The interior of a car with three seats visible through the window.\"}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 24095.545900000026,
+  "error": null,
+  "fromCache": false
+}

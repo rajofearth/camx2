@@ -1,0 +1,11 @@
+{
+  "frameIndex": 13,
+  "timestampMs": 13000,
+  "timestampLabel": "00:13.000",
+  "description": "Simple pricing for your new product,",
+  "rawText": "{\n  \"description\": \"Simple pricing for your new product,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 12218.436999999976,
+  "error": null,
+  "fromCache": false
+}

@@ -1,0 +1,11 @@
+{
+  "frameIndex": 7,
+  "timestampMs": 7000,
+  "timestampLabel": "00:07.000",
+  "description": "A person in a gray hoodie is seen holding a gun inside the car. The camera angle shows the interior of the vehicle, with the driver's seat and steering wheel visible on the left side of the frame. The scene appears to be an indoor setting, possibly a parking lot or a driveway, as there are no other vehicles in sight.",
+  "rawText": "{\n  \"description\": \"A person in a gray hoodie is seen holding a gun inside the car. The camera angle shows the interior of the vehicle, with the driver's seat and steering wheel visible on the left side of the frame. The scene appears to be an indoor setting, possibly a parking lot or a driveway, as there are no other vehicles in sight.\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 26842.692299999995,
+  "error": null,
+  "fromCache": false
+}

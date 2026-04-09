@@ -1,0 +1,11 @@
+{
+  "frameIndex": 11,
+  "timestampMs": 11000,
+  "timestampLabel": "00:11.000",
+  "description": "A person in a black shirt is seen holding a gun near the steering wheel of a car, with another individual standing nearby and wearing a face mask,",
+  "rawText": "{\n  \"description\": \"A person in a black shirt is seen holding a gun near the steering wheel of a car, with another individual standing nearby and wearing a face mask,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 15534.233899999992,
+  "error": null,
+  "fromCache": false
+}

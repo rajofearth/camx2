@@ -1,0 +1,11 @@
+{
+  "frameIndex": 8,
+  "timestampMs": 8000,
+  "timestampLabel": "00:08.000",
+  "description": "A man in a black hoodie is seen holding a silver laptop on his lap while sitting in the back seat of a car,",
+  "rawText": "{\n  \"description\": \"A man in a black hoodie is seen holding a silver laptop on his lap while sitting in the back seat of a car,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 11949.754200000025,
+  "error": null,
+  "fromCache": false
+}

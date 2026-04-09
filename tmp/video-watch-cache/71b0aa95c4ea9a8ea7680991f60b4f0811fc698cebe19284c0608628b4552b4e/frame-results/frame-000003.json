@@ -1,0 +1,11 @@
+{
+  "frameIndex": 3,
+  "timestampMs": 3000,
+  "timestampLabel": "00:03.000",
+  "description": "This is a screenshot of a webpage that shows a video call with a person named [name] and another person named [name]. The video call has a lot of features, including audio and video recording, chat, and file sharing. There are also options to add music, change the camera settings, and adjust the brightness and contrast.",
+  "rawText": "{\n    \"description\": \"This is a screenshot of a webpage that shows a video call with a person named [name] and another person named [name]. The video call has a lot of features, including audio and video recording, chat, and file sharing. There are also options to add music, change the camera settings, and adjust the brightness and contrast.\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 18488.810100000002,
+  "error": null,
+  "fromCache": false
+}

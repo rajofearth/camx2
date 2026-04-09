@@ -1,0 +1,11 @@
+{
+  "frameIndex": 2,
+  "timestampMs": 2000,
+  "timestampLabel": "00:02.000",
+  "description": "A person in a gray hoodie is seen standing outside of the car, possibly waiting for someone or something,",
+  "rawText": "{\n  \"description\": \"A person in a gray hoodie is seen standing outside of the car, possibly waiting for someone or something,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 9154.489500000025,
+  "error": null,
+  "fromCache": false
+}

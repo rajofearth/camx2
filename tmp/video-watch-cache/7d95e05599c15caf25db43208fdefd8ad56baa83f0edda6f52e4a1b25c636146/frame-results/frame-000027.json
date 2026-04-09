@@ -1,0 +1,11 @@
+{
+  "frameIndex": 27,
+  "timestampMs": 27000,
+  "timestampLabel": "00:27.000",
+  "description": "The interior of a car with two seats visible in the foreground.",
+  "rawText": "{\"description\":\"The interior of a car with two seats visible in the foreground.\"}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 24433.169900000037,
+  "error": null,
+  "fromCache": false
+}

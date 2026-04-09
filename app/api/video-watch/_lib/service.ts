@@ -14,9 +14,9 @@ import type {
 
 const CACHE_ROOT = path.join(process.cwd(), "tmp", "video-watch-cache");
 const CONFIG_VERSION = "video-watch-v2-1fps";
-const MAX_CONCURRENCY = 4;
+const MAX_CONCURRENCY = 8;
 const SAMPLE_FPS = 1;
-const FRAME_MODEL_KEY = "smolvlm2-500m-video-instruct@f16";
+const FRAME_MODEL_KEY = "smolvlm2-500m-video-instruct@q8_0";
 const SUMMARY_MODEL_KEY = "lfm-2.5-ucf-1.6b";
 const LMSTUDIO_BASE_URL = "ws://127.0.0.1:1234";
 
@@ -369,7 +369,9 @@ async function loadJobFromDisk(
 ): Promise<InternalJob | null> {
   const cacheDir = await ensureCacheDir(fingerprint);
   const currentVersion = await computeProcessingVersionHash();
-  const storedVersion = await fs.readFile(versionPath(cacheDir), "utf8").catch(() => null);
+  const storedVersion = await fs
+    .readFile(versionPath(cacheDir), "utf8")
+    .catch(() => null);
   if (storedVersion?.trim() !== currentVersion) {
     await removeCacheDir(fingerprint);
     return null;

@@ -1,0 +1,11 @@
+{
+  "frameIndex": 1,
+  "timestampMs": 1000,
+  "timestampLabel": "00:01.000",
+  "description": "A man in a gray hoodie is sitting in the back seat of a car with his hands on the steering wheel, looking towards the camera. The interior of the car is visible through the window, showing a glimpse of the road outside.",
+  "rawText": "{\n  \"description\": \"A man in a gray hoodie is sitting in the back seat of a car with his hands on the steering wheel, looking towards the camera. The interior of the car is visible through the window, showing a glimpse of the road outside.\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 11336.985400000005,
+  "error": null,
+  "fromCache": false
+}

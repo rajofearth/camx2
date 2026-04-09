@@ -1,0 +1,11 @@
+{
+  "frameIndex": 1,
+  "timestampMs": 1000,
+  "timestampLabel": "00:01.000",
+  "description": "Frame analysis failed: Unterminated string in JSON at position 509 (line 2 column 508)",
+  "rawText": "",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 0,
+  "fromCache": false,
+  "error": "Unterminated string in JSON at position 509 (line 2 column 508)"
+}

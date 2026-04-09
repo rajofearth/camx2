@@ -1,22 +1,22 @@
-00:00.000: A cityscape at dusk with buildings and cars in the foreground. The sky is a gradient of orange and purple, transitioning from light to dark as it meets the horizon. There are no visible people or animals in this frame.
-00:01.000: A residential area with a few cars parked on the street and some buildings in the background. The sky is dark, transitioning from orange to purple as it meets the horizon line. There are no people visible in this frame.
-00:02.000: A residential area with a few cars parked on the street and some buildings in the background. The sky is dark, transitioning from orange to purple as it meets the horizon line. There are no people visible in this frame.
-00:03.000: A residential area with a few cars parked in front of a building,
-00:04.000: A residential area with a few cars parked on the street and some buildings in the background. The sky is dark, transitioning from orange to purple as it meets the horizon line. There are no people visible in this frame.
-00:05.000: A residential area with a few cars parked on the street and some buildings in the background. The sky is dark, transitioning from orange to purple as it meets the horizon line. There are no people visible in this frame.
-00:06.000: A residential area with a few cars parked in front of a building,
-00:07.000: A residential area with a few cars parked on the street, including a white car in the foreground and another car further back,
-00:08.000: A residential area with a few cars parked on the street and some buildings in the background. The sky is dark, transitioning from orange to purple as it meets the horizon line. There are no people visible in this frame.
-00:09.000: A residential area bathed in the soft glow of dusk, with a few cars parked along the street and buildings lining the road,
-00:10.000: A residential area with a few cars parked in front of a building,
-00:11.000: A residential area with a few cars parked on the street and some buildings in the background. The sky is dark, transitioning from orange to purple as it meets the horizon line. There are no people visible in this frame.
-00:12.000: A residential area with a few cars parked on the street and some buildings in the background. The sky is dark, transitioning from orange to purple as it meets the horizon line. There are no people visible in this frame.
-00:13.000: A residential area with a few cars parked on the street and some buildings in the background. The sky is dark, transitioning from orange to purple as it meets the horizon line. There are no people visible in this frame.
-00:14.000: A residential area with a few cars parked on the street and some buildings in the background. The sky is dark, transitioning from orange to purple as it meets the horizon line. There are no people visible in this frame.
-00:15.000: A residential area with a few cars parked on the street and some buildings in the background. The sky is dark, transitioning from orange to purple as it meets the horizon line. There are no people visible in this frame.
-00:16.000: A residential area with a few cars parked on the street and some buildings in the background. The sky is dark, transitioning from orange to purple as it meets the horizon line. There are no people visible in this frame.
-00:17.000: A residential area with a few cars parked on the street and some buildings in the background. The sky is dark, transitioning from orange to purple as it meets the horizon line. There are no people visible in this frame.
-00:18.000: A residential area with a few cars parked on the street and some buildings in the background. The sky is dark, transitioning from orange to purple as it meets the horizon line. There are no people visible in this frame.
-00:19.000: A residential area with a few cars parked on the street, including one in the foreground that appears to be a white car,
-00:20.000: A residential area with a few cars parked on the street and some buildings in the background. The sky is dark, transitioning from orange to purple as it meets the horizon line. There are no people visible in this frame.
-00:21.000: A residential area with a few cars parked on the street and some buildings in the background. The sky is dark, transitioning from orange to purple as it meets the horizon line. There are no people visible in this frame.
+00:00.000: A cityscape at dusk with buildings and cars in the foreground. The sky is a gradient of orange and purple, transitioning from light to dark as it meets the horizon. There are no people or animals visible in this frame.
+00:01.000: A residential area bathed in a warm orange glow as dusk falls over the neighborhood,
+00:02.000: A residential area bathed in a warm orange glow as dusk falls over the neighborhood,
+00:03.000: A residential area bathed in the soft glow of dusk, with a few cars parked along the street and a couple of buildings standing tall,
+00:04.000: A residential area bathed in a warm orange glow as dusk falls over the neighborhood,
+00:05.000: A residential area with a few cars parked in front of a building,
+00:06.000: A residential area bathed in the soft glow of dusk, with a few cars parked along the street and a couple of buildings standing tall,
+00:07.000: A residential area bathed in a warm orange glow as dusk falls over the neighborhood,
+00:08.000: A residential area bathed in the soft glow of dusk, with a few cars parked along the street and a couple of buildings standing tall,
+00:09.000: A residential area bathed in the soft glow of dusk. The sky is a gradient of orange and purple, with buildings silhouetted against it. A few cars are parked along the street, their headlights casting long shadows on the ground. The scene is quiet, with no signs of activity or movement.
+00:10.000: A residential area with a few cars parked in front of houses,
+00:11.000: A residential area with a few cars parked in front of a building,
+00:12.000: A residential area with a few cars parked in front of houses,
+00:13.000: A residential area with a few cars parked in front of a building,
+00:14.000: A residential area with a few cars parked in front of a building,
+00:15.000: A residential area with a few cars parked in front of houses,
+00:16.000: A residential area with a few cars parked on the street, including one in front of a house that has a red roof and another car parked near a tree,
+00:17.000: A residential area with a few cars parked on the street, including a white car in the foreground and another car further back,
+00:18.000: A residential area with a few cars parked in front of a building,
+00:19.000: A residential area with a few cars parked in front of a building,
+00:20.000: A residential area with a few cars parked in front of buildings,
+00:21.000: A residential area with a few cars parked on the street, including a white car in the foreground and another car further back,

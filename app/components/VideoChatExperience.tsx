@@ -2,6 +2,7 @@
 
 import {
   ArrowUp,
+  Bug,
   FileText,
   Film,
   Image as ImageIcon,
@@ -98,6 +99,20 @@ async function hashFileSha256(file: File): Promise<string> {
     .join("");
 }
 
+function formatEtaLabel(seconds: number | null): string | null {
+  if (seconds === null || !Number.isFinite(seconds) || seconds < 0) {
+    return null;
+  }
+
+  if (seconds < 60) {
+    return `${Math.max(1, Math.round(seconds))}s`;
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.round(seconds % 60);
+  return `${minutes}m ${String(remainingSeconds).padStart(2, "0")}s`;
+}
+
 export function VideoChatExperience(): React.JSX.Element {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -110,7 +125,11 @@ export function VideoChatExperience(): React.JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [isCacheActionPending, setIsCacheActionPending] = useState(false);
   const [forceFreshUploads, setForceFreshUploads] = useState(false);
+  const [isDebugMode, setIsDebugMode] = useState(false);
   const [clientFingerprint, setClientFingerprint] = useState<string | null>(
+    null,
+  );
+  const [analysisStartedAt, setAnalysisStartedAt] = useState<number | null>(
     null,
   );
 
@@ -127,6 +146,17 @@ export function VideoChatExperience(): React.JSX.Element {
     uploadPhase === "uploading" ||
     (!!job && job.status !== "completed" && job.status !== "error");
   const selectedVideoName = selectedVideo?.name ?? "";
+  const analyzedFrames = job?.analyzedFrames ?? 0;
+  const totalFrames = job?.totalFrames ?? 0;
+  const etaSeconds =
+    job?.status === "analyzing" &&
+    analysisStartedAt !== null &&
+    analyzedFrames > 0 &&
+    totalFrames > analyzedFrames
+      ? ((Date.now() - analysisStartedAt) / 1000 / analyzedFrames) *
+        (totalFrames - analyzedFrames)
+      : null;
+  const etaLabel = formatEtaLabel(etaSeconds);
 
   const buttonLabel = !hasVideo
     ? "Attach"
@@ -158,6 +188,17 @@ export function VideoChatExperience(): React.JSX.Element {
       200,
     )}px`;
   }, [inputValue]);
+
+  useEffect(() => {
+    if (job?.status === "analyzing" && analyzedFrames === 0) {
+      setAnalysisStartedAt(Date.now());
+      return;
+    }
+
+    if (job?.status !== "analyzing") {
+      setAnalysisStartedAt(null);
+    }
+  }, [analyzedFrames, job?.status]);
 
   useEffect(() => {
     if (!job || job.status === "completed" || job.status === "error") {
@@ -243,6 +284,7 @@ export function VideoChatExperience(): React.JSX.Element {
     setInputValue("");
     setError(null);
     setUploadPhase("checking_cache");
+    setAnalysisStartedAt(null);
     setIsReplyProcessing(false);
     setIsAttachmentMenuOpen(false);
 
@@ -294,6 +336,7 @@ export function VideoChatExperience(): React.JSX.Element {
       setMessages([]);
       setError(null);
       setUploadPhase("idle");
+      setAnalysisStartedAt(null);
     } catch (cacheError) {
       setError(
         cacheError instanceof Error
@@ -316,6 +359,7 @@ export function VideoChatExperience(): React.JSX.Element {
       setJob(null);
       setMessages([]);
       setError(null);
+      setAnalysisStartedAt(null);
       await uploadSelectedVideo(selectedVideo, clientFingerprint, {
         forceRefresh: true,
       });
@@ -643,61 +687,71 @@ export function VideoChatExperience(): React.JSX.Element {
                   </div>
 
                   <motion.div className="relative flex items-center gap-2 overflow-hidden rounded-full px-3 py-1.5 text-neutral-500">
-                    <div className="relative flex h-4 items-center overflow-hidden">
-                      <AnimatePresence mode="wait">
-                        <motion.div
-                          key={`${uploadPhase}-${job?.status ?? "none"}-${job?.analyzedFrames ?? 0}`}
-                          initial={{ y: 10, opacity: 0 }}
-                          animate={{ y: 0, opacity: 1 }}
-                          exit={{ y: -10, opacity: 0 }}
-                          className="relative"
-                        >
-                          <span className="text-[13px] font-medium whitespace-nowrap text-neutral-500">
-                            {phaseLabel}
-                          </span>
-                        </motion.div>
-                      </AnimatePresence>
-                    </div>
+                    {job?.status === "analyzing" ? (
+                      <div className="flex items-center gap-2 text-[13px] font-medium whitespace-nowrap text-neutral-500">
+                        <span>Frames</span>
+                        <span className="tabular-nums text-neutral-300">
+                          {analyzedFrames}
+                        </span>
+                        <span>/</span>
+                        <span className="tabular-nums text-neutral-300">
+                          {totalFrames}
+                        </span>
+                        <span className="text-neutral-600">|</span>
+                        <span>ETA</span>
+                        <span className="tabular-nums text-neutral-300">
+                          {etaLabel ?? "--"}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-[13px] font-medium whitespace-nowrap text-neutral-500">
+                        {phaseLabel}
+                      </span>
+                    )}
                   </motion.div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <label className="flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-neutral-400">
-                    <input
-                      type="checkbox"
-                      checked={forceFreshUploads}
-                      onChange={(event) =>
-                        setForceFreshUploads(event.target.checked)
-                      }
-                      className="h-3.5 w-3.5 accent-blue-400"
-                    />
-                    Fresh upload
-                  </label>
+                  {isDebugMode ? (
+                    <>
+                      <label className="flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-neutral-400">
+                        <input
+                          type="checkbox"
+                          checked={forceFreshUploads}
+                          onChange={(event) =>
+                            setForceFreshUploads(event.target.checked)
+                          }
+                          className="h-3.5 w-3.5 accent-blue-400"
+                        />
+                        Fresh upload
+                      </label>
 
-                  {clientFingerprint || job?.jobId ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        void handleClearCache();
-                      }}
-                      disabled={isCacheActionPending}
-                      className="rounded-full border border-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-neutral-300 transition hover:border-white/20 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Clear cache
-                    </button>
-                  ) : null}
+                      {clientFingerprint || job?.jobId ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void handleClearCache();
+                          }}
+                          disabled={isCacheActionPending}
+                          className="rounded-full border border-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-neutral-300 transition hover:border-white/20 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Clear cache
+                        </button>
+                      ) : null}
 
-                  {selectedVideo && clientFingerprint ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        void handleFreshRun();
-                      }}
-                      disabled={isCacheActionPending}
-                      className="rounded-full border border-amber-400/25 bg-amber-400/10 px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-amber-200 transition hover:bg-amber-400/15 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Fresh run
-                    </button>
+                      {selectedVideo && clientFingerprint ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void handleFreshRun();
+                          }}
+                          disabled={isCacheActionPending}
+                          className="rounded-full border border-amber-400/25 bg-amber-400/10 px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-amber-200 transition hover:bg-amber-400/15 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Fresh run
+                        </button>
+                      ) : null}
+                    </>
                   ) : null}
 
                   {job?.cache.cacheHit ? (
@@ -721,6 +775,19 @@ export function VideoChatExperience(): React.JSX.Element {
           void handleVideoSelection(event);
         }}
       />
+
+      <button
+        type="button"
+        onClick={() => setIsDebugMode((current) => !current)}
+        className={`fixed right-5 bottom-5 z-40 flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] uppercase tracking-[0.18em] backdrop-blur-sm transition ${
+          isDebugMode
+            ? "border-amber-400/35 bg-amber-400/12 text-amber-200"
+            : "border-white/10 bg-black/55 text-neutral-400 hover:border-white/20 hover:text-neutral-200"
+        }`}
+      >
+        <Bug size={14} />
+        {isDebugMode ? "Debug on" : "Debug off"}
+      </button>
     </div>
   );
 }

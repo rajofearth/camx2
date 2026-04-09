@@ -1,0 +1,11 @@
+{
+  "frameIndex": 2,
+  "timestampMs": 2000,
+  "timestampLabel": "00:02.000",
+  "description": "A screenshot from a video game showing a character running through a forest.",
+  "rawText": "{\"description\":\"A screenshot from a video game showing a character running through a forest.\"}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 8822.074000000022,
+  "error": null,
+  "fromCache": false
+}

@@ -1,0 +1,11 @@
+{
+  "frameIndex": 12,
+  "timestampMs": 12000,
+  "timestampLabel": "00:12.000",
+  "description": "A person in a black hoodie with a blue mask holding a phone to their ear while sitting in the back seat of a car, looking around and seemingly engaged in conversation or listening intently,",
+  "rawText": "{\n  \"description\": \"A person in a black hoodie with a blue mask holding a phone to their ear while sitting in the back seat of a car, looking around and seemingly engaged in conversation or listening intently,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 20063.651100000017,
+  "error": null,
+  "fromCache": false
+}

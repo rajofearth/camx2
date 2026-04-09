@@ -1,0 +1,11 @@
+{
+  "frameIndex": 4,
+  "timestampMs": 4000,
+  "timestampLabel": "00:04.000",
+  "description": "A man in a gray hoodie is seen leaning over the steering wheel of a car with his hand on it, possibly adjusting something or looking around,",
+  "rawText": "{\n  \"description\": \"A man in a gray hoodie is seen leaning over the steering wheel of a car with his hand on it, possibly adjusting something or looking around,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 15079.420600000012,
+  "error": null,
+  "fromCache": false
+}

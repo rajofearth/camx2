@@ -1,0 +1,11 @@
+{
+  "frameIndex": 0,
+  "timestampMs": 0,
+  "timestampLabel": "00:00.000",
+  "description": "A man in a gray hoodie is sitting in the back seat of a car with his head down, possibly looking at something on the dashboard or phone. The interior of the car is visible through the window, showing some motion blur and reflections from the surroundings,",
+  "rawText": "{\n  \"description\": \"A man in a gray hoodie is sitting in the back seat of a car with his head down, possibly looking at something on the dashboard or phone. The interior of the car is visible through the window, showing some motion blur and reflections from the surroundings,\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 13204.663700000034,
+  "error": null,
+  "fromCache": false
+}

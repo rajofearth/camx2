@@ -1,0 +1,11 @@
+{
+  "frameIndex": 5,
+  "timestampMs": 5000,
+  "timestampLabel": "00:05.000",
+  "description": "A man in a gray hoodie is sitting in the back seat of a car with another person, who appears to be wearing a black shirt and jeans. The man in the hoodie is holding something in his hand, possibly a phone or a book. The other person is looking at him intently.",
+  "rawText": "{\n  \"description\": \"A man in a gray hoodie is sitting in the back seat of a car with another person, who appears to be wearing a black shirt and jeans. The man in the hoodie is holding something in his hand, possibly a phone or a book. The other person is looking at him intently.\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 19258.862199999974,
+  "error": null,
+  "fromCache": false
+}

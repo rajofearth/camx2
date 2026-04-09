@@ -2,10 +2,10 @@
   "frameIndex": 21,
   "timestampMs": 21000,
   "timestampLabel": "00:21.000",
-  "description": "A residential area with a few cars parked on the street and some buildings in the background. The sky is dark, transitioning from orange to purple as it meets the horizon line. There are no people visible in this frame.",
-  "rawText": "{\n  \"description\": \"A residential area with a few cars parked on the street and some buildings in the background. The sky is dark, transitioning from orange to purple as it meets the horizon line. There are no people visible in this frame.\"\n}",
-  "modelKey": "smolvlm2-500m-video-instruct@f16",
-  "latencyMs": 5456.723100000061,
+  "description": "A residential area with a few cars parked on the street, including a white car in the foreground and another car further back,",
+  "rawText": "{\n  \"description\": \"A residential area with a few cars parked on the street, including a white car in the foreground and another car further back,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 1644.6283999999869,
   "error": null,
   "fromCache": false
 }

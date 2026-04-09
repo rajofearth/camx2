@@ -2,10 +2,10 @@
   "frameIndex": 0,
   "timestampMs": 0,
   "timestampLabel": "00:00.000",
-  "description": "A cityscape at dusk with buildings and cars in the foreground. The sky is a gradient of orange and purple, transitioning from light to dark as it meets the horizon. There are no visible people or animals in this frame.",
-  "rawText": "{\n  \"description\": \"A cityscape at dusk with buildings and cars in the foreground. The sky is a gradient of orange and purple, transitioning from light to dark as it meets the horizon. There are no visible people or animals in this frame.\"\n}",
-  "modelKey": "smolvlm2-500m-video-instruct@f16",
-  "latencyMs": 11886.322300000116,
+  "description": "A cityscape at dusk with buildings and cars in the foreground. The sky is a gradient of orange and purple, transitioning from light to dark as it meets the horizon. There are no people or animals visible in this frame.",
+  "rawText": "{\n  \"description\": \"A cityscape at dusk with buildings and cars in the foreground. The sky is a gradient of orange and purple, transitioning from light to dark as it meets the horizon. There are no people or animals visible in this frame.\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 13163.602899999998,
   "error": null,
   "fromCache": false
 }

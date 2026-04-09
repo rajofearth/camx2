@@ -1,0 +1,11 @@
+{
+  "frameIndex": 16,
+  "timestampMs": 16000,
+  "timestampLabel": "00:16.000",
+  "description": "The driver of a car is seen driving down a street with cars passing by in the background. The camera angle shows the side profile of the vehicle and the road ahead, indicating that this might be an urban setting.",
+  "rawText": "{\n  \"description\": \"The driver of a car is seen driving down a street with cars passing by in the background. The camera angle shows the side profile of the vehicle and the road ahead, indicating that this might be an urban setting.\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 25753.031200000027,
+  "error": null,
+  "fromCache": false
+}

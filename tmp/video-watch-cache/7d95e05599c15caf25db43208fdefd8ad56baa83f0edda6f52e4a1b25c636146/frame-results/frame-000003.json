@@ -1,0 +1,11 @@
+{
+  "frameIndex": 3,
+  "timestampMs": 3000,
+  "timestampLabel": "00:03.000",
+  "description": "A man in a gray hoodie is driving a car with two other people inside,",
+  "rawText": "{\n  \"description\": \"A man in a gray hoodie is driving a car with two other people inside,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 7301.214900000021,
+  "error": null,
+  "fromCache": false
+}
