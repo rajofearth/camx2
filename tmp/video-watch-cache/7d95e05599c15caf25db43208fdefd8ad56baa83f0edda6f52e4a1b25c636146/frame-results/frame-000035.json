@@ -1,0 +1,11 @@
+{
+  "frameIndex": 35,
+  "timestampMs": 35000,
+  "timestampLabel": "00:35.000",
+  "description": "The car is parked in a parking lot with trees in the background.",
+  "rawText": "{\"description\":\"The car is parked in a parking lot with trees in the background.\"}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 16247.470999999961,
+  "error": null,
+  "fromCache": false
+}

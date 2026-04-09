@@ -1,0 +1,11 @@
+{
+  "frameIndex": 66,
+  "timestampMs": 66000,
+  "timestampLabel": "01:06.000",
+  "description": "Two men are sitting in a car with their hands on the steering wheel. One of them is wearing a gray hoodie and the other one is wearing a black shirt. The man in the gray hoodie has his hand on the steering wheel, while the man in the black shirt is holding a phone to his ear. The car's interior is visible through the windows.",
+  "rawText": "{\n  \"description\": \"Two men are sitting in a car with their hands on the steering wheel. One of them is wearing a gray hoodie and the other one is wearing a black shirt. The man in the gray hoodie has his hand on the steering wheel, while the man in the black shirt is holding a phone to his ear. The car's interior is visible through the windows.\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 40281.174299999955,
+  "error": null,
+  "fromCache": false
+}

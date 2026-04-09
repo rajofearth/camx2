@@ -1,0 +1,11 @@
+{
+  "frameIndex": 28,
+  "timestampMs": 28000,
+  "timestampLabel": "00:28.000",
+  "description": "The car's interior is shown from the driver's seat. The dashboard has a blue color with some black elements, and there are two headrests visible in the image.",
+  "rawText": "{\"description\":\"The car's interior is shown from the driver's seat. The dashboard has a blue color with some black elements, and there are two headrests visible in the image.\"}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 31423.12300000002,
+  "error": null,
+  "fromCache": false
+}

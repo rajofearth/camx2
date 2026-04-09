@@ -1,0 +1,11 @@
+{
+  "frameIndex": 30,
+  "timestampMs": 30000,
+  "timestampLabel": "00:30.000",
+  "description": "The interior of a car with a person's hand on the steering wheel,",
+  "rawText": "{\n  \"description\": \"The interior of a car with a person's hand on the steering wheel,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 22531.72999999998,
+  "error": null,
+  "fromCache": false
+}

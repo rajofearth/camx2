@@ -1,0 +1,11 @@
+{
+  "frameIndex": 60,
+  "timestampMs": 60000,
+  "timestampLabel": "01:00.000",
+  "description": "A person wearing a gray hoodie is sitting in the back seat of a car with another individual, both looking out the window. The time displayed on the screen is 18:74:25. The scene appears to be an indoor setting as there are no visible outdoor elements or other cars around.",
+  "rawText": "{\n  \"description\": \"A person wearing a gray hoodie is sitting in the back seat of a car with another individual, both looking out the window. The time displayed on the screen is 18:74:25. The scene appears to be an indoor setting as there are no visible outdoor elements or other cars around.\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 28340.71279999998,
+  "error": null,
+  "fromCache": false
+}

@@ -1,0 +1,11 @@
+{
+  "frameIndex": 58,
+  "timestampMs": 58000,
+  "timestampLabel": "00:58.000",
+  "description": "A person wearing a white shirt is sitting in the driver's seat of a car with their hands on the steering wheel, looking around and talking to someone off-camera.",
+  "rawText": "{\"description\":\"A person wearing a white shirt is sitting in the driver's seat of a car with their hands on the steering wheel, looking around and talking to someone off-camera.\"}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 19258.642100000056,
+  "error": null,
+  "fromCache": false
+}

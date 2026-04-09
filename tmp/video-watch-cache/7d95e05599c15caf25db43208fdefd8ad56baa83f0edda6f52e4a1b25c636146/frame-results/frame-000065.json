@@ -1,0 +1,11 @@
+{
+  "frameIndex": 65,
+  "timestampMs": 65000,
+  "timestampLabel": "01:05.000",
+  "description": "A man in a white shirt is sitting in the driver's seat of a car with another person, possibly his wife or partner, who is wearing a gray hoodie and black pants. The man appears to be talking to someone off-screen while the other person listens attentively. The scene captures a moment of interaction between two individuals inside a vehicle.",
+  "rawText": "{\n  \"description\": \"A man in a white shirt is sitting in the driver's seat of a car with another person, possibly his wife or partner, who is wearing a gray hoodie and black pants. The man appears to be talking to someone off-screen while the other person listens attentively. The scene captures a moment of interaction between two individuals inside a vehicle.\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 36281.163300000015,
+  "error": null,
+  "fromCache": false
+}

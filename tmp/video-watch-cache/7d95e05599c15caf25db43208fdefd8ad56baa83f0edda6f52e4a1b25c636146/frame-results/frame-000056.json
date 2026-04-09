@@ -1,0 +1,11 @@
+{
+  "frameIndex": 56,
+  "timestampMs": 56000,
+  "timestampLabel": "00:56.000",
+  "description": "A person in a hoodie is seen driving down the street with another individual in the passenger seat, both wearing black hoodies and white shirts. The car's interior features a steering wheel and dashboard visible through the windshield. The scene appears to be an urban setting with buildings and trees in the background.",
+  "rawText": "{\n  \"description\": \"A person in a hoodie is seen driving down the street with another individual in the passenger seat, both wearing black hoodies and white shirts. The car's interior features a steering wheel and dashboard visible through the windshield. The scene appears to be an urban setting with buildings and trees in the background.\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 19253.599699999904,
+  "error": null,
+  "fromCache": false
+}

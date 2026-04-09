@@ -1,0 +1,11 @@
+{
+  "frameIndex": 43,
+  "timestampMs": 43000,
+  "timestampLabel": "00:43.000",
+  "description": "The driver of a car is seen in the passenger seat,",
+  "rawText": "{\n  \"description\": \"The driver of a car is seen in the passenger seat,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 16740.190199999954,
+  "error": null,
+  "fromCache": false
+}

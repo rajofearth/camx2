@@ -1,0 +1,11 @@
+{
+  "frameIndex": 32,
+  "timestampMs": 32000,
+  "timestampLabel": "00:32.000",
+  "description": "The video shows a parking lot with several cars parked in rows. There are no people or animals present.",
+  "rawText": "{\"description\":\"The video shows a parking lot with several cars parked in rows. There are no people or animals present.\"}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 19906.919100000057,
+  "error": null,
+  "fromCache": false
+}

@@ -1,0 +1,11 @@
+{
+  "frameIndex": 50,
+  "timestampMs": 50000,
+  "timestampLabel": "00:50.000",
+  "description": "A person wearing a black hat is sitting in the back seat of a car with another individual, who appears to be wearing a white hoodie and blue jeans. The driver's side window is open, revealing a street view outside. The time displayed on the screen is 18:53:47.",
+  "rawText": "{\n  \"description\": \"A person wearing a black hat is sitting in the back seat of a car with another individual, who appears to be wearing a white hoodie and blue jeans. The driver's side window is open, revealing a street view outside. The time displayed on the screen is 18:53:47.\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 33059.775300000096,
+  "error": null,
+  "fromCache": false
+}

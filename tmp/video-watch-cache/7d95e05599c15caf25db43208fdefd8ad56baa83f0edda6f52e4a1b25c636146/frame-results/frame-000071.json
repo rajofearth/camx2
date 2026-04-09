@@ -1,0 +1,11 @@
+{
+  "frameIndex": 71,
+  "timestampMs": 71000,
+  "timestampLabel": "01:11.000",
+  "description": "A man in a black shirt with a blue mask is sitting on the floor of an office, looking down at something on the table. He appears to be engaged in some sort of task or conversation,",
+  "rawText": "{\n  \"description\": \"A man in a black shirt with a blue mask is sitting on the floor of an office, looking down at something on the table. He appears to be engaged in some sort of task or conversation,\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 36560.44469999999,
+  "error": null,
+  "fromCache": false
+}

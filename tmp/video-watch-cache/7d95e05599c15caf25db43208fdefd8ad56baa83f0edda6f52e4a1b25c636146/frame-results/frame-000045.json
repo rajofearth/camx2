@@ -1,0 +1,11 @@
+{
+  "frameIndex": 45,
+  "timestampMs": 45000,
+  "timestampLabel": "00:45.000",
+  "description": "The driver of a car is seen from the inside looking out through the window,",
+  "rawText": "{\n  \"description\": \"The driver of a car is seen from the inside looking out through the window,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 28624.02270000009,
+  "error": null,
+  "fromCache": false
+}

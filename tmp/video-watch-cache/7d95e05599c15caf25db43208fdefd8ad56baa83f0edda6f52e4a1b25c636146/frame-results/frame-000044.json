@@ -1,0 +1,11 @@
+{
+  "frameIndex": 44,
+  "timestampMs": 44000,
+  "timestampLabel": "00:44.000",
+  "description": "The driver of a car is seen talking to someone outside the window,",
+  "rawText": "{\n  \"description\": \"The driver of a car is seen talking to someone outside the window,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 26483.50549999997,
+  "error": null,
+  "fromCache": false
+}

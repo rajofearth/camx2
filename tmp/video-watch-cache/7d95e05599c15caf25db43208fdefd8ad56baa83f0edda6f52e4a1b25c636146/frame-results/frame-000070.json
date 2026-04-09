@@ -1,0 +1,11 @@
+{
+  "frameIndex": 70,
+  "timestampMs": 70000,
+  "timestampLabel": "01:10.000",
+  "description": "A man in a black hoodie and mask is seen holding a gun in his hand while sitting inside a car,",
+  "rawText": "{\n  \"description\": \"A man in a black hoodie and mask is seen holding a gun in his hand while sitting inside a car,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 33344.113500000094,
+  "error": null,
+  "fromCache": false
+}

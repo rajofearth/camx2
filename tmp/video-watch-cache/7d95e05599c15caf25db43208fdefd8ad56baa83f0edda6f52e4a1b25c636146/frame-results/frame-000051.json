@@ -1,0 +1,11 @@
+{
+  "frameIndex": 51,
+  "timestampMs": 51000,
+  "timestampLabel": "00:51.000",
+  "description": "A person wearing a black hoodie with white text on it is sitting in the back seat of a car, looking out the window. The driver's side door is open and there are no other people visible in the scene.",
+  "rawText": "{\n  \"description\": \"A person wearing a black hoodie with white text on it is sitting in the back seat of a car, looking out the window. The driver's side door is open and there are no other people visible in the scene.\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 31289.70239999995,
+  "error": null,
+  "fromCache": false
+}

@@ -1,0 +1,11 @@
+{
+  "frameIndex": 53,
+  "timestampMs": 53000,
+  "timestampLabel": "00:53.000",
+  "description": "A man in a white shirt is sitting in the back seat of a car with another person wearing a black hoodie and cap, both looking out the window. The dashboard has a digital clock displaying '23:22' and '18:08', indicating it's 2:22 PM on August 25th.",
+  "rawText": "{\n  \"description\": \"A man in a white shirt is sitting in the back seat of a car with another person wearing a black hoodie and cap, both looking out the window. The dashboard has a digital clock displaying '23:22' and '18:08', indicating it's 2:22 PM on August 25th.\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 24928.06640000001,
+  "error": null,
+  "fromCache": false
+}

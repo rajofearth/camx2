@@ -1,0 +1,11 @@
+{
+  "frameIndex": 55,
+  "timestampMs": 55000,
+  "timestampLabel": "00:55.000",
+  "description": "A man in a gray hoodie is sitting in the back seat of a car with another person, possibly his wife or partner, who is wearing a white hoodie and has her hair tied up. The man appears to be looking at something outside the window while the other person looks inside the car. There are no visible texts on the screen.",
+  "rawText": "{\n  \"description\": \"A man in a gray hoodie is sitting in the back seat of a car with another person, possibly his wife or partner, who is wearing a white hoodie and has her hair tied up. The man appears to be looking at something outside the window while the other person looks inside the car. There are no visible texts on the screen.\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 24119.816699999967,
+  "error": null,
+  "fromCache": false
+}

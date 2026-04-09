@@ -1,0 +1,11 @@
+{
+  "frameIndex": 31,
+  "timestampMs": 31000,
+  "timestampLabel": "00:31.000",
+  "description": "The video shows a parking lot with several cars parked in rows. There are trees and buildings in the background, indicating an urban setting.",
+  "rawText": "{\"description\":\"The video shows a parking lot with several cars parked in rows. There are trees and buildings in the background, indicating an urban setting.\"}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 30240.298500000034,
+  "error": null,
+  "fromCache": false
+}

@@ -1,0 +1,11 @@
+{
+  "frameIndex": 59,
+  "timestampMs": 59000,
+  "timestampLabel": "00:59.000",
+  "description": "A person wearing a white shirt is seen driving in the car with another individual in the back seat, both looking forward and seemingly engaged in conversation,",
+  "rawText": "{\n  \"description\": \"A person wearing a white shirt is seen driving in the car with another individual in the back seat, both looking forward and seemingly engaged in conversation,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 22782.66749999998,
+  "error": null,
+  "fromCache": false
+}

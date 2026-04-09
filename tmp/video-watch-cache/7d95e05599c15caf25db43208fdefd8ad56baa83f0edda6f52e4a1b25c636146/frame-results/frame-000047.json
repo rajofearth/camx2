@@ -1,0 +1,11 @@
+{
+  "frameIndex": 47,
+  "timestampMs": 47000,
+  "timestampLabel": "00:47.000",
+  "description": "A person in a gray hoodie is sitting in the driver's seat of a car with their hands on the steering wheel, looking out the window,",
+  "rawText": "{\n  \"description\": \"A person in a gray hoodie is sitting in the driver's seat of a car with their hands on the steering wheel, looking out the window,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 30139.070299999905,
+  "error": null,
+  "fromCache": false
+}

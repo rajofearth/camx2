@@ -1,0 +1,11 @@
+{
+  "frameIndex": 46,
+  "timestampMs": 46000,
+  "timestampLabel": "00:46.000",
+  "description": "A man in a white shirt is driving a car with his hands on the steering wheel,",
+  "rawText": "{\n    \"description\": \"A man in a white shirt is driving a car with his hands on the steering wheel,\"\n    }",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 26512.045999999973,
+  "error": null,
+  "fromCache": false
+}

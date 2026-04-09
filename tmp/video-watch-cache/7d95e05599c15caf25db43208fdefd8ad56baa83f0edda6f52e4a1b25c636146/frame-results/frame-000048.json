@@ -1,0 +1,11 @@
+{
+  "frameIndex": 48,
+  "timestampMs": 48000,
+  "timestampLabel": "00:48.000",
+  "description": "The interior of a car with two individuals inside. The person in the driver's seat appears to be looking out the window, while the passenger is wearing a white hoodie and black pants. There are no visible objects or text on the screen.",
+  "rawText": "{\n  \"description\": \"The interior of a car with two individuals inside. The person in the driver's seat appears to be looking out the window, while the passenger is wearing a white hoodie and black pants. There are no visible objects or text on the screen.\"\n}",
+  "modelKey": "smolvlm2-500m-video-instruct@q8_0",
+  "latencyMs": 29599.011100000003,
+  "error": null,
+  "fromCache": false
+}

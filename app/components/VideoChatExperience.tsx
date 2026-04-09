@@ -113,6 +113,47 @@ function formatEtaLabel(seconds: number | null): string | null {
   return `${minutes}m ${String(remainingSeconds).padStart(2, "0")}s`;
 }
 
+function getInputPlaceholder(input: {
+  readonly hasVideo: boolean;
+  readonly isVideoReady: boolean;
+  readonly uploadPhase: VideoWatchPhase;
+  readonly jobStatus?: VideoWatchPhase;
+}): string {
+  if (input.isVideoReady) {
+    return "Ask about the uploaded footage...";
+  }
+
+  if (!input.hasVideo) {
+    return "Upload a video and wait until analysis is ready...";
+  }
+
+  if (input.uploadPhase === "checking_cache") {
+    return "Checking whether this video was already analyzed...";
+  }
+
+  if (input.uploadPhase === "uploading") {
+    return "Uploading your video for analysis...";
+  }
+
+  if (input.jobStatus === "extracting") {
+    return "Extracting frames from your uploaded video...";
+  }
+
+  if (input.jobStatus === "analyzing") {
+    return "Analyzing your uploaded video frames...";
+  }
+
+  if (input.jobStatus === "combining") {
+    return "Combining frame descriptions into a timeline...";
+  }
+
+  if (input.jobStatus === "error") {
+    return "Analysis failed. Clear cache or try a fresh run.";
+  }
+
+  return "Preparing your uploaded video...";
+}
+
 export function VideoChatExperience(): React.JSX.Element {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -157,6 +198,12 @@ export function VideoChatExperience(): React.JSX.Element {
         (totalFrames - analyzedFrames)
       : null;
   const etaLabel = formatEtaLabel(etaSeconds);
+  const inputPlaceholder = getInputPlaceholder({
+    hasVideo,
+    isVideoReady: !!isVideoReady,
+    uploadPhase,
+    jobStatus: job?.status,
+  });
 
   const buttonLabel = !hasVideo
     ? "Attach"
@@ -574,11 +621,7 @@ export function VideoChatExperience(): React.JSX.Element {
                   onFocus={() => setIsInputFocused(true)}
                   onBlur={() => setIsInputFocused(false)}
                   disabled={!isVideoReady}
-                  placeholder={
-                    isVideoReady
-                      ? "Ask about the uploaded footage..."
-                      : "Upload a video and wait until analysis is ready..."
-                  }
+                  placeholder={inputPlaceholder}
                   className="flex-1 resize-none overflow-hidden border-none bg-transparent py-1 text-[16px] leading-relaxed font-normal text-neutral-100 outline-none placeholder:text-[#555] disabled:cursor-not-allowed disabled:text-neutral-500"
                   style={{ minHeight: "28px" }}
                 />
