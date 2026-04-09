@@ -11,6 +11,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import GridLoader from "@/components/smoothui/components/grid-loader";
 import { SiteNav } from "./SiteNav";
 
 type ChatMessage = {
@@ -28,6 +29,12 @@ type AnalysisPhase =
   | "ready";
 
 const TOTAL_ANALYSIS_FRAMES = 12;
+const READY_PHRASES = [
+  "Waiting for your command",
+  "Ready when you are",
+  "Ask about any moment",
+  "Footage is primed",
+] as const;
 
 const ATTACHMENT_ITEMS = [
   {
@@ -135,6 +142,8 @@ export function VideoChatExperience(): React.JSX.Element {
       ? "text-blue-400"
       : "text-emerald-400/90";
 
+  const [readyPhrase, setReadyPhrase] = useState(0);
+
   useEffect(() => {
     if (!messages.length) return;
 
@@ -203,6 +212,19 @@ export function VideoChatExperience(): React.JSX.Element {
       }
     };
   }, [selectedVideo]);
+
+  useEffect(() => {
+    if (!isVideoReady) {
+      setReadyPhrase(0);
+      return;
+    }
+
+    const id = window.setInterval(() => {
+      setReadyPhrase((current) => (current + 1) % READY_PHRASES.length);
+    }, 3000);
+
+    return () => window.clearInterval(id);
+  }, [isVideoReady]);
 
   const openVideoPicker = () => {
     hiddenFileInputRef.current?.click();
@@ -500,10 +522,7 @@ export function VideoChatExperience(): React.JSX.Element {
                     </AnimatePresence>
                   </div>
 
-                  <motion.div
-                    whileTap={{ scale: 0.97 }}
-                    className="relative flex items-center gap-2 overflow-hidden rounded-full px-3 py-1.5 text-neutral-500"
-                  >
+                  <motion.div className="relative flex items-center gap-2 overflow-hidden rounded-full px-3 py-1.5 text-neutral-500">
                     <div className="relative flex h-4 items-center overflow-hidden">
                       <AnimatePresence mode="wait">
                         <motion.div
@@ -521,6 +540,65 @@ export function VideoChatExperience(): React.JSX.Element {
                     </div>
                   </motion.div>
                 </div>
+
+                <AnimatePresence mode="wait">
+                  {isVideoReady ? (
+                    <motion.div
+                      key="ready"
+                      initial={{ opacity: 0, x: 8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -8 }}
+                      transition={{ duration: 0.25 }}
+                      className="flex items-center gap-2 pr-1"
+                    >
+                      <GridLoader
+                        pattern="sparkle"
+                        mode="stagger"
+                        color="blue"
+                        size="sm"
+                        blur={1}
+                        gap={1}
+                      />
+                      <div className="relative h-4 overflow-hidden">
+                        <AnimatePresence mode="wait">
+                          <motion.span
+                            key={readyPhrase}
+                            initial={{ y: 8, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: -8, opacity: 0 }}
+                            transition={{
+                              duration: 0.28,
+                              ease: [0.22, 1, 0.36, 1],
+                            }}
+                            className="absolute inset-0 whitespace-nowrap text-[13px] font-medium tracking-wide text-neutral-400"
+                          >
+                            {READY_PHRASES[readyPhrase]}
+                          </motion.span>
+                        </AnimatePresence>
+                      </div>
+                    </motion.div>
+                  ) : !hasVideo ? (
+                    <motion.div
+                      key="idle"
+                      initial={{ opacity: 0, x: 8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -8 }}
+                      className="flex items-center gap-2 pr-1"
+                    >
+                      <GridLoader
+                        pattern="plus-hollow"
+                        mode="pulse"
+                        color="white"
+                        size="sm"
+                        blur={0.8}
+                        gap={1}
+                      />
+                      <span className="whitespace-nowrap text-[13px] font-medium text-neutral-600">
+                        Waiting for footage
+                      </span>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
               </div>
             </div>
           </motion.div>
