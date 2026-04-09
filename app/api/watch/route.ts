@@ -1,4 +1,7 @@
+import { promises as fs } from "node:fs";
+import path from "node:path";
 import type { NextRequest } from "next/server";
+import type { WatchResult } from "@/app/lib/watch-types";
 import { BadRequestError } from "./_lib/errors";
 import { runWatchLmStudio } from "./_lib/lmstudio";
 import {
@@ -6,9 +9,6 @@ import {
   createSuccessResponse,
   generateRequestId,
 } from "./_lib/response";
-
-import { promises as fs } from "fs";
-import path from "path";
 
 export const runtime = "nodejs";
 
@@ -110,6 +110,8 @@ export async function POST(req: NextRequest): Promise<Response> {
     let finalMime = mimeType;
     const detectedMime = detectImageMime(bufferProcessed);
 
+    const usedOriginalForAgent = !detectedMime;
+
     if (!detectedMime) {
       // Processed image seems invalid — fallback to original capture so agent can still run
       finalBase64 = bufferOriginal.toString("base64");
@@ -136,9 +138,9 @@ export async function POST(req: NextRequest): Promise<Response> {
         ? (originalFile as Blob).type
         : mimeType;
 
-    let result;
-    let rawText;
-    let modelKey;
+    let result: WatchResult;
+    let rawText = "";
+    let modelKey = "";
     let agentMs = 0;
 
     try {
@@ -160,24 +162,19 @@ export async function POST(req: NextRequest): Promise<Response> {
         (errMsg.includes("Failed to load image") ||
           errMsg.includes("Failed to format input"))
       ) {
-        try {
-          console.warn(
-            `[WATCH] [${requestId}] Agent failed to load processed image; retrying with original image`,
-          );
-          const retryStart = performance.now();
-          const res2 = await runWatchLmStudio({
-            base64Image: originalBase64,
-            mimeType: originalMimeType,
-          });
-          const retryEnd = performance.now();
-          agentMs = retryEnd - retryStart;
-          result = res2.result;
-          rawText = res2.rawText;
-          modelKey = res2.modelKey;
-        } catch (retryErr) {
-          // If retry also fails, rethrow to be handled by outer catch below.
-          throw retryErr;
-        }
+        console.warn(
+          `[WATCH] [${requestId}] Agent failed to load processed image; retrying with original image`,
+        );
+        const retryStart = performance.now();
+        const res2 = await runWatchLmStudio({
+          base64Image: originalBase64,
+          mimeType: originalMimeType,
+        });
+        const retryEnd = performance.now();
+        agentMs = retryEnd - retryStart;
+        result = res2.result;
+        rawText = res2.rawText;
+        modelKey = res2.modelKey;
       } else {
         // Not a recoverable load error or we already used the original; rethrow.
         throw err;

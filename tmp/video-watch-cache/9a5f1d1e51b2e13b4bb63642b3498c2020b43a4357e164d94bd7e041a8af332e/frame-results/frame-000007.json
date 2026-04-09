@@ -1,0 +1,11 @@
+{
+  "frameIndex": 7,
+  "timestampMs": 7000,
+  "timestampLabel": "00:07.000",
+  "description": "A residential area with a few cars parked on the street, including a white car in the foreground and another car further back,",
+  "rawText": "{\n  \"description\": \"A residential area with a few cars parked on the street, including a white car in the foreground and another car further back,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@f16",
+  "latencyMs": 11217.002800000366,
+  "error": null,
+  "fromCache": false
+}

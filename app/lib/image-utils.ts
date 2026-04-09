@@ -36,7 +36,7 @@ export interface ImageProcessOptions {
    * - 'webp' returns a compressed WebP Blob (significantly smaller).
    * - 'png' returns a PNG Blob (useful when server requires PNG).
    */
-  output?: "png" | "webp";
+  output?: "png" | "webp" | "jpeg" | "jpg";
 }
 
 /**

@@ -24,8 +24,6 @@ function mimeTypeToFileName(mimeType: string): string {
       return "frame.png";
     case "image/webp":
       return "frame.webp";
-    case "image/jpeg":
-    case "image/jpg":
     default:
       return "frame.jpg";
   }
@@ -55,17 +53,18 @@ async function resolveWatchModelKey(): Promise<string> {
 
   const client = getClient();
 
-  let loadedModels;
-  try {
-    loadedModels = await client.llm.listLoaded();
-  } catch (error) {
-    if (isConnectionError(error)) {
-      throw new Error(
-        "LM Studio local server is not running or is unreachable at ws://127.0.0.1:1234",
-      );
+  const loadedModels = await (async () => {
+    try {
+      return await client.llm.listLoaded();
+    } catch (error) {
+      if (isConnectionError(error)) {
+        throw new Error(
+          "LM Studio local server is not running or is unreachable at ws://127.0.0.1:1234",
+        );
+      }
+      throw error;
     }
-    throw error;
-  }
+  })();
 
   const loadedTarget = loadedModels.find(
     (model) =>

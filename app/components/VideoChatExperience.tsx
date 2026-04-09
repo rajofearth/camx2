@@ -10,7 +10,17 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
+import {
+  askVideoWatchQuestion,
+  clearVideoWatchCache,
+  fetchVideoWatchStatus,
+  uploadVideoForWatch,
+} from "@/app/lib/video-watch-client";
+import type {
+  VideoWatchJob,
+  VideoWatchPhase,
+} from "@/app/lib/video-watch-types";
 import GridLoader from "@/components/grid-loader";
 import { SiteNav } from "./SiteNav";
 
@@ -20,15 +30,6 @@ type ChatMessage = {
   content: string;
   isThinking?: boolean;
 };
-
-type AnalysisPhase =
-  | "idle"
-  | "preparing"
-  | "extracting"
-  | "analyzing"
-  | "ready";
-
-const TOTAL_ANALYSIS_FRAMES = 12;
 
 const ATTACHMENT_ITEMS = [
   {
@@ -48,28 +49,53 @@ const ATTACHMENT_ITEMS = [
   },
 ] as const;
 
+const LOCAL_CACHE_PREFIX = "video-watch:fingerprint:";
+
 function getPhaseLabel(
-  phase: AnalysisPhase,
-  analyzedFrames: number,
-  totalFrames: number,
+  job: VideoWatchJob | null,
+  uploadPhase: VideoWatchPhase,
 ) {
-  if (phase === "preparing") {
-    return "Preparing video file...";
+  if (uploadPhase === "checking_cache") {
+    return "Checking cache...";
   }
 
-  if (phase === "extracting") {
+  if (uploadPhase === "uploading") {
+    return "Uploading video...";
+  }
+
+  if (!job) {
+    return "Upload a video file to begin";
+  }
+
+  if (job.status === "extracting") {
     return "Extracting frames...";
   }
 
-  if (phase === "analyzing") {
-    return `${analyzedFrames}/${totalFrames} frame analysing`;
+  if (job.status === "analyzing") {
+    return `${job.analyzedFrames}/${job.totalFrames} frames analyzed`;
   }
 
-  if (phase === "ready") {
+  if (job.status === "combining") {
+    return "Combining timeline...";
+  }
+
+  if (job.status === "completed") {
     return "Ready to chat";
   }
 
-  return "Upload a video file to begin";
+  if (job.status === "error") {
+    return "Analysis failed";
+  }
+
+  return "Preparing analysis...";
+}
+
+async function hashFileSha256(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  const digest = await crypto.subtle.digest("SHA-256", buffer);
+  return Array.from(new Uint8Array(digest))
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 export function VideoChatExperience(): React.JSX.Element {
@@ -79,44 +105,52 @@ export function VideoChatExperience(): React.JSX.Element {
   const [isReplyProcessing, setIsReplyProcessing] = useState(false);
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
-  const [analysisPhase, setAnalysisPhase] = useState<AnalysisPhase>("idle");
-  const [analyzedFrames, setAnalyzedFrames] = useState(0);
+  const [job, setJob] = useState<VideoWatchJob | null>(null);
+  const [uploadPhase, setUploadPhase] = useState<VideoWatchPhase>("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [isCacheActionPending, setIsCacheActionPending] = useState(false);
+  const [forceFreshUploads, setForceFreshUploads] = useState(false);
+  const [clientFingerprint, setClientFingerprint] = useState<string | null>(
+    null,
+  );
 
   const hiddenFileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const hasMessages = messages.length > 0;
-  const isVideoReady = analysisPhase === "ready";
-  const phaseLabel = getPhaseLabel(
-    analysisPhase,
-    analyzedFrames,
-    TOTAL_ANALYSIS_FRAMES,
-  );
-
+  const isVideoReady = job?.status === "completed";
+  const phaseLabel = getPhaseLabel(job, uploadPhase);
   const hasVideo = !!selectedVideo;
   const isAnalyzing =
-    hasVideo && analysisPhase !== "ready" && analysisPhase !== "idle";
+    uploadPhase === "checking_cache" ||
+    uploadPhase === "uploading" ||
+    (!!job && job.status !== "completed" && job.status !== "error");
+  const selectedVideoName = selectedVideo?.name ?? "";
 
   const buttonLabel = !hasVideo
     ? "Attach"
     : isAnalyzing
-      ? selectedVideo!.name.length > 16
-        ? selectedVideo!.name.slice(0, 13) + "…"
-        : selectedVideo!.name
+      ? selectedVideoName.length > 16
+        ? `${selectedVideoName.slice(0, 13)}…`
+        : selectedVideoName
       : "Replace video";
 
   const ButtonIcon = !hasVideo ? Paperclip : isAnalyzing ? Film : Paperclip;
 
   useEffect(() => {
-    if (!messages.length) return;
+    if (!messages.length) {
+      return;
+    }
 
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   useEffect(() => {
     void inputValue;
-    if (!textareaRef.current) return;
+    if (!textareaRef.current) {
+      return;
+    }
 
     textareaRef.current.style.height = "auto";
     textareaRef.current.style.height = `${Math.min(
@@ -126,86 +160,188 @@ export function VideoChatExperience(): React.JSX.Element {
   }, [inputValue]);
 
   useEffect(() => {
-    if (!selectedVideo) {
-      setAnalysisPhase("idle");
-      setAnalyzedFrames(0);
+    if (!job || job.status === "completed" || job.status === "error") {
       return;
     }
 
-    setAnalysisPhase("preparing");
-    setAnalyzedFrames(0);
+    const interval = window.setInterval(async () => {
+      const next = await fetchVideoWatchStatus({ jobId: job.jobId });
+      if (next.ok) {
+        startTransition(() => {
+          setJob(next);
+          setUploadPhase(next.status);
+          setError(next.error ?? null);
+        });
 
-    const timers: Array<ReturnType<typeof setTimeout>> = [];
-    let frameInterval: ReturnType<typeof setInterval> | null = null;
-
-    timers.push(
-      setTimeout(() => {
-        setAnalysisPhase("extracting");
-      }, 1100),
-    );
-
-    timers.push(
-      setTimeout(() => {
-        setAnalysisPhase("analyzing");
-        frameInterval = setInterval(() => {
-          setAnalyzedFrames((current) => {
-            const nextValue = current + 1;
-
-            if (nextValue >= TOTAL_ANALYSIS_FRAMES) {
-              if (frameInterval) {
-                clearInterval(frameInterval);
-              }
-
-              setAnalysisPhase("ready");
-              return TOTAL_ANALYSIS_FRAMES;
-            }
-
-            return nextValue;
-          });
-        }, 320);
-      }, 2400),
-    );
+        if (next.status === "completed" && clientFingerprint) {
+          window.localStorage.setItem(
+            `${LOCAL_CACHE_PREFIX}${clientFingerprint}`,
+            next.jobId,
+          );
+        }
+      } else {
+        startTransition(() => {
+          setError(next.message);
+          setUploadPhase("error");
+        });
+      }
+    }, 1500);
 
     return () => {
-      for (const timer of timers) {
-        clearTimeout(timer);
-      }
-
-      if (frameInterval) {
-        clearInterval(frameInterval);
-      }
+      window.clearInterval(interval);
     };
-  }, [selectedVideo]);
+  }, [clientFingerprint, job]);
 
   const openVideoPicker = () => {
     hiddenFileInputRef.current?.click();
   };
 
-  const handleVideoSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const clearLocalCacheEntry = (fingerprint: string | null) => {
+    if (!fingerprint) {
+      return;
+    }
+
+    window.localStorage.removeItem(`${LOCAL_CACHE_PREFIX}${fingerprint}`);
+  };
+
+  const uploadSelectedVideo = async (
+    file: File,
+    fingerprint: string,
+    options?: {
+      readonly forceRefresh?: boolean;
+    },
+  ) => {
+    setUploadPhase("uploading");
+    const uploaded = await uploadVideoForWatch(file, fingerprint, options);
+    if (!uploaded.ok) {
+      setError(uploaded.message);
+      setUploadPhase("error");
+      return;
+    }
+
+    setJob(uploaded);
+    setUploadPhase(uploaded.status);
+    window.localStorage.setItem(
+      `${LOCAL_CACHE_PREFIX}${fingerprint}`,
+      uploaded.jobId,
+    );
+  };
+
+  const handleVideoSelection = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0] ?? null;
+    event.target.value = "";
 
     if (!file) {
       return;
     }
 
     setSelectedVideo(file);
+    setJob(null);
     setMessages([]);
     setInputValue("");
+    setError(null);
+    setUploadPhase("checking_cache");
     setIsReplyProcessing(false);
     setIsAttachmentMenuOpen(false);
-    event.target.value = "";
+
+    try {
+      const fingerprint = await hashFileSha256(file);
+      setClientFingerprint(fingerprint);
+
+      const cachedStatus = await fetchVideoWatchStatus({ fingerprint });
+      if (cachedStatus.ok) {
+        setJob(cachedStatus);
+        setUploadPhase(cachedStatus.status);
+        window.localStorage.setItem(
+          `${LOCAL_CACHE_PREFIX}${fingerprint}`,
+          cachedStatus.jobId,
+        );
+        return;
+      }
+
+      await uploadSelectedVideo(file, fingerprint, {
+        forceRefresh: forceFreshUploads,
+      });
+    } catch (uploadError) {
+      const message =
+        uploadError instanceof Error ? uploadError.message : "Upload failed";
+      setError(message);
+      setUploadPhase("error");
+    }
   };
 
-  const handleSend = () => {
-    if (!inputValue.trim() || !isVideoReady || isReplyProcessing) {
+  const handleClearCache = async () => {
+    if (!clientFingerprint && !job?.jobId) {
       return;
     }
 
+    setIsCacheActionPending(true);
+    try {
+      const response = await clearVideoWatchCache({
+        fingerprint: clientFingerprint ?? undefined,
+        jobId: job?.jobId,
+      });
+
+      if (!response.ok) {
+        setError(response.message);
+        return;
+      }
+
+      clearLocalCacheEntry(response.fingerprint);
+      setJob(null);
+      setMessages([]);
+      setError(null);
+      setUploadPhase("idle");
+    } catch (cacheError) {
+      setError(
+        cacheError instanceof Error
+          ? cacheError.message
+          : "Failed to clear cache",
+      );
+    } finally {
+      setIsCacheActionPending(false);
+    }
+  };
+
+  const handleFreshRun = async () => {
+    if (!selectedVideo || !clientFingerprint) {
+      return;
+    }
+
+    setIsCacheActionPending(true);
+    try {
+      clearLocalCacheEntry(clientFingerprint);
+      setJob(null);
+      setMessages([]);
+      setError(null);
+      await uploadSelectedVideo(selectedVideo, clientFingerprint, {
+        forceRefresh: true,
+      });
+    } catch (refreshError) {
+      setError(
+        refreshError instanceof Error
+          ? refreshError.message
+          : "Fresh run failed",
+      );
+      setUploadPhase("error");
+    } finally {
+      setIsCacheActionPending(false);
+    }
+  };
+
+  const handleSend = async () => {
+    if (!inputValue.trim() || !isVideoReady || !job || isReplyProcessing) {
+      return;
+    }
+
+    const question = inputValue.trim();
     const timestamp = Date.now();
     const userMessage: ChatMessage = {
       id: `${timestamp}`,
       role: "user",
-      content: inputValue.trim(),
+      content: question,
     };
     const thinkingMessage: ChatMessage = {
       id: `${timestamp + 1}`,
@@ -217,28 +353,50 @@ export function VideoChatExperience(): React.JSX.Element {
     setMessages((current) => [...current, userMessage, thinkingMessage]);
     setInputValue("");
     setIsReplyProcessing(true);
-    setIsAttachmentMenuOpen(false);
 
-    window.setTimeout(() => {
+    try {
+      const response = await askVideoWatchQuestion({
+        jobId: job.jobId,
+        question,
+      });
+
       setMessages((current) =>
         current.map((message) =>
           message.id === thinkingMessage.id
             ? {
                 ...message,
                 isThinking: false,
-                content: `Footage chat is ready. This is a placeholder answer for "${userMessage.content}" while backend analysis is still not wired.`,
+                content:
+                  response.ok === true
+                    ? response.answer
+                    : `I couldn't answer that yet: ${response.message}`,
               }
             : message,
         ),
       );
+    } catch (chatError) {
+      const message =
+        chatError instanceof Error ? chatError.message : "Chat failed";
+      setMessages((current) =>
+        current.map((messageItem) =>
+          messageItem.id === thinkingMessage.id
+            ? {
+                ...messageItem,
+                isThinking: false,
+                content: `I couldn't answer that yet: ${message}`,
+              }
+            : messageItem,
+        ),
+      );
+    } finally {
       setIsReplyProcessing(false);
-    }, 1800);
+    }
   };
 
   const handleTextareaKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      handleSend();
+      void handleSend();
     }
   };
 
@@ -254,7 +412,29 @@ export function VideoChatExperience(): React.JSX.Element {
       </div>
 
       <div className="no-scrollbar relative z-10 flex-1 overflow-y-auto px-6">
-        <div className="mx-auto flex w-full max-w-3xl flex-col pt-6 pb-40">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 pt-6 pb-40">
+          {job?.summary ? (
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="mb-2 flex items-center justify-between gap-3 text-xs uppercase tracking-[0.18em] text-neutral-500">
+                <span>Analysis Summary</span>
+                <span>
+                  {job.cache.cacheHit
+                    ? `Cache hit (${job.cache.source})`
+                    : "Fresh run"}
+                </span>
+              </div>
+              <p className="text-sm leading-6 text-neutral-300">
+                {job.summary.summaryText}
+              </p>
+            </div>
+          ) : null}
+
+          {error ? (
+            <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+              {error}
+            </div>
+          ) : null}
+
           <AnimatePresence initial={false}>
             {!hasMessages ? (
               <motion.div
@@ -270,8 +450,8 @@ export function VideoChatExperience(): React.JSX.Element {
                     Chat with recorded footage
                   </h1>
                   <p className="mx-auto max-w-2xl text-sm leading-6 text-neutral-500">
-                    Upload a video first, let the analysis pipeline finish, and
-                    then start asking questions about the footage.
+                    Upload a video once, let the frame pipeline build a cached
+                    timeline, and then ask questions about the footage.
                   </p>
                 </div>
               </motion.div>
@@ -282,7 +462,7 @@ export function VideoChatExperience(): React.JSX.Element {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.35, ease: [0.19, 1, 0.22, 1] }}
-                  className={`mb-8 flex ${
+                  className={`mb-4 flex ${
                     message.role === "user" ? "justify-end" : "justify-start"
                   }`}
                 >
@@ -368,7 +548,9 @@ export function VideoChatExperience(): React.JSX.Element {
                       animate={{ scale: 1, opacity: 1 }}
                       exit={{ scale: 0.8, opacity: 0 }}
                       transition={{ type: "spring", bounce: 0, duration: 0.3 }}
-                      onClick={handleSend}
+                      onClick={() => {
+                        void handleSend();
+                      }}
                       disabled={isReplyProcessing || !isVideoReady}
                       className={`mb-1 flex items-center justify-center rounded-full p-1.5 ${
                         isReplyProcessing
@@ -389,7 +571,6 @@ export function VideoChatExperience(): React.JSX.Element {
               <div className="flex items-center justify-between px-4 py-2">
                 <div className="flex items-center gap-1.5">
                   <div className="relative">
-                    {/* Updated attach button: three visual states (idle, analyzing, ready) */}
                     <motion.button
                       type="button"
                       whileTap={{ scale: 0.97 }}
@@ -421,7 +602,7 @@ export function VideoChatExperience(): React.JSX.Element {
                                 : "opacity-80 transition-opacity group-hover:opacity-100"
                             }
                           />
-                          <span className="text- font-medium whitespace-nowrap">
+                          <span className="font-medium whitespace-nowrap">
                             {buttonLabel}
                           </span>
                         </motion.span>
@@ -465,7 +646,7 @@ export function VideoChatExperience(): React.JSX.Element {
                     <div className="relative flex h-4 items-center overflow-hidden">
                       <AnimatePresence mode="wait">
                         <motion.div
-                          key={analysisPhase}
+                          key={`${uploadPhase}-${job?.status ?? "none"}-${job?.analyzedFrames ?? 0}`}
                           initial={{ y: 10, opacity: 0 }}
                           animate={{ y: 0, opacity: 1 }}
                           exit={{ y: -10, opacity: 0 }}
@@ -480,6 +661,51 @@ export function VideoChatExperience(): React.JSX.Element {
                   </motion.div>
                 </div>
 
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-neutral-400">
+                    <input
+                      type="checkbox"
+                      checked={forceFreshUploads}
+                      onChange={(event) =>
+                        setForceFreshUploads(event.target.checked)
+                      }
+                      className="h-3.5 w-3.5 accent-blue-400"
+                    />
+                    Fresh upload
+                  </label>
+
+                  {clientFingerprint || job?.jobId ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleClearCache();
+                      }}
+                      disabled={isCacheActionPending}
+                      className="rounded-full border border-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-neutral-300 transition hover:border-white/20 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Clear cache
+                    </button>
+                  ) : null}
+
+                  {selectedVideo && clientFingerprint ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleFreshRun();
+                      }}
+                      disabled={isCacheActionPending}
+                      className="rounded-full border border-amber-400/25 bg-amber-400/10 px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-amber-200 transition hover:bg-amber-400/15 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Fresh run
+                    </button>
+                  ) : null}
+
+                  {job?.cache.cacheHit ? (
+                    <span className="rounded-full border border-blue-400/30 bg-blue-400/10 px-2.5 py-1 text-[11px] uppercase tracking-[0.18em] text-blue-200">
+                      Cache hit
+                    </span>
+                  ) : null}
+                </div>
               </div>
             </div>
           </motion.div>
@@ -491,7 +717,9 @@ export function VideoChatExperience(): React.JSX.Element {
         type="file"
         accept="video/*"
         className="hidden"
-        onChange={handleVideoSelection}
+        onChange={(event) => {
+          void handleVideoSelection(event);
+        }}
       />
     </div>
   );

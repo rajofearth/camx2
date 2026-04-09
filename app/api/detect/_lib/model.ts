@@ -106,7 +106,7 @@ export function getOutputNames(
     let masks: string | undefined;
 
     for (const metadata of session.outputMetadata) {
-      const shape = metadata.shape;
+      const shape = "shape" in metadata ? metadata.shape : undefined;
       if (!Array.isArray(shape)) {
         continue;
       }

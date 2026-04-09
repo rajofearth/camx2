@@ -39,7 +39,11 @@ type InMsg = {
   };
 };
 
-self.addEventListener("message", async (ev: MessageEvent) => {
+const workerScope = self as typeof globalThis & {
+  postMessage: (message: unknown, transfer?: Transferable[]) => void;
+};
+
+workerScope.addEventListener("message", async (ev: MessageEvent) => {
   const msg = ev.data as InMsg;
   const t0 = performance.now();
 
@@ -193,7 +197,7 @@ self.addEventListener("message", async (ev: MessageEvent) => {
     };
 
     // Post back result with transferable ArrayBuffer
-    self.postMessage(
+    workerScope.postMessage(
       {
         id: msg?.id,
         success: true,
@@ -207,7 +211,7 @@ self.addEventListener("message", async (ev: MessageEvent) => {
   } catch (err: any) {
     // Send error back; do not throw
     try {
-      self.postMessage({
+      workerScope.postMessage({
         id: (msg as any)?.id,
         success: false,
         error: String(err?.message ?? err ?? "Unknown error in image worker"),

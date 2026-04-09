@@ -1,0 +1,11 @@
+{
+  "frameIndex": 9,
+  "timestampMs": 9000,
+  "timestampLabel": "00:09.000",
+  "description": "A residential area bathed in the soft glow of dusk, with a few cars parked along the street and buildings lining the road,",
+  "rawText": "{\n  \"description\": \"A residential area bathed in the soft glow of dusk, with a few cars parked along the street and buildings lining the road,\"\n  }",
+  "modelKey": "smolvlm2-500m-video-instruct@f16",
+  "latencyMs": 7267.3892999999225,
+  "error": null,
+  "fromCache": false
+}
