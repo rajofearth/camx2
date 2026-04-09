@@ -105,6 +105,36 @@ export function VideoChatExperience(): React.JSX.Element {
     return `Video loaded: ${selectedVideo.name}`;
   }, [isVideoReady, selectedVideo]);
 
+  const hasVideo = !!selectedVideo;
+  const isAnalyzing =
+    hasVideo && analysisPhase !== "ready" && analysisPhase !== "idle";
+
+  const buttonLabel = !hasVideo
+    ? "Attach"
+    : isAnalyzing
+      ? selectedVideo!.name.length > 16
+        ? selectedVideo!.name.slice(0, 13) + "…"
+        : selectedVideo!.name
+      : "Replace video";
+
+  const ButtonIcon = !hasVideo ? Paperclip : isAnalyzing ? Film : Paperclip;
+
+  const statusText = !hasVideo
+    ? "Waiting for video"
+    : analysisPhase === "preparing"
+      ? "Preparing"
+      : analysisPhase === "extracting"
+        ? "Extracting frames"
+        : analysisPhase === "analyzing"
+          ? `${analyzedFrames}/${TOTAL_ANALYSIS_FRAMES} ANALYZING`
+          : "Footage ready";
+
+  const statusColor = !hasVideo
+    ? "text-neutral-700"
+    : isAnalyzing
+      ? "text-blue-400"
+      : "text-emerald-400/90";
+
   useEffect(() => {
     if (!messages.length) return;
 
@@ -242,8 +272,8 @@ export function VideoChatExperience(): React.JSX.Element {
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-hidden bg-[#000000] text-white antialiased">
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-        <div className="absolute top-0 left-1/2 h-[600px] w-[100px] -translate-x-1/2 rounded-full bg-blue-500/10 opacity-50 blur-[120px]" />
-        <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-black via-black/80 to-transparent" />
+        <div className="absolute top-0 left-1/2 h-150 w-25 -translate-x-1/2 rounded-full bg-blue-500/10 opacity-50 blur-[120px]" />
+        <div className="absolute inset-x-0 bottom-0 h-64 bg-linear-to-t from-black via-black/80 to-transparent" />
       </div>
 
       <div className="relative z-20 px-6 pt-6">
@@ -309,7 +339,7 @@ export function VideoChatExperience(): React.JSX.Element {
           hasMessages ? "mt-auto" : "flex-1 items-center pb-64"
         }`}
       >
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black via-black/90 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-linear-to-t from-black via-black/90 to-transparent" />
         <motion.div
           layout
           initial={false}
@@ -324,10 +354,10 @@ export function VideoChatExperience(): React.JSX.Element {
                 : "border-white/8 bg-[#0d0d0d]/95"
             }`}
           >
-            <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-blue-500/70 to-transparent" />
+            <div className="absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-blue-500/70 to-transparent" />
 
             <div className="flex flex-col px-0">
-              <div className="mb-1 flex min-h-[24px] items-end gap-3 rounded-[16px] border-b border-[#121212] bg-black/80 px-5 py-4">
+              <div className="mb-1 flex min-h-6 items-end gap-3 rounded-2xl border-b border-[#121212] bg-black/80 px-5 py-4">
                 <textarea
                   ref={textareaRef}
                   rows={1}
@@ -376,18 +406,65 @@ export function VideoChatExperience(): React.JSX.Element {
               <div className="flex items-center justify-between px-4 py-2">
                 <div className="flex items-center gap-1.5">
                   <div className="relative">
+                    {/* Updated attach button: three visual states (idle, analyzing, ready) */}
                     <motion.button
                       type="button"
                       whileTap={{ scale: 0.97 }}
                       onClick={() =>
                         setIsAttachmentMenuOpen((current) => !current)
                       }
-                      className="group flex items-center gap-2 rounded-full px-3 py-1.5 text-neutral-500 transition-all duration-300 hover:bg-white/[0.03] hover:text-neutral-300"
+                      animate={{
+                        boxShadow: !hasVideo
+                          ? [
+                              "0 0 0 1px rgba(59,130,246,0.30), inset 0 0 0.75px 0 rgba(255,255,255,0.06), 0 0 0 0 rgba(59,130,246,0)",
+                              "0 0 0 1px rgba(96,165,250,0.50), inset 0 0 0.75px 0 rgba(255,255,255,0.10), 0 0 10px 0 rgba(59,130,246,0.18)",
+                              "0 0 0 1px rgba(59,130,246,0.30), inset 0 0 0.75px 0 rgba(255,255,255,0.06), 0 0 0 0 rgba(59,130,246,0)",
+                            ]
+                          : isAnalyzing
+                            ? [
+                                "0 0 0 1px rgba(96,165,250,0.65), inset 0 0 0.75px 0 rgba(255,255,255,0.12), 0 0 12px 2px rgba(59,130,246,0.28)",
+                                "0 0 0 1px rgba(147,197,253,0.85), inset 0 0 0.75px 0 rgba(255,255,255,0.16), 0 0 20px 4px rgba(59,130,246,0.4)",
+                                "0 0 0 1px rgba(96,165,250,0.65), inset 0 0 0.75px 0 rgba(255,255,255,0.12), 0 0 12px 2px rgba(59,130,246,0.28)",
+                              ]
+                            : [
+                                "0 0 0 1px rgba(59,130,246,0.38), inset 0 0 0.75px 0 rgba(255,255,255,0.08)",
+                              ],
+                      }}
+                      transition={{
+                        duration: isAnalyzing ? 1.4 : 4,
+                        repeat: isAnalyzing || !hasVideo ? Infinity : 0,
+                        ease: "easeInOut",
+                      }}
+                      className={`group relative flex items-center gap-2 rounded-full px-3 py-1.5 backdrop-blur-sm transition-all duration-300 hover:bg-white/3 hover:text-neutral-300 ${
+                        !hasVideo
+                          ? "bg-[#0b0b12]/80 text-neutral-500"
+                          : isAnalyzing
+                            ? "bg-[#0e172a]/90 text-blue-200"
+                            : "bg-[#0b0b12]/80 text-neutral-300"
+                      }`}
                     >
-                      <Paperclip size={14} />
-                      <span className="text-[13px] font-medium whitespace-nowrap">
-                        Attach
-                      </span>
+                      <AnimatePresence mode="wait" initial={false}>
+                        <motion.span
+                          key={buttonLabel}
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -4 }}
+                          transition={{ duration: 0.18 }}
+                          className="flex items-center gap-2"
+                        >
+                          <ButtonIcon
+                            size={14}
+                            className={
+                              isAnalyzing
+                                ? "animate-pulse"
+                                : "opacity-80 transition-opacity group-hover:opacity-100"
+                            }
+                          />
+                          <span className="text- font-medium whitespace-nowrap">
+                            {buttonLabel}
+                          </span>
+                        </motion.span>
+                      </AnimatePresence>
                     </motion.button>
 
                     <AnimatePresence>
@@ -443,12 +520,6 @@ export function VideoChatExperience(): React.JSX.Element {
                       </AnimatePresence>
                     </div>
                   </motion.div>
-                </div>
-
-                <div className="flex items-center gap-2 pr-1">
-                  <span className="text-[12px] font-medium tracking-wider text-neutral-700 uppercase select-none">
-                    {isVideoReady ? "Footage ready" : "Waiting for video"}
-                  </span>
                 </div>
               </div>
             </div>
