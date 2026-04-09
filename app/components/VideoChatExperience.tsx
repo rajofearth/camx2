@@ -11,7 +11,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import GridLoader from "@/components/smoothui/components/grid-loader";
+import GridLoader from "@/components/grid-loader";
 import { SiteNav } from "./SiteNav";
 
 type ChatMessage = {
@@ -338,7 +338,17 @@ export function VideoChatExperience(): React.JSX.Element {
                   <div className="max-w-[85%] rounded-[14px] bg-[#121212] px-4 py-2 text-[15px] leading-[1.6] font-medium">
                     {message.isThinking ? (
                       <div className="flex items-center gap-2">
-                        <ShimmerLabel active>Thinking...</ShimmerLabel>
+                        <GridLoader
+                          pattern="frame"
+                          mode="stagger"
+                          color="white"
+                          size="sm"
+                          blur={1}
+                          gap={1}
+                        />
+                        <span className="text-sm font-medium text-neutral-300">
+                          Thinking...
+                        </span>
                       </div>
                     ) : (
                       <div className="text-base whitespace-pre-wrap text-neutral-400">
@@ -478,7 +488,7 @@ export function VideoChatExperience(): React.JSX.Element {
                             size={14}
                             className={
                               isAnalyzing
-                                ? "animate-pulse"
+                                ? "opacity-100"
                                 : "opacity-80 transition-opacity group-hover:opacity-100"
                             }
                           />
@@ -532,9 +542,9 @@ export function VideoChatExperience(): React.JSX.Element {
                           exit={{ y: -10, opacity: 0 }}
                           className="relative"
                         >
-                          <ShimmerLabel active={selectedVideo !== null}>
+                          <span className="text-[13px] font-medium whitespace-nowrap text-neutral-500">
                             {phaseLabel}
-                          </ShimmerLabel>
+                          </span>
                         </motion.div>
                       </AnimatePresence>
                     </div>
@@ -587,7 +597,7 @@ export function VideoChatExperience(): React.JSX.Element {
                     >
                       <GridLoader
                         pattern="plus-hollow"
-                        mode="pulse"
+                        mode="stagger"
                         color="white"
                         size="sm"
                         blur={0.8}
@@ -613,40 +623,5 @@ export function VideoChatExperience(): React.JSX.Element {
         onChange={handleVideoSelection}
       />
     </div>
-  );
-}
-
-function ShimmerLabel({
-  active = false,
-  children,
-}: {
-  active?: boolean;
-  children: React.ReactNode;
-}) {
-  if (!active) {
-    return (
-      <span className="text-[13px] font-medium whitespace-nowrap text-neutral-500">
-        {children}
-      </span>
-    );
-  }
-
-  return (
-    <motion.span
-      className="bg-clip-text text-[13px] font-semibold whitespace-nowrap text-transparent"
-      style={{
-        backgroundImage:
-          "linear-gradient(90deg, #737373 0%, #737373 40%, #ffffff 50%, #737373 60%, #737373 100%)",
-        backgroundSize: "200% 100%",
-      }}
-      animate={{ backgroundPositionX: ["100%", "-100%"] }}
-      transition={{
-        repeat: Number.POSITIVE_INFINITY,
-        duration: 2,
-        ease: "linear",
-      }}
-    >
-      {children}
-    </motion.span>
   );
 }
