@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export interface CameraDevice {
   readonly deviceId: string;
@@ -17,7 +17,7 @@ export function useCameraDevices(): UseCameraDevicesResult {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const enumerateDevices = async (): Promise<void> => {
+  const enumerateDevices = useCallback(async (): Promise<void> => {
     try {
       setIsLoading(true);
       setError(null);
@@ -58,7 +58,7 @@ export function useCameraDevices(): UseCameraDevicesResult {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     void enumerateDevices();
@@ -76,7 +76,7 @@ export function useCameraDevices(): UseCameraDevicesResult {
         handleDeviceChange,
       );
     };
-  }, []);
+  }, [enumerateDevices]);
 
   return {
     devices,

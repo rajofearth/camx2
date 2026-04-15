@@ -42,10 +42,24 @@ export function AlertPopup({
         zIndex: 10000,
         padding: "20px",
       }}
-      onClick={onClose}
     >
+      <button
+        type="button"
+        aria-label="Dismiss alert"
+        onClick={onClose}
+        style={{
+          position: "absolute",
+          inset: 0,
+          border: "none",
+          padding: 0,
+          backgroundColor: "transparent",
+          cursor: "default",
+        }}
+      />
       <div
         style={{
+          position: "relative",
+          zIndex: 1,
           backgroundColor: "#1f2937",
           borderRadius: "12px",
           padding: "24px",
@@ -54,7 +68,6 @@ export function AlertPopup({
           border: "2px solid #ef4444",
           boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.5)",
         }}
-        onClick={(e) => e.stopPropagation()}
       >
         <div
           style={{

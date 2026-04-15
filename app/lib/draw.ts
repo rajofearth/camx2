@@ -1,5 +1,5 @@
 import { cocoClassName } from "./coco";
-import type { Detection, DetectionMask, DetectionModel } from "./types";
+import type { Detection, DetectionModel } from "./types";
 
 export interface DrawDetectionsOptions {
   readonly frameW: number;

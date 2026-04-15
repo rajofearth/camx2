@@ -140,10 +140,8 @@ workerScope.addEventListener("message", async (ev: MessageEvent) => {
       type: string,
       q?: number,
     ): Promise<Blob> {
-      // @ts-ignore - convertToBlob exists on modern OffscreenCanvas
-      if (typeof (canvas as any).convertToBlob === "function") {
-        // @ts-ignore
-        return await (canvas as any).convertToBlob({ type, quality: q });
+      if (typeof canvas.convertToBlob === "function") {
+        return await canvas.convertToBlob({ type, quality: q });
       }
       // Last-resort: try to convert via ImageBitmap path (should rarely be needed in worker)
       const bmp = await createImageBitmap(canvas);
@@ -152,8 +150,7 @@ workerScope.addEventListener("message", async (ev: MessageEvent) => {
       if (!tctx) throw new Error("Failed to get tmp canvas context");
       tctx.drawImage(bmp, 0, 0);
       bmp.close?.();
-      // @ts-ignore
-      return await (tmp as any).convertToBlob({ type, quality: q });
+      return await tmp.convertToBlob({ type, quality: q });
     }
 
     let producedBlob: Blob;
@@ -208,11 +205,11 @@ workerScope.addEventListener("message", async (ev: MessageEvent) => {
       },
       [producedArrayBuffer],
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Send error back; do not throw
     try {
       workerScope.postMessage({
-        id: (msg as any)?.id,
+        id: msg.id,
         success: false,
         error: String(err?.message ?? err ?? "Unknown error in image worker"),
       });

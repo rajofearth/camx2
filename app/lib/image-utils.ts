@@ -78,7 +78,7 @@ export async function makeSquareAndCompress(
       img.onload = async () => {
         try {
           if (typeof createImageBitmap === "function") {
-            const bmp = await createImageBitmap(img as any);
+            const bmp = await createImageBitmap(img);
             URL.revokeObjectURL(url);
             resolve(bmp);
             return;
@@ -123,12 +123,12 @@ export async function makeSquareAndCompress(
     width: number,
     height: number,
   ): HTMLCanvasElement | OffscreenCanvas {
-    if (typeof OffscreenCanvas !== "undefined") {
+    const OffscreenCanvasCtor = globalThis.OffscreenCanvas;
+    if (typeof OffscreenCanvasCtor !== "undefined") {
       try {
-        // @ts-ignore - some TS targets don't include OffscreenCanvas constructor types
-        return new OffscreenCanvas(width, height);
+        return new OffscreenCanvasCtor(width, height);
       } catch {
-        // fallthrough to HTMLCanvasElement
+        // fall through to HTMLCanvasElement
       }
     }
     const c = document.createElement("canvas");
@@ -137,24 +137,23 @@ export async function makeSquareAndCompress(
     return c;
   }
 
+  function isOffscreenCanvas(
+    canvas: HTMLCanvasElement | OffscreenCanvas,
+  ): canvas is OffscreenCanvas {
+    return typeof OffscreenCanvas !== "undefined" && canvas instanceof OffscreenCanvas;
+  }
+
   // Utility: canvas -> blob promise wrapper
   function canvasToBlob(
     canvas: HTMLCanvasElement | OffscreenCanvas,
     type: string,
     quality?: number,
   ): Promise<Blob | null> {
-    // @ts-ignore
-    if (typeof (canvas as OffscreenCanvas).convertToBlob === "function") {
-      // @ts-ignore
-      return (canvas as OffscreenCanvas).convertToBlob({ type, quality });
+    if (isOffscreenCanvas(canvas)) {
+      return canvas.convertToBlob({ type, quality });
     }
     return new Promise((resolve) => {
-      // @ts-ignore
-      (canvas as HTMLCanvasElement).toBlob(
-        (b: Blob | null) => resolve(b),
-        type,
-        quality,
-      );
+      canvas.toBlob((blob) => resolve(blob), type, quality);
     });
   }
 
@@ -191,9 +190,7 @@ export async function makeSquareAndCompress(
 
     // Draw source region into intermediate canvas sized to finalSize
     const intermediateCanvas = makeCanvas(finalSize, finalSize);
-    const intermediateCtx = (intermediateCanvas as any).getContext
-      ? (intermediateCanvas as any).getContext("2d")
-      : null;
+    const intermediateCtx = intermediateCanvas.getContext("2d");
     if (!intermediateCtx) {
       throw new Error("Failed to get 2D context for intermediate canvas");
     }
@@ -236,10 +233,12 @@ export async function makeSquareAndCompress(
             console.debug(
               `[image-utils] makeSquareAndCompress: originalSize=${(file as Blob).size} processedType=image/webp processedSize=${webpCandidate.size}`,
             );
-          } catch (e) {
+        } catch {
             // ignore logging failures
           }
-        } catch {}
+        } catch {
+          // ignore logging failures
+        }
         return webpCandidate;
       }
 
@@ -304,7 +303,9 @@ export async function makeSquareAndCompress(
           console.debug(
             `[image-utils] makeSquareAndCompress: originalSize=${(file as Blob).size} processedType=image/jpeg processedSize=${jpegCandidate.size}`,
           );
-        } catch (e) {}
+        } catch {
+          // ignore logging failures
+        }
         return jpegCandidate;
       }
 
@@ -318,9 +319,7 @@ export async function makeSquareAndCompress(
 
     // Draw compressed visual to final canvas and export PNG
     const finalCanvas = makeCanvas(finalSize, finalSize);
-    const finalCtx = (finalCanvas as any).getContext
-      ? (finalCanvas as any).getContext("2d")
-      : null;
+    const finalCtx = finalCanvas.getContext("2d");
     if (!finalCtx) {
       throw new Error("Failed to get 2D context for final canvas");
     }
@@ -339,7 +338,7 @@ export async function makeSquareAndCompress(
       console.debug(
         `[image-utils] makeSquareAndCompress: originalSize=${(file as Blob).size} processedType=image/png processedSize=${pngBlob.size}`,
       );
-    } catch (e) {
+    } catch {
       // ignore logging failures
     }
 
