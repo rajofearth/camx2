@@ -4,28 +4,28 @@ overview: "Refactor the current monolithic `video-watch` pipeline into a modular
 todos:
   - id: audit-contracts
     content: Preserve the current route and client contracts while identifying all fields/types that can be extended safely.
-    status: in_progress
+    status: completed
   - id: install-vectra
     content: Add `vectra` with `pnpm` and introduce a small server-side embedding adapter since no reusable embedding code exists today.
-    status: pending
+    status: completed
   - id: create-analysis-domain
     content: Create the new `lib/video-analysis` domain types and services for persistent state, frame analysis, and repository persistence.
-    status: pending
+    status: completed
   - id: migrate-storage-root
     content: Replace `tmp/video-watch-cache` with a versioned `data/` storage layout and fresh-start invalidation behavior.
-    status: pending
+    status: completed
   - id: refactor-analysis-loop
     content: Refactor the main analysis handler to use ordered stateful frame processing, static-scene skip, and state trimming.
-    status: pending
+    status: completed
   - id: add-vectra-rag
     content: Create the Vectra-backed vector store and query-time chat context builder for semantic retrieval.
-    status: pending
+    status: completed
   - id: keep-routes-stable
     content: Retain the existing API surface by turning the current monolithic service into a thin façade over the new modules.
-    status: pending
+    status: completed
   - id: verify-performance
     content: Run an end-to-end validation pass on analysis continuity, timestamp accuracy, disk persistence, and chat latency.
-    status: pending
+    status: completed
 isProject: false
 ---
 
