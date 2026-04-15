@@ -1,8 +1,9 @@
 import { LMStudioClient } from "@lmstudio/sdk";
 import { parseWatchModelJson, WATCH_RESPONSE_SCHEMA } from "./schema";
 
-const LMSTUDIO_BASE_URL = "ws://127.0.0.1:1234";
-const TARGET_MODEL_KEY = "lfm-2.5-ucf-1.6b";
+const LMSTUDIO_BASE_URL =
+  process.env.LMSTUDIO_BASE_URL ?? "ws://127.0.0.1:1234";
+const TARGET_MODEL_KEY = process.env.LMSTUDIO_WATCH_MODEL ?? "lfm-2.5-ucf-1.6b";
 
 let cachedClient: LMStudioClient | null = null;
 let cachedResolvedModelKey: string | null = null;
@@ -60,7 +61,7 @@ async function resolveWatchModelKey(): Promise<string> {
     } catch (error) {
       if (isConnectionError(error)) {
         throw new Error(
-          "LM Studio local server is not running or is unreachable at ws://127.0.0.1:1234",
+          `LM Studio local server is not running or is unreachable at ${LMSTUDIO_BASE_URL}`,
         );
       }
       throw error;
