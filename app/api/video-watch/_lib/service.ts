@@ -17,9 +17,12 @@ const CACHE_ROOT = path.join(process.cwd(), "tmp", "video-watch-cache");
 const CONFIG_VERSION = "video-watch-v2-1fps";
 const MAX_CONCURRENCY = 8;
 const SAMPLE_FPS = 1;
-const FRAME_MODEL_KEY = "smolvlm2-500m-video-instruct@q8_0";
-const SUMMARY_MODEL_KEY = "qwen3.5-4b";
-const LMSTUDIO_BASE_URL = "ws://127.0.0.1:1234";
+const FRAME_MODEL_KEY =
+  process.env.VIDEO_WATCH_FRAME_MODEL_KEY ?? "lfm-ucf-400m";
+const SUMMARY_MODEL_KEY =
+  process.env.VIDEO_WATCH_SUMMARY_MODEL_KEY ?? "google/gemma-4-e4b";
+const LMSTUDIO_BASE_URL =
+  process.env.LMSTUDIO_BASE_URL ?? "ws://127.0.0.1:1234";
 const CHAT_CONTEXT_BUFFER_TOKENS = 128;
 const CHAT_MAX_RESPONSE_TOKENS = 300;
 const MIN_CHAT_PROMPT_TOKENS = 512;

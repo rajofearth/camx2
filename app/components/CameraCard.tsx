@@ -324,9 +324,10 @@ export function CameraCard({
       };
 
   const hasDevices = devices.length > 0;
+  const hasActiveSource = Boolean(selectedDeviceId) || useLocalVideo;
   const showEmptyState =
     !isLoadingDevices &&
-    (!hasDevices || devicesError || (!selectedDeviceId && !isCameraActive));
+    (!hasDevices || devicesError || (!hasActiveSource && !isCameraActive));
 
   // Small helper to produce debug JSON for watch API
   const getWatchDebugObject = () => {
@@ -560,7 +561,7 @@ export function CameraCard({
             <button
               type="button"
               onClick={toggleDetection}
-              disabled={!isCameraRunning || !selectedDeviceId}
+              disabled={!isCameraRunning || !hasActiveSource}
               style={{
                 padding: "8px 14px",
                 backgroundColor: isDetectionActive ? "#ef4444" : "#22c55e",
@@ -568,17 +569,17 @@ export function CameraCard({
                 border: "none",
                 borderRadius: "6px",
                 cursor:
-                  isCameraRunning && selectedDeviceId
+                  isCameraRunning && hasActiveSource
                     ? "pointer"
                     : "not-allowed",
                 fontSize: "11px",
                 fontWeight: "600",
                 transition: "all 0.2s",
-                opacity: isCameraRunning && selectedDeviceId ? 1 : 0.5,
+                opacity: isCameraRunning && hasActiveSource ? 1 : 0.5,
                 boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
               }}
               onMouseEnter={(e) => {
-                if (isCameraRunning && selectedDeviceId) {
+                if (isCameraRunning && hasActiveSource) {
                   e.currentTarget.style.transform = "translateY(-1px)";
                   e.currentTarget.style.boxShadow =
                     "0 4px 6px rgba(0, 0, 0, 0.3)";
@@ -623,7 +624,7 @@ export function CameraCard({
             <button
               type="button"
               onClick={toggleWatch}
-              disabled={!isCameraRunning || !selectedDeviceId}
+              disabled={!isCameraRunning || !hasActiveSource}
               style={{
                 padding: "8px 14px",
                 backgroundColor: isWatchActive ? "#ef4444" : "#22c55e",
@@ -631,17 +632,17 @@ export function CameraCard({
                 border: "none",
                 borderRadius: "6px",
                 cursor:
-                  isCameraRunning && selectedDeviceId
+                  isCameraRunning && hasActiveSource
                     ? "pointer"
                     : "not-allowed",
                 fontSize: "11px",
                 fontWeight: "600",
                 transition: "all 0.2s",
-                opacity: isCameraRunning && selectedDeviceId ? 1 : 0.5,
+                opacity: isCameraRunning && hasActiveSource ? 1 : 0.5,
                 boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
               }}
               onMouseEnter={(e) => {
-                if (isCameraRunning && selectedDeviceId) {
+                if (isCameraRunning && hasActiveSource) {
                   e.currentTarget.style.transform = "translateY(-1px)";
                   e.currentTarget.style.boxShadow =
                     "0 4px 6px rgba(0, 0, 0, 0.3)";
@@ -658,7 +659,7 @@ export function CameraCard({
             <button
               type="button"
               onClick={() => setShowWatchDebug((s) => !s)}
-              disabled={!isCameraRunning || !selectedDeviceId}
+              disabled={!isCameraRunning || !hasActiveSource}
               title="Toggle Watch API debug info"
               style={{
                 padding: "8px 10px",
@@ -667,13 +668,13 @@ export function CameraCard({
                 border: "none",
                 borderRadius: "6px",
                 cursor:
-                  isCameraRunning && selectedDeviceId
+                  isCameraRunning && hasActiveSource
                     ? "pointer"
                     : "not-allowed",
                 fontSize: "11px",
                 fontWeight: "600",
                 transition: "all 0.2s",
-                opacity: isCameraRunning && selectedDeviceId ? 1 : 0.5,
+                opacity: isCameraRunning && hasActiveSource ? 1 : 0.5,
                 boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
               }}
             >
@@ -682,22 +683,22 @@ export function CameraCard({
             <button
               type="button"
               onClick={toggleCamera}
-              disabled={!selectedDeviceId}
+              disabled={!hasActiveSource}
               style={{
                 padding: "8px 14px",
                 backgroundColor: isCameraActive ? "#ef4444" : "#22c55e",
                 color: "#fff",
                 border: "none",
                 borderRadius: "6px",
-                cursor: selectedDeviceId ? "pointer" : "not-allowed",
+                cursor: hasActiveSource ? "pointer" : "not-allowed",
                 fontSize: "11px",
                 fontWeight: "600",
                 transition: "all 0.2s",
-                opacity: selectedDeviceId ? 1 : 0.5,
+                opacity: hasActiveSource ? 1 : 0.5,
                 boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
               }}
               onMouseEnter={(e) => {
-                if (selectedDeviceId) {
+                if (hasActiveSource) {
                   e.currentTarget.style.transform = "translateY(-1px)";
                   e.currentTarget.style.boxShadow =
                     "0 4px 6px rgba(0, 0, 0, 0.3)";
