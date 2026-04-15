@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { CameraSourceRef } from "@/app/lib/camera-source";
 import { makeSquareAndCompress } from "@/app/lib/image-utils";
 import { fetchWatch } from "@/app/lib/watch-client";
-import type { WatchResult } from "@/app/lib/watch-types";
+import type { WatchOk, WatchResult } from "@/app/lib/watch-types";
 
 // Use the shared image utility to produce a square, compressed PNG.
 // The heavy lifting is delegated to `makeSquareAndCompress` which uses
@@ -13,6 +13,7 @@ export interface UseWebcamWatchResult {
   readonly latest: WatchResult | null;
   readonly lastLatency: number | null;
   readonly lastRequestId: string | null;
+  readonly lastMeta: WatchOk["meta"] | null;
   readonly isProcessing: boolean;
   readonly error: string | null;
 }
@@ -26,6 +27,7 @@ export function useWebcamWatch(
   const [latest, setLatest] = useState<WatchResult | null>(null);
   const [lastLatency, setLastLatency] = useState<number | null>(null);
   const [lastRequestId, setLastRequestId] = useState<string | null>(null);
+  const [lastMeta, setLastMeta] = useState<WatchOk["meta"] | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -269,10 +271,12 @@ export function useWebcamWatch(
         setLatest(null);
         setLastLatency(null);
         setLastRequestId(null);
+        setLastMeta(null);
       } else {
         setLatest(result.data.result);
         setLastLatency(result.data.meta?.latencyMs ?? null);
         setLastRequestId(result.data.requestId);
+        setLastMeta(result.data.meta ?? null);
         setError(null);
       }
     } catch (err) {
@@ -284,6 +288,7 @@ export function useWebcamWatch(
       setLatest(null);
       setLastLatency(null);
       setLastRequestId(null);
+      setLastMeta(null);
     } finally {
       setIsProcessing(false);
       abortControllerRef.current = null;
@@ -311,6 +316,7 @@ export function useWebcamWatch(
       setError(null);
       setLastLatency(null);
       setLastRequestId(null);
+      setLastMeta(null);
       setIsProcessing(false);
       return;
     }
@@ -333,6 +339,7 @@ export function useWebcamWatch(
     latest,
     lastLatency,
     lastRequestId,
+    lastMeta,
     isProcessing,
     error,
   };

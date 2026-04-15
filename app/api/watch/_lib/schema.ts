@@ -1,5 +1,10 @@
 import type { WatchResult } from "@/app/lib/watch-types";
 
+export interface WatchHarmVerificationResult {
+  readonly matchesPrompt: boolean;
+  readonly reason: string;
+}
+
 /**
  * Schema describing the expected model response.
  * Strictly enforces that `description` is provided only if `isHarm` is true.
@@ -53,6 +58,26 @@ export const WATCH_RESPONSE_SCHEMA = {
   additionalProperties: false,
 } as const;
 
+export const WATCH_HARM_VERIFICATION_SCHEMA = {
+  $schema: "http://json-schema.org/draft-07/schema#",
+  type: "object",
+  properties: {
+    matchesPrompt: {
+      type: "boolean",
+      description:
+        "True only if the harm description clearly matches the original watch harm prompt and visible evidence.",
+    },
+    reason: {
+      type: "string",
+      description:
+        "Short explanation of why the description does or does not fit the watch harm prompt.",
+      minLength: 1,
+    },
+  },
+  required: ["matchesPrompt", "reason"],
+  additionalProperties: false,
+} as const;
+
 /**
  * Parse the raw JSON returned from the model.
  * * Validates the strict rules laid out in the JSON schema above,
@@ -102,4 +127,33 @@ export function parseWatchModelJson(json: unknown): WatchResult {
     isHarm,
     description,
   } as WatchResult; // Ensuring it maps to your updated WatchResult type
+}
+
+export function parseWatchHarmVerificationJson(
+  json: unknown,
+): WatchHarmVerificationResult {
+  if (typeof json !== "object" || json === null) {
+    throw new Error("Invalid verification JSON: not an object");
+  }
+
+  const obj = json as Record<string, unknown>;
+  const rawMatchesPrompt = obj.matchesPrompt;
+  const rawReason = obj.reason;
+
+  if (typeof rawMatchesPrompt !== "boolean") {
+    throw new Error(
+      "Invalid verification JSON: 'matchesPrompt' must be a boolean",
+    );
+  }
+
+  if (typeof rawReason !== "string" || rawReason.trim().length === 0) {
+    throw new Error(
+      "Invalid verification JSON: 'reason' must be a non-empty string",
+    );
+  }
+
+  return {
+    matchesPrompt: rawMatchesPrompt,
+    reason: rawReason.trim(),
+  };
 }

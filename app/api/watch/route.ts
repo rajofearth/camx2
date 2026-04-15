@@ -142,6 +142,11 @@ export async function POST(req: NextRequest): Promise<Response> {
     let rawText = "";
     let modelKey = "";
     let agentMs = 0;
+    let verificationMs = 0;
+    let verificationRawText = "";
+    let verificationModelKey = "";
+    let verificationReason = "";
+    let verificationApplied = false;
 
     try {
       const agentStart = performance.now();
@@ -154,6 +159,11 @@ export async function POST(req: NextRequest): Promise<Response> {
       result = res.result;
       rawText = res.rawText;
       modelKey = res.modelKey;
+      verificationApplied = res.verification !== null;
+      verificationMs = res.verification?.latencyMs ?? 0;
+      verificationRawText = res.verification?.rawText ?? "";
+      verificationModelKey = res.verification?.modelKey ?? "";
+      verificationReason = res.verification?.reason ?? "";
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
       // If the agent failed to load the processed image, retry once with the original capture.
@@ -175,6 +185,11 @@ export async function POST(req: NextRequest): Promise<Response> {
         result = res2.result;
         rawText = res2.rawText;
         modelKey = res2.modelKey;
+        verificationApplied = res2.verification !== null;
+        verificationMs = res2.verification?.latencyMs ?? 0;
+        verificationRawText = res2.verification?.rawText ?? "";
+        verificationModelKey = res2.verification?.modelKey ?? "";
+        verificationReason = res2.verification?.reason ?? "";
       } else {
         // Not a recoverable load error or we already used the original; rethrow.
         throw err;
@@ -215,6 +230,9 @@ export async function POST(req: NextRequest): Promise<Response> {
         modelKey,
         preprocessMs,
         agentMs,
+        verificationMs,
+        verificationApplied,
+        verificationModelKey,
         processedSize,
         originalSize,
         totalMs: performance.now() - startTime,
@@ -228,7 +246,22 @@ export async function POST(req: NextRequest): Promise<Response> {
       const responsePath = path.join(DEBUG_DIR, `${requestId}-response.json`);
       await fs.writeFile(
         responsePath,
-        JSON.stringify({ meta, result, rawText }, null, 2),
+        JSON.stringify(
+          {
+            meta,
+            result,
+            rawText,
+            verification: verificationApplied
+              ? {
+                  rawText: verificationRawText,
+                  modelKey: verificationModelKey,
+                  reason: verificationReason,
+                }
+              : null,
+          },
+          null,
+          2,
+        ),
       );
     } catch (e) {
       console.error(`[WATCH] [${requestId}] Failed to write debug files:`, e);
@@ -241,8 +274,20 @@ export async function POST(req: NextRequest): Promise<Response> {
       latencyMs,
       preprocessMs,
       agentMs,
+      verificationMs,
       processedSize,
       originalSize,
+      verification: verificationApplied
+        ? {
+            applied: true,
+            matchesPrompt: result.isHarm === true,
+            reason: verificationReason,
+            modelKey: verificationModelKey,
+            latencyMs: verificationMs,
+            rawText: verificationRawText,
+            overturned: result.isHarm !== true,
+          }
+        : null,
     } as unknown as Parameters<typeof createSuccessResponse>[2]);
   } catch (error) {
     const latencyMs = performance.now() - startTime;

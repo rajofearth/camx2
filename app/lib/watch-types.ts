@@ -3,6 +3,16 @@ export interface WatchResult {
   readonly description: string | null;
 }
 
+export interface WatchVerificationMeta {
+  readonly applied: boolean;
+  readonly matchesPrompt?: boolean | null;
+  readonly reason?: string | null;
+  readonly modelKey?: string | null;
+  readonly latencyMs: number;
+  readonly rawText?: string | null;
+  readonly overturned: boolean;
+}
+
 export type WatchErrorCode =
   | "BAD_REQUEST"
   | "UNAUTHORIZED"
@@ -15,6 +25,12 @@ export interface WatchOk {
   readonly result: WatchResult;
   readonly meta?: {
     readonly latencyMs?: number;
+    readonly preprocessMs?: number;
+    readonly agentMs?: number;
+    readonly verificationMs?: number;
+    readonly processedSize?: number;
+    readonly originalSize?: number;
+    readonly verification?: WatchVerificationMeta | null;
   };
 }
 

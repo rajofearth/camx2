@@ -1,5 +1,13 @@
 import { LMStudioClient } from "@lmstudio/sdk";
-import { parseWatchModelJson, WATCH_RESPONSE_SCHEMA } from "./schema";
+import {
+  parseWatchHarmVerificationJson,
+  parseWatchModelJson,
+  WATCH_HARM_VERIFICATION_SCHEMA,
+  WATCH_RESPONSE_SCHEMA,
+} from "./schema";
+
+const WATCH_ANALYSIS_PROMPT =
+  "Analyze this frame with absolute strictness and extreme caution. Detect ANY potential harm: self-harm, weapons, accidents, threats, blood, violence, or life-endangering elements (even if not active). CRITICAL RULE: If you detect ANY lethal items, weapons, or potentially fatal scenarios, you MUST mark it as harm immediately, no matter if the context is unclear, ambiguous, or seemingly benign. Context does not excuse lethal objects. Be paranoid; never optimistic. If there is any doubt whatsoever, flag as harmful. (Exception: Clear, obvious toy guns are safe).";
 
 const LMSTUDIO_BASE_URL =
   process.env.LMSTUDIO_BASE_URL ?? "ws://127.0.0.1:1234";
@@ -145,6 +153,21 @@ export interface WatchLmStudioOutput {
   readonly result: ReturnType<typeof parseWatchModelJson>;
   readonly rawText: string;
   readonly modelKey: string;
+  readonly verification: WatchVerificationOutput | null;
+}
+
+export interface WatchVerificationInput {
+  readonly base64Image: string;
+  readonly mimeType: string;
+  readonly description: string;
+}
+
+export interface WatchVerificationOutput {
+  readonly matchesPrompt: boolean;
+  readonly reason: string;
+  readonly rawText: string;
+  readonly modelKey: string;
+  readonly latencyMs: number;
 }
 
 export async function runWatchLmStudio(
@@ -163,8 +186,7 @@ export async function runWatchLmStudio(
     [
       {
         role: "system",
-        content:
-          "Analyze this frame with absolute strictness and extreme caution. Detect ANY potential harm: self-harm, weapons, accidents, threats, blood, violence, or life-endangering elements (even if not active). CRITICAL RULE: If you detect ANY lethal items, weapons, or potentially fatal scenarios, you MUST mark it as harm immediately, no matter if the context is unclear, ambiguous, or seemingly benign. Context does not excuse lethal objects. Be paranoid; never optimistic. If there is any doubt whatsoever, flag as harmful. (Exception: Clear, obvious toy guns are safe).",
+        content: WATCH_ANALYSIS_PROMPT,
       },
       {
         role: "user",
@@ -193,5 +215,113 @@ export async function runWatchLmStudio(
   }
 
   const result = parseWatchModelJson(parsed);
-  return { result, rawText, modelKey };
+
+  if (result.isHarm === true && result.description) {
+    const verification = await verifyWatchHarmDescription({
+      base64Image: input.base64Image,
+      mimeType: input.mimeType,
+      description: result.description,
+    });
+
+    if (!verification.matchesPrompt) {
+      return {
+        result: {
+          isHarm: false,
+          description: null,
+        },
+        rawText: JSON.stringify(
+          {
+            analysis: parsed,
+            verification: {
+              matchesPrompt: verification.matchesPrompt,
+              reason: verification.reason,
+              rawText: verification.rawText,
+            },
+          },
+          null,
+          2,
+        ),
+        modelKey,
+        verification,
+      };
+    }
+
+    return {
+      result,
+      rawText: JSON.stringify(
+        {
+          analysis: parsed,
+          verification: {
+            matchesPrompt: verification.matchesPrompt,
+            reason: verification.reason,
+            rawText: verification.rawText,
+          },
+        },
+        null,
+        2,
+      ),
+      modelKey,
+      verification,
+    };
+  }
+
+  return { result, rawText, modelKey, verification: null };
+}
+
+export async function verifyWatchHarmDescription(
+  input: WatchVerificationInput,
+): Promise<WatchVerificationOutput> {
+  const verificationStart = performance.now();
+  const client = getClient();
+  const modelKey = await resolveWatchModelKey();
+  const model = await client.llm.model(modelKey);
+
+  const image = await client.files.prepareImageBase64(
+    mimeTypeToFileName(input.mimeType),
+    input.base64Image,
+  );
+
+  const response = await model.respond(
+    [
+      {
+        role: "system",
+        content: `You are validating a previous CCTV harm analysis result against the original watch prompt. Original watch prompt: "${WATCH_ANALYSIS_PROMPT}" Only decide whether the provided harm description actually fits what is visibly present in this image and matches the kinds of harms required by that prompt. Be strict and factual. Return matchesPrompt=true only when the description clearly matches visible harmful content in the image under that prompt. If the description is exaggerated, unsupported, unrelated, speculative, or does not fit the prompt, return matchesPrompt=false.`,
+      },
+      {
+        role: "user",
+        content: `Check whether this harm description actually fits the image and the watch prompt.\n\nDescription: ${input.description}`,
+        images: [image],
+      },
+    ],
+    {
+      maxTokens: 200,
+      temperature: 0,
+      structured: {
+        type: "json",
+        jsonSchema: WATCH_HARM_VERIFICATION_SCHEMA,
+      },
+    },
+  );
+
+  const rawText = response?.content?.trim();
+  if (!rawText) {
+    throw new Error("LM Studio returned empty verification response");
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(rawText);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown JSON error";
+    throw new Error(`LM Studio returned invalid verification JSON: ${message}`);
+  }
+
+  const result = parseWatchHarmVerificationJson(parsed);
+  return {
+    matchesPrompt: result.matchesPrompt,
+    reason: result.reason,
+    rawText,
+    modelKey,
+    latencyMs: performance.now() - verificationStart,
+  };
 }
