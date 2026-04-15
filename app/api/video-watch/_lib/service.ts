@@ -5,6 +5,7 @@ import path from "node:path";
 import { LMStudioClient } from "@lmstudio/sdk";
 import ffmpegStatic from "ffmpeg-static";
 import ffprobeStatic from "ffprobe-static";
+import { makeSquareAndCompressServer } from "@/app/lib/image-utils-server";
 import type {
   VideoWatchChatMessage,
   VideoWatchFrameResult,
@@ -14,9 +15,11 @@ import type {
 } from "@/app/lib/video-watch-types";
 
 const CACHE_ROOT = path.join(process.cwd(), "tmp", "video-watch-cache");
-const CONFIG_VERSION = "video-watch-v2-1fps";
+const CONFIG_VERSION = "video-watch-v4-square-compressed-png-1fps";
 const MAX_CONCURRENCY = 8;
 const SAMPLE_FPS = 1;
+const FRAME_TARGET_SIZE = 160;
+const FRAME_COMPRESSION_QUALITY = 0.45;
 const FRAME_MODEL_KEY =
   process.env.VIDEO_WATCH_FRAME_MODEL_KEY ?? "lfm-ucf-400m";
 const SUMMARY_MODEL_KEY =
@@ -617,24 +620,38 @@ async function extractFrames(
     path.join(targetFramesDir, "frame-%06d.jpg"),
   ]);
 
-  const frameFileNames = (await fs.readdir(targetFramesDir))
+  const extractedFrameFileNames = (await fs.readdir(targetFramesDir))
     .filter((fileName) => fileName.toLowerCase().endsWith(".jpg"))
     .sort();
 
   const frameInfos = await Promise.all(
-    frameFileNames.map(async (fileName, index) => {
-      const imagePath = path.join(targetFramesDir, fileName);
-      const buffer = await fs.readFile(imagePath);
+    extractedFrameFileNames.map(async (fileName, index) => {
+      const sourceImagePath = path.join(targetFramesDir, fileName);
+      const outputImagePath = path.join(
+        targetFramesDir,
+        `frame-${String(index + 1).padStart(6, "0")}.png`,
+      );
+      const sourceBuffer = await fs.readFile(sourceImagePath);
+      const processedBuffer = await makeSquareAndCompressServer(sourceBuffer, {
+        quality: FRAME_COMPRESSION_QUALITY,
+        mode: "crop",
+        targetSize: FRAME_TARGET_SIZE,
+        output: "png",
+      });
+
+      await fs.writeFile(outputImagePath, processedBuffer);
+      await fs.rm(sourceImagePath, { force: true });
+
       const timestampMs = Math.round((index * 1000) / SAMPLE_FPS);
 
       return {
         frameIndex: index,
         timestampMs,
         timestampLabel: toTimestampLabel(timestampMs),
-        imagePath,
-        checksum: await hashBuffer(buffer),
-        width: probe.width,
-        height: probe.height,
+        imagePath: outputImagePath,
+        checksum: await hashBuffer(processedBuffer),
+        width: FRAME_TARGET_SIZE,
+        height: FRAME_TARGET_SIZE,
       } satisfies PersistedFrameInfo;
     }),
   );
@@ -661,7 +678,7 @@ async function analyzeFrame(
   const model = await client.llm.model(resolvedFrameModelKey);
   const imageBuffer = await fs.readFile(frame.imagePath);
   const image = await client.files.prepareImageBase64(
-    mimeTypeToFileName("image/jpeg"),
+    mimeTypeToFileName("image/png"),
     imageBuffer.toString("base64"),
   );
 
