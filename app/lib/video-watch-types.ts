@@ -14,16 +14,44 @@ export interface VideoWatchCacheInfo {
   readonly source: "memory" | "disk" | "upload";
 }
 
+/** One model call: exact prompts and verbatim response for debugging. */
+export interface VideoWatchFrameModelTurn {
+  readonly modelKey: string;
+  readonly systemPrompt: string;
+  readonly userPrompt: string;
+  /** Exact body returned by the model (only outer whitespace trimmed). */
+  readonly responseRaw: string;
+}
+
+export interface VideoWatchFrameLlmTrace {
+  readonly narrative: VideoWatchFrameModelTurn;
+  readonly tracking: VideoWatchFrameModelTurn;
+}
+
 export interface VideoWatchFrameResult {
   readonly frameIndex: number;
   readonly timestampMs: number;
   readonly timestampLabel: string;
-  readonly description: string;
+  /** Parsed from `llm.narrative.responseRaw` when present; otherwise legacy normalized text. */
+  readonly frameAnalysis: string;
+  /** Filled by the server from the previous frame, not from this frame's model calls. */
+  readonly priorFrameAnalysis: string;
+  readonly priorVisibleObjects: readonly string[];
+  readonly objects: Readonly<Record<string, string>>;
+  /**
+   * Compact dump of model response strings (no double-encoded JSON inside strings).
+   * Prefer `llm` when present for full prompt/response debugging.
+   */
   readonly rawText: string;
+  /** Primary narrative model key (same as `llm.narrative.modelKey` when `llm` is set). */
   readonly modelKey: string;
   readonly latencyMs: number;
   readonly fromCache: boolean;
   readonly error?: string | null;
+  /** When set, exact prompts and verbatim responses for both frame models. */
+  readonly llm?: VideoWatchFrameLlmTrace;
+  /** Present when prior fields were computed by the pipeline from the prior frame. */
+  readonly priorFieldsOrigin?: "server";
 }
 
 export interface VideoWatchSummary {
