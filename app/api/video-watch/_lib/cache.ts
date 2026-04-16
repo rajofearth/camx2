@@ -46,67 +46,47 @@ export async function hashBuffer(input: Buffer | string): Promise<string> {
 }
 
 export async function hashVideoBuffer(videoBuffer: Buffer): Promise<string> {
-  return createHash("sha256").update(videoBuffer).digest("hex");
+  return hashBuffer(videoBuffer);
 }
 
 export async function computeProcessingVersionHash(): Promise<string> {
-  return createHash("sha256").update(CONFIG_VERSION).digest("hex");
+  return hashBuffer(CONFIG_VERSION);
 }
 
 export async function removeCacheDir(fingerprint: string): Promise<void> {
-  await fs.rm(path.join(CACHE_ROOT, fingerprint), {
-    recursive: true,
-    force: true,
-  });
+  await fs.rm(path.join(CACHE_ROOT, fingerprint), { recursive: true, force: true });
 }
 
-export async function findFingerprintByJobId(
-  jobId: string,
-): Promise<string | null> {
+export async function findFingerprintByJobId(jobId: string): Promise<string | null> {
   const cacheDirs = await fs.readdir(CACHE_ROOT).catch(() => []);
-
   for (const dirName of cacheDirs) {
-    const state = await readJson<PersistedState>(
-      path.join(CACHE_ROOT, dirName, "state.json"),
-    );
-    if (state?.jobId === jobId) {
-      return state.fingerprint;
-    }
+    const state = await readJson<PersistedState>(path.join(CACHE_ROOT, dirName, "state.json"));
+    if (state?.jobId === jobId) return state.fingerprint;
   }
-
   return null;
 }
 
-export async function writeFrameResult(
-  cacheDir: string,
-  result: VideoWatchFrameResult,
-): Promise<void> {
+// Writes a single frame result to the cache
+export async function writeFrameResult(cacheDir: string, result: VideoWatchFrameResult): Promise<void> {
   const dir = resultsDir(cacheDir);
   await fs.mkdir(dir, { recursive: true });
-  await writeJson(
-    path.join(dir, `frame-${String(result.frameIndex).padStart(6, "0")}.json`),
-    result,
-  );
+  await writeJson(path.join(dir, `frame-${String(result.frameIndex).padStart(6, "0")}.json`), result);
 }
 
-export async function readAllFrameResults(
-  cacheDir: string,
-): Promise<VideoWatchFrameResult[]> {
+// Reads all frame results from cache, returning them ordered and normalized
+export async function readAllFrameResults(cacheDir: string): Promise<VideoWatchFrameResult[]> {
   const dir = resultsDir(cacheDir);
   const entries = await fs.readdir(dir).catch(() => []);
+  // Only read and parse relevant JSON files
   const results = await Promise.all(
     entries
-      .filter((fileName) => fileName.endsWith(".json"))
+      .filter(f => f.endsWith(".json"))
       .sort()
-      .map(async (fileName) =>
-        readJson<VideoWatchFrameResult>(path.join(dir, fileName)),
-      ),
+      .map(f => readJson<VideoWatchFrameResult>(path.join(dir, f)))
   );
-
   const sorted = results
-    .filter((value): value is VideoWatchFrameResult => value !== null)
-    .map((value) => normalizeFrameResult(value))
+    .filter((v): v is VideoWatchFrameResult => v !== null)
+    .map(normalizeFrameResult)
     .sort((a, b) => a.frameIndex - b.frameIndex);
-
   return repairOrderedResultsPriorFields(sorted);
 }

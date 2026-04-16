@@ -12,14 +12,10 @@ export function createSuccessResponse(
   frame: DetectOk["frame"],
   meta?: DetectOk["meta"],
 ): Response {
-  const body: DetectOk = {
-    ok: true,
-    requestId,
-    detections,
-    frame,
-    meta,
-  };
-  return Response.json(body, { status: 200 });
+  return Response.json(
+    { ok: true, requestId, detections, frame, meta },
+    { status: 200 },
+  );
 }
 
 export function createErrorResponse(
@@ -28,13 +24,8 @@ export function createErrorResponse(
   message: string,
   details?: DetectErr["details"],
 ): Response {
-  const status = toHttpStatus(errorCode);
-  const body: DetectErr = {
-    ok: false,
-    requestId,
-    errorCode,
-    message,
-    details,
-  };
-  return Response.json(body, { status });
+  return Response.json(
+    { ok: false, requestId, errorCode, message, details },
+    { status: toHttpStatus(errorCode) },
+  );
 }

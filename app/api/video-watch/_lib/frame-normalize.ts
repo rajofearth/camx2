@@ -28,25 +28,14 @@ export function normalizeFrameResult(
   if (result.llm) {
     let frameAnalysis = result.frameAnalysis;
     try {
-      frameAnalysis = parseNarrativeAnalysisFromResponseRaw(
-        result.llm.narrative.responseRaw,
-      );
-    } catch {
-      // keep stored frameAnalysis if parse fails (corrupt file)
-    }
-
+      frameAnalysis = parseNarrativeAnalysisFromResponseRaw(result.llm.narrative.responseRaw);
+    } catch {}
     let objects: Record<string, string>;
     try {
-      objects = parseTrackingObjectsFromResponseRaw(
-        result.llm.tracking.responseRaw,
-      );
+      objects = parseTrackingObjectsFromResponseRaw(result.llm.tracking.responseRaw);
     } catch {
-      objects = sanitizeStringRecord(
-        result.objects ?? legacy.objects,
-        MAX_OBJECT_ID_ENTRIES,
-      );
+      objects = sanitizeStringRecord(result.objects ?? legacy.objects, MAX_OBJECT_ID_ENTRIES);
     }
-
     return {
       ...result,
       frameAnalysis,
@@ -61,11 +50,8 @@ export function normalizeFrameResult(
     };
   }
 
-  const objects = sanitizeStringRecord(
-    result.objects ?? legacy.objects,
-    MAX_OBJECT_ID_ENTRIES,
-  );
-
+  // Back-compat branch for legacy results without llm metadata
+  const objects = sanitizeStringRecord(result.objects ?? legacy.objects, MAX_OBJECT_ID_ENTRIES);
   const payload = normalizeNarrativePayload({
     analysis: result.frameAnalysis,
     frameAnalysis: result.frameAnalysis,
@@ -75,14 +61,13 @@ export function normalizeFrameResult(
   });
 
   let frameAnalysis = payload;
+  // If not a substantive analysis, but contains objects, build string from objects
   if (
     !isSceneUnchangedAnalysis(frameAnalysis) &&
     isPlaceholderFrameAnalysis(frameAnalysis)
   ) {
     const fromObjects = frameAnalysisFromTrackedObjects(objects);
-    if (fromObjects) {
-      frameAnalysis = trimNarrativeText(fromObjects);
-    }
+    if (fromObjects) frameAnalysis = trimNarrativeText(fromObjects);
   }
 
   return {
@@ -110,16 +95,9 @@ export function repairOrderedResultsPriorFields(
         priorFieldsOrigin: "server",
       };
     }
-
     const prev = ordered[index - 1];
-    if (!prev) {
-      return frame;
-    }
-
-    const fixed = applyAuthoritativePriorFields(
-      prev,
-      frame.priorVisibleObjects,
-    );
+    if (!prev) return frame;
+    const fixed = applyAuthoritativePriorFields(prev, frame.priorVisibleObjects);
     return {
       ...frame,
       priorFrameAnalysis: fixed.priorFrameAnalysis,

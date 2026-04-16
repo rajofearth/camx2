@@ -9,56 +9,46 @@ import { trimNarrativeText } from "./text-utils";
 export const PRIOR_FRAME_SENTINEL = "No relevant prior frame context.";
 
 export function sanitizePriorFrameAnalysis(value: unknown): string {
-  const base =
-    typeof value === "string" && value.trim() ? value : PRIOR_FRAME_SENTINEL;
-  const raw = trimNarrativeText(base);
-  const lower = raw.trim().toLowerCase();
-  if (lower === "none" || lower === "") {
+  const str = typeof value === "string" ? value.trim() : "";
+  if (!str || str.toLowerCase() === "none") {
     return PRIOR_FRAME_SENTINEL;
   }
-  return raw;
+  const normalized = trimNarrativeText(str);
+  return normalized ? normalized : PRIOR_FRAME_SENTINEL;
 }
 
 export function authoritativePriorFrameAnalysis(previousFrame: {
   readonly frameAnalysis: string;
 }): string {
   const text = trimNarrativeText(previousFrame.frameAnalysis);
-  return text.length > 0 ? text : PRIOR_FRAME_SENTINEL;
+  return text ? text : PRIOR_FRAME_SENTINEL;
 }
 
 export function authoritativePriorVisibleObjects(previousFrame: {
   readonly objects: Readonly<Record<string, string>>;
 }): string[] {
-  const fromObjects = Object.entries(previousFrame.objects).map(
-    ([id, value]) => `${id}: ${trimNarrativeText(value)}`,
-  );
-  return sanitizeStringList(fromObjects, MAX_VISIBLE_OBJECTS);
+  const entries = Object.entries(previousFrame.objects);
+  if (entries.length === 0) return [];
+  // Compose, trim, deduplicate, clip to max
+  const unique = new Set<string>();
+  for (let i = 0; i < entries.length && unique.size < MAX_VISIBLE_OBJECTS; ++i) {
+    const [id, value] = entries[i];
+    const attr = trimNarrativeText(value);
+    if (attr) unique.add(`${id}: ${attr}`);
+  }
+  return Array.from(unique);
 }
 
 export function sanitizeStringList(value: unknown, maxItems: number): string[] {
-  if (!Array.isArray(value)) {
-    return [];
+  if (!Array.isArray(value)) return [];
+  const unique = new Set<string>();
+  for (let i = 0; i < value.length && unique.size < maxItems; ++i) {
+    const entry = value[i];
+    if (typeof entry !== "string") continue;
+    const trimmed = trimNarrativeText(entry);
+    if (trimmed) unique.add(trimmed);
   }
-
-  const uniqueValues = new Set<string>();
-
-  for (const entry of value) {
-    if (typeof entry !== "string") {
-      continue;
-    }
-
-    const normalized = trimNarrativeText(entry);
-    if (!normalized) {
-      continue;
-    }
-
-    uniqueValues.add(normalized);
-    if (uniqueValues.size >= maxItems) {
-      break;
-    }
-  }
-
-  return [...uniqueValues];
+  return Array.from(unique);
 }
 
 export function applyAuthoritativePriorFields(
@@ -75,14 +65,12 @@ export function applyAuthoritativePriorFields(
     };
   }
 
-  const fromPreviousObjects = authoritativePriorVisibleObjects(previousFrame);
-
+  const prevObjects = authoritativePriorVisibleObjects(previousFrame);
   return {
     priorFrameAnalysis: authoritativePriorFrameAnalysis(previousFrame),
-    priorVisibleObjects:
-      fromPreviousObjects.length > 0
-        ? fromPreviousObjects
-        : [...modelPriorVisibleObjects],
+    priorVisibleObjects: prevObjects.length > 0
+      ? prevObjects
+      : modelPriorVisibleObjects.slice(),
   };
 }
 
@@ -90,97 +78,57 @@ export function sanitizeStringRecord(
   value: unknown,
   maxEntries: number,
 ): Record<string, string> {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return {};
-  }
-
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const output: Record<string, string> = {};
+  let count = 0;
   for (const [rawKey, rawValue] of Object.entries(value)) {
-    const key = rawKey.replace(/\s+/g, " ").trim().toLowerCase();
-    if (!key) {
-      continue;
-    }
-
-    if (Object.keys(output).length >= maxEntries) {
-      break;
-    }
-
-    if (typeof rawValue !== "string") {
-      continue;
-    }
-
+    if (count >= maxEntries) break;
+    let key = typeof rawKey === "string" ? rawKey.replace(/\s+/g, " ").trim().toLowerCase() : "";
+    if (!key) continue;
+    if (typeof rawValue !== "string") continue;
     const normalizedValue = trimNarrativeText(rawValue);
-    if (!normalizedValue) {
-      continue;
-    }
-
+    if (!normalizedValue) continue;
     output[key] = normalizedValue;
+    count++;
   }
-
   return output;
 }
 
 export function frameAnalysisFromTrackedObjects(
   objects: Readonly<Record<string, string>>,
 ): string | null {
-  const entries = Object.entries(objects).filter(([, value]) => value.trim());
-  if (!entries.length) {
-    return null;
+  const result: string[] = [];
+  for (const [id, value] of Object.entries(objects)) {
+    if (value && value.trim()) {
+      result.push(`${id}: ${trimNarrativeText(value)}`);
+    }
   }
-
-  return entries
-    .map(([id, value]) => `${id}: ${trimNarrativeText(value)}`)
-    .join("; ");
+  if (!result.length) return null;
+  return result.join("; ");
 }
 
 export function isPlaceholderFrameAnalysis(text: string): boolean {
-  if (isSceneUnchangedAnalysis(text)) {
-    return false;
-  }
+  if (isSceneUnchangedAnalysis(text)) return false;
   const t = text.trim().toLowerCase();
-  if (!t) {
-    return true;
-  }
-  if (t === "none") {
-    return true;
-  }
-  if (t.includes("no relevant prior frame context")) {
-    return true;
-  }
-  return false;
+  return !t || t === "none" || t.includes("no relevant prior frame context");
 }
 
 /** Legacy / model output normalization into a single narrative string. */
 export function normalizeNarrativePayload(value: unknown): string {
-  const parsed =
-    typeof value === "object" && value !== null
-      ? (value as Record<string, unknown>)
-      : {};
+  const parsed = (typeof value === "object" && value !== null)
+    ? (value as Record<string, unknown>)
+    : {};
   const raw =
-    [
-      parsed.analysis,
-      parsed.frameAnalysis,
-      parsed.summaryText,
-      parsed.description,
-    ].find((x): x is string => typeof x === "string" && x.trim().length > 0) ??
-    "";
+    [parsed.analysis, parsed.frameAnalysis, parsed.summaryText, parsed.description]
+      .find((x) => typeof x === "string" && x.trim().length > 0) as string | undefined || "";
 
-  if (isSceneUnchangedAnalysis(raw)) {
-    return SCENE_UNCHANGED_SENTINEL;
-  }
+  if (isSceneUnchangedAnalysis(raw)) return SCENE_UNCHANGED_SENTINEL;
 
-  let frameAnalysis = trimNarrativeText(raw);
-  if (!frameAnalysis) {
-    frameAnalysis = "No meaningful visual change detected.";
-  }
-
+  let frameAnalysis = trimNarrativeText(raw) || "No meaningful visual change detected.";
   const objects = sanitizeStringRecord(parsed.objects, MAX_OBJECT_ID_ENTRIES);
   if (isPlaceholderFrameAnalysis(frameAnalysis)) {
     const fromObjects = frameAnalysisFromTrackedObjects(objects);
-    if (fromObjects) {
-      frameAnalysis = trimNarrativeText(fromObjects);
-    }
+    if (fromObjects) frameAnalysis = trimNarrativeText(fromObjects);
   }
-
   return trimNarrativeText(frameAnalysis);
 }

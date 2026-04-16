@@ -14,12 +14,11 @@ export interface VideoWatchCacheInfo {
   readonly source: "memory" | "disk" | "upload";
 }
 
-/** One model call: exact prompts and verbatim response for debugging. */
+// Full prompt/response data for one model call
 export interface VideoWatchFrameModelTurn {
   readonly modelKey: string;
   readonly systemPrompt: string;
   readonly userPrompt: string;
-  /** Exact body returned by the model (only outer whitespace trimmed). */
   readonly responseRaw: string;
 }
 
@@ -32,25 +31,16 @@ export interface VideoWatchFrameResult {
   readonly frameIndex: number;
   readonly timestampMs: number;
   readonly timestampLabel: string;
-  /** Parsed from `llm.narrative.responseRaw` when present; otherwise legacy normalized text. */
   readonly frameAnalysis: string;
-  /** Filled by the server from the previous frame, not from this frame's model calls. */
   readonly priorFrameAnalysis: string;
   readonly priorVisibleObjects: readonly string[];
   readonly objects: Readonly<Record<string, string>>;
-  /**
-   * Compact dump of model response strings (no double-encoded JSON inside strings).
-   * Prefer `llm` when present for full prompt/response debugging.
-   */
   readonly rawText: string;
-  /** Primary narrative model key (same as `llm.narrative.modelKey` when `llm` is set). */
   readonly modelKey: string;
   readonly latencyMs: number;
   readonly fromCache: boolean;
   readonly error?: string | null;
-  /** When set, exact prompts and verbatim responses for both frame models. */
   readonly llm?: VideoWatchFrameLlmTrace;
-  /** Present when prior fields were computed by the pipeline from the prior frame. */
   readonly priorFieldsOrigin?: "server";
 }
 
@@ -106,17 +96,12 @@ export interface VideoWatchChatError {
 
 export type VideoWatchChatResponse = VideoWatchChatOk | VideoWatchChatError;
 
+// Validates and parses VideoWatch API response object
 export function parseVideoWatchResponse(json: unknown): VideoWatchResponse {
-  if (typeof json !== "object" || json === null) {
-    throw new Error("Invalid video watch response");
-  }
-
+  if (!json || typeof json !== "object") throw new Error("Invalid video watch response");
   const value = json as Record<string, unknown>;
   if (value.ok === false) {
-    if (
-      typeof value.errorCode === "string" &&
-      typeof value.message === "string"
-    ) {
+    if (typeof value.errorCode === "string" && typeof value.message === "string") {
       return {
         ok: false,
         errorCode: value.errorCode as VideoWatchError["errorCode"],
@@ -125,7 +110,6 @@ export function parseVideoWatchResponse(json: unknown): VideoWatchResponse {
     }
     throw new Error("Invalid video watch error response");
   }
-
   if (
     value.ok !== true ||
     typeof value.jobId !== "string" ||
@@ -139,32 +123,19 @@ export function parseVideoWatchResponse(json: unknown): VideoWatchResponse {
   ) {
     throw new Error("Invalid video watch success response");
   }
-
   return value as unknown as VideoWatchJob;
 }
 
-export function parseVideoWatchChatResponse(
-  json: unknown,
-): VideoWatchChatResponse {
-  if (typeof json !== "object" || json === null) {
-    throw new Error("Invalid video watch chat response");
-  }
-
+// Validates and parses VideoWatch chat API response object
+export function parseVideoWatchChatResponse(json: unknown): VideoWatchChatResponse {
+  if (!json || typeof json !== "object") throw new Error("Invalid video watch chat response");
   const value = json as Record<string, unknown>;
   if (value.ok === true) {
-    if (
-      typeof value.answer !== "string" ||
-      typeof value.modelKey !== "string"
-    ) {
+    if (typeof value.answer !== "string" || typeof value.modelKey !== "string") {
       throw new Error("Invalid video watch chat success response");
     }
-
     return value as unknown as VideoWatchChatOk;
   }
-
-  if (typeof value.message !== "string") {
-    throw new Error("Invalid video watch chat error response");
-  }
-
+  if (typeof value.message !== "string") throw new Error("Invalid video watch chat error response");
   return value as unknown as VideoWatchChatError;
 }

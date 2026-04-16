@@ -9,22 +9,18 @@ type LoadedLlmHandle = Awaited<
 >[number];
 
 export function getClient(): LMStudioClient {
-  if (cachedClient) {
-    return cachedClient;
+  if (!cachedClient) {
+    cachedClient = new LMStudioClient({
+      baseUrl: LMSTUDIO_BASE_URL,
+      verboseErrorMessages: true,
+    });
   }
-
-  cachedClient = new LMStudioClient({
-    baseUrl: LMSTUDIO_BASE_URL,
-    verboseErrorMessages: true,
-  });
-
   return cachedClient;
 }
 
 function isConnectionError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error);
-  const lower = message.toLowerCase();
-
+  const msg = error instanceof Error ? error.message : String(error);
+  const lower = msg.toLowerCase();
   return (
     lower.includes("econnrefused") ||
     lower.includes("connect") ||
@@ -39,43 +35,34 @@ export async function resolveModelKey(modelKey: string): Promise<string> {
   const client = getClient();
   const cached = resolvedModelKeys.get(modelKey);
 
-  const loadedModels = await (async () => {
-    try {
-      return await client.llm.listLoaded();
-    } catch (error) {
-      if (isConnectionError(error)) {
-        throw new Error(
-          "LM Studio local server is not running or is unreachable at ws://127.0.0.1:1234",
-        );
-      }
-      throw error;
-    }
-  })();
+  let loadedModels: LoadedLlmHandle[];
+  try {
+    loadedModels = await client.llm.listLoaded();
+  } catch (error) {
+    if (isConnectionError(error))
+      throw new Error(
+        "LM Studio local server is not running or is unreachable at ws://127.0.0.1:1234"
+      );
+    throw error;
+  }
 
-  const findLoadedTarget = (
-    candidateKey: string,
-  ): LoadedLlmHandle | undefined =>
-    loadedModels.find(
-      (model) =>
-        model.modelKey === candidateKey || model.identifier === candidateKey,
+  const candidateKeys = [cached, modelKey].filter(Boolean) as string[];
+  let loadedTarget: LoadedLlmHandle | undefined;
+  for (const key of candidateKeys) {
+    loadedTarget = loadedModels.find(
+      (model) => model.modelKey === key || model.identifier === key
     );
-
-  const loadedTarget = [cached, modelKey]
-    .filter((value): value is string => !!value)
-    .map((candidateKey) => findLoadedTarget(candidateKey))
-    .find((value): value is LoadedLlmHandle => value !== undefined);
+    if (loadedTarget) break;
+  }
 
   if (loadedTarget) {
     const loadedInfo = await loadedTarget.getModelInfo();
 
     if (loadedInfo.contextLength < loadedInfo.maxContextLength) {
       await loadedTarget.unload();
-
       const reloadedModel = await client.llm.load(loadedInfo.modelKey, {
         identifier: loadedInfo.identifier,
-        config: {
-          contextLength: loadedInfo.maxContextLength,
-        },
+        config: { contextLength: loadedInfo.maxContextLength },
       });
       const reloadedInfo = await reloadedModel.getModelInfo();
       resolvedModelKeys.set(modelKey, reloadedInfo.modelKey);
@@ -88,19 +75,16 @@ export async function resolveModelKey(modelKey: string): Promise<string> {
 
   const downloadedModels = await client.system.listDownloadedModels("llm");
   const downloadedTarget = downloadedModels.find(
-    (model) => model.modelKey === cached || model.modelKey === modelKey,
+    (model) => model.modelKey === cached || model.modelKey === modelKey
   );
 
-  if (!downloadedTarget) {
+  if (!downloadedTarget)
     throw new Error(
-      `Required LM Studio model "${modelKey}" is not loaded and not available locally`,
+      `Required LM Studio model "${modelKey}" is not loaded and not available locally`
     );
-  }
 
   const loadedModel = await client.llm.load(downloadedTarget.modelKey, {
-    config: {
-      contextLength: downloadedTarget.maxContextLength,
-    },
+    config: { contextLength: downloadedTarget.maxContextLength },
   });
   const loadedInfo = await loadedModel.getModelInfo();
   resolvedModelKeys.set(modelKey, loadedInfo.modelKey);

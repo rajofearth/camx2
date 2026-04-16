@@ -46,20 +46,17 @@ export function useWebcamDetect(
   const [lastLatency, setLastLatency] = useState<number | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [frameDimensions, setFrameDimensions] =
-    useState<FrameDimensions | null>(null);
+  const [frameDimensions, setFrameDimensions] = useState<FrameDimensions | null>(null);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastRequestTimeRef = useRef<number>(0);
   const isActiveRef = useRef<boolean>(isActive);
 
-  // Keep ref in sync with prop
   useEffect(() => {
     isActiveRef.current = isActive;
   }, [isActive]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: resetting when the model changes keeps the UI state aligned with the active detector.
   useEffect(() => {
     setDetections([]);
     setLastLatency(null);
@@ -68,45 +65,32 @@ export function useWebcamDetect(
   }, [detectionModel]);
 
   const processFrame = useCallback(async () => {
-    if (!isActiveRef.current || !webcamRef.current) {
-      return;
-    }
+    // Only process if active and webcam source is ready
+    if (!isActiveRef.current || !webcamRef.current) return;
 
     const now = performance.now();
-    const timeSinceLastRequest = now - lastRequestTimeRef.current;
+    const sinceLast = now - lastRequestTimeRef.current;
 
-    if (timeSinceLastRequest < minIntervalMs) {
-      const delay = minIntervalMs - timeSinceLastRequest;
-      timeoutRef.current = setTimeout(() => {
-        void processFrame();
-      }, delay);
+    if (sinceLast < minIntervalMs) {
+      // Throttle detection loop
+      timeoutRef.current = setTimeout(() => void processFrame(), minIntervalMs - sinceLast);
       return;
     }
 
     const imageSrc = webcamRef.current.getScreenshot();
     if (!imageSrc) {
-      const retryDelay = Math.max(
-        16,
-        minIntervalMs - (performance.now() - lastRequestTimeRef.current),
-      );
-      timeoutRef.current = setTimeout(() => {
-        void processFrame();
-      }, retryDelay);
+      timeoutRef.current = setTimeout(() => void processFrame(), 16);
       return;
     }
 
-    // Cancel previous request if still in flight
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
+    if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
     setIsProcessing(true);
     setError(null);
     lastRequestTimeRef.current = now;
 
     try {
-      const blob = await fetch(imageSrc).then((r) => r.blob());
+      const blob = await fetch(imageSrc).then(r => r.blob());
       const result = await fetchDetect(blob, {
         signal: abortControllerRef.current.signal,
         model: detectionModel,
@@ -120,9 +104,7 @@ export function useWebcamDetect(
           setFrameDimensions(null);
         });
       } else {
-        const filtered = result.data.detections.filter(
-          (det) => det.confidence >= minConfidence,
-        );
+        const filtered = result.data.detections.filter(d => d.confidence >= minConfidence);
         startTransition(() => {
           setDetections(filtered);
           setLastLatency(result.data.meta?.latencyMs ?? null);
@@ -131,10 +113,8 @@ export function useWebcamDetect(
         });
       }
     } catch (err) {
-      if (err instanceof Error && err.name === "AbortError") {
-        // Request was cancelled, ignore
-        return;
-      }
+      // Request cancelled or failed
+      if (err instanceof Error && err.name === "AbortError") return;
       const message = err instanceof Error ? err.message : "Unknown error";
       startTransition(() => {
         setError(`Detection failed: ${message}`);
@@ -145,22 +125,16 @@ export function useWebcamDetect(
     } finally {
       setIsProcessing(false);
       abortControllerRef.current = null;
-
       if (isActiveRef.current) {
-        const nextDelay = Math.max(
-          0,
-          minIntervalMs - (performance.now() - lastRequestTimeRef.current),
-        );
-        timeoutRef.current = setTimeout(() => {
-          void processFrame();
-        }, nextDelay);
+        const delay = Math.max(0, minIntervalMs - (performance.now() - lastRequestTimeRef.current));
+        timeoutRef.current = setTimeout(() => void processFrame(), delay);
       }
     }
   }, [webcamRef, minIntervalMs, minConfidence, detectionModel]);
 
   useEffect(() => {
     if (!isActive) {
-      // Cancel any in-flight requests
+      // Clean up in-flight requests and timeouts
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
         abortControllerRef.current = null;
@@ -176,7 +150,6 @@ export function useWebcamDetect(
       return;
     }
 
-    // Start the loop
     void processFrame();
 
     return () => {

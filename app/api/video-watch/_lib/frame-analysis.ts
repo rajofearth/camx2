@@ -182,14 +182,11 @@ async function runTrackingAnalysis(
         type: "json",
         jsonSchema: TRACKING_RESPONSE_SCHEMA,
       },
-    },
+    }
   );
 
   const responseRaw = response?.content?.trim();
-  if (!responseRaw) {
-    throw new Error("LM Studio returned empty tracking response");
-  }
-
+  if (!responseRaw) throw new Error("LM Studio returned empty tracking response");
   const objects = parseTrackingObjectsFromResponseRaw(responseRaw);
 
   return {
@@ -228,8 +225,11 @@ export async function analyzeFrame(
   context: AnalyzeFrameContext,
 ): Promise<Omit<VideoWatchFrameResult, "fromCache">> {
   const start = performance.now();
-  const resolvedNarrativeKey = await resolveModelKey(FRAME_MODEL_KEY);
-  const resolvedTrackingKey = await resolveModelKey(TRACKING_MODEL_KEY);
+
+  const [resolvedNarrativeKey, resolvedTrackingKey] = await Promise.all([
+    resolveModelKey(FRAME_MODEL_KEY),
+    resolveModelKey(TRACKING_MODEL_KEY),
+  ]);
 
   const [narrative, tracking] = await Promise.all([
     runNarrativeAnalysis(frame, resolvedNarrativeKey),
@@ -240,7 +240,7 @@ export async function analyzeFrame(
 
   const authoritativePrior = applyAuthoritativePriorFields(
     context.previousFrame,
-    [],
+    []
   );
 
   const rawText = JSON.stringify(
@@ -249,7 +249,7 @@ export async function analyzeFrame(
       tracking: tracking.responseRaw,
     },
     null,
-    2,
+    2
   );
 
   return {
@@ -282,6 +282,7 @@ export async function analyzeFrame(
   };
 }
 
+// Runs frame analysis for all frames in manifest, skipping cached
 export async function runFrameQueue(
   job: InternalJob,
   manifest: PersistedManifest,
@@ -289,12 +290,14 @@ export async function runFrameQueue(
   const cacheDir = await ensureCacheDir(job.fingerprint);
   const repairedOnDisk = await readAllFrameResults(cacheDir);
   const existingByIndex = new Map(
-    repairedOnDisk.map((item) => [item.frameIndex, item]),
+    repairedOnDisk.map(item => [item.frameIndex, item])
   );
 
-  const tasks = [...manifest.frames]
-    .sort((left, right) => left.frameIndex - right.frameIndex)
-    .map((frame) => ({
+  // Prepare tasks sorted by frame index
+  const tasks = manifest.frames
+    .slice()
+    .sort((a, b) => a.frameIndex - b.frameIndex)
+    .map(frame => ({
       frame,
       existing: existingByIndex.get(frame.frameIndex) ?? null,
     }));
@@ -314,13 +317,8 @@ export async function runFrameQueue(
 
     let result: VideoWatchFrameResult;
     try {
-      const analyzed = await analyzeFrame(frame, {
-        previousFrame: lastFrame,
-      });
-      result = {
-        ...analyzed,
-        fromCache: false,
-      };
+      const analyzed = await analyzeFrame(frame, { previousFrame: lastFrame });
+      result = { ...analyzed, fromCache: false };
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unknown frame analysis error";

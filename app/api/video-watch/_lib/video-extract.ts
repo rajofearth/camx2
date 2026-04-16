@@ -20,12 +20,9 @@ export function toTimestampLabel(timestampMs: number): string {
   const seconds = Math.floor((totalMs % 60_000) / 1_000);
   const millis = totalMs % 1_000;
   const base = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(millis).padStart(3, "0")}`;
-
-  if (hours > 0) {
-    return `${String(hours).padStart(2, "0")}:${base}`;
-  }
-
-  return base;
+  return hours > 0
+    ? `${String(hours).padStart(2, "0")}:${base}`
+    : base;
 }
 
 async function resolveExecutablePath(
@@ -33,10 +30,8 @@ async function resolveExecutablePath(
   explicitPath: string | undefined,
   packagedPath: string | null | undefined,
 ): Promise<string> {
-  if (explicitPath) {
-    return explicitPath;
-  }
-
+  if (explicitPath) return explicitPath;
+  // Try system installation first, then package
   try {
     await runCommand(preferredCommand, ["-version"]);
     return preferredCommand;
@@ -45,52 +40,34 @@ async function resolveExecutablePath(
       try {
         await fs.access(packagedPath);
         return packagedPath;
-      } catch {
-        // Fall through to the final error.
-      }
+      } catch {}
     }
   }
-
   throw new Error(
-    `Required executable "${preferredCommand}" was not found. Install it or set ${preferredCommand.toUpperCase()}_PATH.`,
+    `Required executable "${preferredCommand}" was not found. Install it or set ${preferredCommand.toUpperCase()}_PATH.`
   );
 }
 
 async function runCommand(
   command: string,
-  args: string[],
+  args: string[]
 ): Promise<{ stdout: string; stderr: string }> {
   return await new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       stdio: ["ignore", "pipe", "pipe"],
       windowsHide: true,
     });
-
     let stdout = "";
     let stderr = "";
-
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk.toString();
-    });
-
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk.toString();
-    });
-
-    child.on("error", (error) => {
-      reject(error);
-    });
-
-    child.on("close", (code) => {
-      if (code === 0) {
-        resolve({ stdout, stderr });
-        return;
-      }
-
-      reject(
+    child.stdout.on("data", chunk => { stdout += chunk; });
+    child.stderr.on("data", chunk => { stderr += chunk; });
+    child.once("error", reject);
+    child.once("close", code => {
+      if (code === 0) resolve({ stdout, stderr });
+      else reject(
         new Error(
-          `${command} exited with code ${code}: ${stderr.trim() || stdout.trim()}`,
-        ),
+          `${command} exited with code ${code}: ${stderr.trim() || stdout.trim()}`
+        )
       );
     });
   });
@@ -130,6 +107,25 @@ async function probeFrames(sourceVideoPath: string): Promise<{
   };
 }
 
+// Process frame conversions in limited batches for efficiency.
+async function mapAsyncBatched<T, U>(
+  array: T[],
+  mapper: (item: T, idx: number) => Promise<U>,
+  concurrency = 8 // default concurrency
+): Promise<U[]> {
+  const results: U[] = new Array(array.length);
+  let idx = 0;
+  async function worker() {
+    while (idx < array.length) {
+      const i = idx++;
+      results[i] = await mapper(array[i], i);
+    }
+  }
+  const workers = Array(Math.min(concurrency, array.length)).fill(0).map(worker);
+  await Promise.all(workers);
+  return results;
+}
+
 export async function extractFrames(
   fingerprint: string,
   sourceVideoPath: string,
@@ -139,51 +135,56 @@ export async function extractFrames(
   const cacheDir = await ensureCacheDir(fingerprint);
   const manifestFile = manifestPath(cacheDir);
   const existingManifest = await readJson<PersistedManifest>(manifestFile);
-  if (existingManifest?.frames?.length) {
-    return existingManifest;
-  }
+  if (existingManifest?.frames?.length) return existingManifest;
 
   const targetFramesDir = framesDir(cacheDir);
   await fs.mkdir(targetFramesDir, { recursive: true });
 
-  const existingFiles = await fs.readdir(targetFramesDir).catch(() => []);
-  await Promise.all(
-    existingFiles.map((fileName) =>
-      fs.rm(path.join(targetFramesDir, fileName), { force: true }),
-    ),
-  );
+  try {
+    const existingFiles = await fs.readdir(targetFramesDir);
+    if (existingFiles.length)
+      await Promise.all(
+        existingFiles.map(fileName =>
+          fs.rm(path.join(targetFramesDir, fileName), { force: true })
+        ),
+      );
+  } catch {}
 
   await probeFrames(sourceVideoPath);
 
   const ffmpegPath = await resolveExecutablePath(
     "ffmpeg",
     process.env.FFMPEG_PATH,
-    ffmpegStatic,
+    typeof ffmpegStatic === "string" ? ffmpegStatic : (ffmpegStatic as any)?.path
   );
 
   await runCommand(ffmpegPath, [
-    "-hide_banner",
-    "-loglevel",
-    "error",
-    "-i",
-    sourceVideoPath,
-    "-vf",
-    `fps=${SAMPLE_FPS}`,
+    "-hide_banner", "-loglevel", "error",
+    "-i", sourceVideoPath,
+    "-vf", `fps=${SAMPLE_FPS}`,
     path.join(targetFramesDir, "frame-%06d.jpg"),
   ]);
 
   const extractedFrameFileNames = (await fs.readdir(targetFramesDir))
-    .filter((fileName) => fileName.toLowerCase().endsWith(".jpg"))
+    .filter(fileName => fileName.toLowerCase().endsWith(".jpg"))
     .sort();
 
-  const frameInfos = await Promise.all(
-    extractedFrameFileNames.map(async (fileName, index) => {
+  const frameInfos = await mapAsyncBatched(
+    extractedFrameFileNames,
+    async (fileName, index) => {
       const sourceImagePath = path.join(targetFramesDir, fileName);
+
+      // Prepare output filename only once
       const outputImagePath = path.join(
         targetFramesDir,
         `frame-${String(index + 1).padStart(6, "0")}.png`,
       );
-      const sourceBuffer = await fs.readFile(sourceImagePath);
+
+      const [sourceBuffer] = await Promise.all([
+        fs.readFile(sourceImagePath)
+      ]);
+
+      // Image transformation offloaded and parallelized in batches
       const processedBuffer = await makeSquareAndCompressServer(sourceBuffer, {
         quality: FRAME_COMPRESSION_QUALITY,
         mode: "crop",
@@ -191,8 +192,11 @@ export async function extractFrames(
         output: "png",
       });
 
-      await fs.writeFile(outputImagePath, processedBuffer);
-      await fs.rm(sourceImagePath, { force: true });
+      // Write and delete in parallel
+      await Promise.all([
+        fs.writeFile(outputImagePath, processedBuffer),
+        fs.rm(sourceImagePath, { force: true })
+      ]);
 
       const timestampMs = Math.round((index * 1000) / SAMPLE_FPS);
 
@@ -205,7 +209,8 @@ export async function extractFrames(
         width: FRAME_TARGET_SIZE,
         height: FRAME_TARGET_SIZE,
       } satisfies PersistedFrameInfo;
-    }),
+    },
+    8 // batch concurrency, can tune as needed for resources
   );
 
   const manifest: PersistedManifest = {

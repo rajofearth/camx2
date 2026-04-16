@@ -48,60 +48,75 @@ export interface DetectErr {
 
 export type DetectResponse = DetectOk | DetectErr;
 
+// Precompute allowed error codes for efficient lookup
+const DETECT_ERROR_CODES = new Set<DetectErrorCode>([
+  "BAD_REQUEST",
+  "UNSUPPORTED_MEDIA",
+  "MODEL_ERROR",
+  "INFERENCE_ERROR",
+  "INTERNAL_ERROR",
+]);
+
 function isDetectionMask(value: unknown): value is DetectionMask {
-  if (typeof value !== "object" || value === null) return false;
+  if (
+    typeof value !== "object" ||
+    value === null
+  )
+    return false;
   const mask = value as Record<string, unknown>;
+  const { width, height, data } = mask;
   return (
-    typeof mask.width === "number" &&
-    typeof mask.height === "number" &&
-    typeof mask.data === "string" &&
-    mask.width > 0 &&
-    mask.height > 0 &&
-    Number.isInteger(mask.width) &&
-    Number.isInteger(mask.height)
+    typeof width === "number" &&
+    Number.isInteger(width) &&
+    width > 0 &&
+    typeof height === "number" &&
+    Number.isInteger(height) &&
+    height > 0 &&
+    typeof data === "string"
   );
 }
 
 function isDetection(value: unknown): value is Detection {
-  if (typeof value !== "object" || value === null) return false;
+  if (
+    typeof value !== "object" ||
+    value === null
+  )
+    return false;
   const d = value as Record<string, unknown>;
+  const { x1, y1, x2, y2, confidence, class: classNum, mask } = d;
   return (
-    typeof d.x1 === "number" &&
-    typeof d.y1 === "number" &&
-    typeof d.x2 === "number" &&
-    typeof d.y2 === "number" &&
-    typeof d.confidence === "number" &&
-    typeof d.class === "number" &&
-    d.confidence >= 0 &&
-    d.confidence <= 1 &&
-    d.class >= 0 &&
-    Number.isInteger(d.class) &&
-    (d.mask === undefined || isDetectionMask(d.mask))
+    typeof x1 === "number" &&
+    typeof y1 === "number" &&
+    typeof x2 === "number" &&
+    typeof y2 === "number" &&
+    typeof confidence === "number" &&
+    confidence >= 0 && confidence <= 1 &&
+    typeof classNum === "number" &&
+    Number.isInteger(classNum) && classNum >= 0 &&
+    (mask === undefined || isDetectionMask(mask))
   );
 }
 
 function isFrameDimensions(value: unknown): value is FrameDimensions {
-  if (typeof value !== "object" || value === null) return false;
+  if (
+    typeof value !== "object" ||
+    value === null
+  )
+    return false;
   const f = value as Record<string, unknown>;
+  const { width, height } = f;
   return (
-    typeof f.width === "number" &&
-    typeof f.height === "number" &&
-    f.width > 0 &&
-    f.height > 0 &&
-    Number.isFinite(f.width) &&
-    Number.isFinite(f.height)
+    typeof width === "number" &&
+    Number.isFinite(width) &&
+    width > 0 &&
+    typeof height === "number" &&
+    Number.isFinite(height) &&
+    height > 0
   );
 }
 
 function isDetectErrorCode(value: unknown): value is DetectErrorCode {
-  return (
-    typeof value === "string" &&
-    (value === "BAD_REQUEST" ||
-      value === "UNSUPPORTED_MEDIA" ||
-      value === "MODEL_ERROR" ||
-      value === "INFERENCE_ERROR" ||
-      value === "INTERNAL_ERROR")
-  );
+  return typeof value === "string" && DETECT_ERROR_CODES.has(value as DetectErrorCode);
 }
 
 export function parseDetectResponse(json: unknown): DetectResponse {
@@ -115,7 +130,7 @@ export function parseDetectResponse(json: unknown): DetectResponse {
     throw new Error("Invalid response: missing 'ok' field");
   }
 
-  if (typeof obj.requestId !== "string" || obj.requestId.length === 0) {
+  if (typeof obj.requestId !== "string" || !obj.requestId) {
     throw new Error("Invalid response: missing or invalid 'requestId'");
   }
 
@@ -124,8 +139,11 @@ export function parseDetectResponse(json: unknown): DetectResponse {
       throw new Error("Invalid response: 'detections' must be an array");
     }
 
-    if (!obj.detections.every(isDetection)) {
-      throw new Error("Invalid response: invalid detection format");
+    // Use a for loop for efficiency instead of every()
+    for (let i = 0; i < obj.detections.length; i++) {
+      if (!isDetection(obj.detections[i])) {
+        throw new Error("Invalid response: invalid detection format");
+      }
     }
 
     if (!isFrameDimensions(obj.frame)) {
@@ -135,8 +153,8 @@ export function parseDetectResponse(json: unknown): DetectResponse {
     return {
       ok: true,
       requestId: obj.requestId,
-      detections: obj.detections,
-      frame: obj.frame,
+      detections: obj.detections as Detection[],
+      frame: obj.frame as FrameDimensions,
       meta:
         obj.meta && typeof obj.meta === "object"
           ? (obj.meta as DetectOk["meta"])
@@ -155,7 +173,7 @@ export function parseDetectResponse(json: unknown): DetectResponse {
   return {
     ok: false,
     requestId: obj.requestId,
-    errorCode: obj.errorCode,
+    errorCode: obj.errorCode as DetectErrorCode,
     message: obj.message,
     details:
       obj.details && typeof obj.details === "object"

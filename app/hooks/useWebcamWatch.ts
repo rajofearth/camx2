@@ -4,11 +4,6 @@ import { makeSquareAndCompress } from "@/app/lib/image-utils";
 import { fetchWatch } from "@/app/lib/watch-client";
 import type { WatchOk, WatchResult } from "@/app/lib/watch-types";
 
-// Use the shared image utility to produce a square, compressed PNG.
-// The heavy lifting is delegated to `makeSquareAndCompress` which uses
-// fast browser APIs (createImageBitmap, OffscreenCanvas where available).
-// No local conversion helper is required here.
-
 export interface UseWebcamWatchResult {
   readonly latest: WatchResult | null;
   readonly lastLatency: number | null;
@@ -36,27 +31,20 @@ export function useWebcamWatch(
   const isActiveRef = useRef(isActive);
   isActiveRef.current = isActive;
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the ref-backed guard keeps the loop stable while state changes.
+  // Schedule and process a webcam frame if allowed, with backpressure.
   const processFrame = useCallback(async () => {
-    if (!isActiveRef.current || !webcamRef.current) {
-      return;
-    }
+    if (!isActiveRef.current || !webcamRef.current) return;
 
-    // Backpressure: never overlap requests.
     if (abortControllerRef.current) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        void processFrame();
-      }, FRAME_INTERVAL_MS);
+      timeoutRef.current = setTimeout(() => { void processFrame(); }, FRAME_INTERVAL_MS);
       return;
     }
 
     const imageSrc = webcamRef.current.getScreenshot();
     if (!imageSrc) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        void processFrame();
-      }, FRAME_INTERVAL_MS);
+      timeoutRef.current = setTimeout(() => { void processFrame(); }, FRAME_INTERVAL_MS);
       return;
     }
 
@@ -65,37 +53,22 @@ export function useWebcamWatch(
     setError(null);
 
     try {
-      const originalBlob = await fetch(imageSrc).then((r) => r.blob());
-
-      // We will try to produce a WebP processed blob that is small (target <= 100KB).
-      // Strategy:
-      // 1) Try worker-based processing to avoid blocking the UI thread.
-      // 2) If worker is unavailable or fails, fall back to in-thread processing.
-      // 3) If produced blob is too large (or larger than the original), retry with reduced size/quality.
-      // 4) If all attempts fail, fall back to sending the processed blob we have (or original).
+      const originalBlob = await fetch(imageSrc).then(r => r.blob());
       let processedBlob: Blob | null = null;
       let workerTimings: unknown = null;
 
-      // Helper: process once via worker (returns Blob or throws)
-      async function processOnceWithWorker(_opts: {
-        quality: number;
-        targetSize: number;
-      }): Promise<Blob> {
+      // Try to process the blob with a worker or in-thread, repeatedly reducing size/quality.
+      async function processOnceWithWorker(opts: { quality: number; targetSize: number }): Promise<Blob> {
         return new Promise<Blob>((resolve, reject) => {
           try {
             const worker = new Worker(
               new URL("../workers/imageWorker.ts", import.meta.url),
-              {
-                type: "module",
-              },
+              { type: "module" }
             );
-
             const id = String(Math.random()).slice(2);
             const onMessage = (ev: MessageEvent) => {
               const d = ev.data;
-              if (!d) return;
-              // accept matching id or single-response workers
-              if (d.id !== undefined && d.id !== id) return;
+              if (!d || (d.id !== undefined && d.id !== id)) return;
               worker.removeEventListener("message", onMessage);
               worker.removeEventListener("error", onError);
               if (d.success) {
@@ -112,23 +85,18 @@ export function useWebcamWatch(
               worker.removeEventListener("error", onError);
               reject(err.error || new Error("Worker error"));
             };
-
             worker.addEventListener("message", onMessage);
             worker.addEventListener("error", onError);
-
-            // Post the image data URL to the worker
             worker.postMessage({
               id,
               imageDataUrl: imageSrc,
               options: {
-                quality: 0.45,
+                quality: opts.quality,
                 mode: "crop",
-                targetSize: 160,
+                targetSize: opts.targetSize,
                 output: "png",
               },
             });
-
-            // Safety timeout in case worker hangs
             const timeout = setTimeout(() => {
               try {
                 worker.removeEventListener("message", onMessage);
@@ -137,32 +105,16 @@ export function useWebcamWatch(
               } catch {}
               reject(new Error("Image worker timeout"));
             }, 3000);
-
-            // Clear timeout on resolution/rejection
-            const wrapResolve =
-              <TArgs extends unknown[], TResult>(
-                fn: (...args: TArgs) => TResult,
-              ) =>
-              (...args: TArgs) => {
-                clearTimeout(timeout);
-                return fn(...args);
-              };
-            const originalResolve = resolve;
-            const originalReject = reject;
-            // replace resolve/reject to clear timeout
-            resolve = wrapResolve(originalResolve);
-            reject = wrapResolve(originalReject);
+            const wrap = (fn: any) => (...args: any[]) => { clearTimeout(timeout); return fn(...args); };
+            resolve = wrap(resolve);
+            reject = wrap(reject);
           } catch (err) {
             reject(err);
           }
         });
       }
 
-      // Helper: synchronous/in-thread processing attempt
-      async function processInThread(opts: {
-        quality: number;
-        targetSize: number;
-      }) {
+      async function processInThread(opts: { quality: number; targetSize: number }) {
         return makeSquareAndCompress(originalBlob, {
           quality: opts.quality,
           mode: "crop",
@@ -171,8 +123,7 @@ export function useWebcamWatch(
         });
       }
 
-      // Retry strategy parameters (descending quality/size)
-      const MAX_SIZE = 100 * 1024; // 100 KB desired upper bound
+      const MAX_SIZE = 100 * 1024;
       const attempts = [
         { quality: 0.45, targetSize: 160 },
         { quality: 0.35, targetSize: 128 },
@@ -180,90 +131,53 @@ export function useWebcamWatch(
         { quality: 0.18, targetSize: 64 },
       ];
 
-      // Iterate attempts until we get a webp under MAX_SIZE (prefer smaller than original)
       for (const attempt of attempts) {
         try {
-          // Prefer worker if available
           if (typeof Worker !== "undefined") {
             try {
-              processedBlob = await processOnceWithWorker({
-                quality: attempt.quality,
-                targetSize: attempt.targetSize,
-              });
+              processedBlob = await processOnceWithWorker(attempt);
             } catch {
-              // worker failed for this attempt, try in-thread fallback for the same params
               try {
-                processedBlob = await processInThread({
-                  quality: attempt.quality,
-                  targetSize: attempt.targetSize,
-                });
+                processedBlob = await processInThread(attempt);
               } catch {
                 processedBlob = null;
               }
             }
           } else {
-            // No worker available: process in-thread
-            processedBlob = await processInThread({
-              quality: attempt.quality,
-              targetSize: attempt.targetSize,
-            });
+            processedBlob = await processInThread(attempt);
           }
-
           if (processedBlob) {
-            // Ensure it's WebP (we requested webp, but double-check)
-            const isWebp = (processedBlob.type || "")
-              .toLowerCase()
-              .includes("webp");
+            // Accept if image is WebP and under size target or at least smaller than original.
+            const isWebp = (processedBlob.type || "").toLowerCase().includes("webp");
             const sizeOk = processedBlob.size <= MAX_SIZE;
             const smallerThanOriginal = processedBlob.size < originalBlob.size;
-
-            if (isWebp && (sizeOk || smallerThanOriginal)) {
-              // Accept this processed blob
-              break;
-            }
-
-            // If not acceptable, continue to next attempt (possibly with lower size/quality)
-            // Keep the smallest seen blob as a fallback.
-            // If processedBlob is larger than original and there are more attempts, continue.
+            if (isWebp && (sizeOk || smallerThanOriginal)) break;
           }
         } catch {
-          // keep trying lower-quality attempts
           processedBlob = null;
         }
       }
 
-      // If after attempts we still don't have a processedBlob, try a final fast in-thread pass with very small params
       if (!processedBlob) {
         try {
-          processedBlob = await processInThread({
-            quality: 0.15,
-            targetSize: 64,
-          });
+          processedBlob = await processInThread({ quality: 0.15, targetSize: 64 });
         } catch {
-          // Give up and fall back to original
           processedBlob = originalBlob;
         }
       }
+      if (!processedBlob) processedBlob = originalBlob;
 
-      // Final safeguard: ensure we at least have a Blob
-      if (!processedBlob) {
-        processedBlob = originalBlob;
-      }
-
-      // Log sizes and optional timings for debugging
       try {
         // eslint-disable-next-line no-console
         console.debug(
           `[watch] sending frame sizes: original=${originalBlob.size} bytes, processed=${processedBlob.size} bytes`,
-          workerTimings ? { workerTimings } : undefined,
+          workerTimings ? { workerTimings } : undefined
         );
-      } catch {
-        // ignore logging failures
-      }
+      } catch {}
 
-      // Send both original (for audit) and processed (for analysis)
+      // Send original and processed image to backend.
       const result = await fetchWatch(originalBlob, processedBlob, {
-        signal: abortControllerRef.current.signal,
+        signal: abortControllerRef.current.signal
       });
 
       if (!result.success) {
@@ -280,9 +194,7 @@ export function useWebcamWatch(
         setError(null);
       }
     } catch (err) {
-      if (err instanceof Error && err.name === "AbortError") {
-        return;
-      }
+      if (err instanceof Error && err.name === "AbortError") return;
       const message = err instanceof Error ? err.message : "Unknown error";
       setError(`Watch failed: ${message}`);
       setLatest(null);
@@ -295,14 +207,13 @@ export function useWebcamWatch(
 
       if (isActiveRef.current) {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        timeoutRef.current = setTimeout(() => {
-          void processFrame();
-        }, FRAME_INTERVAL_MS);
+        timeoutRef.current = setTimeout(() => { void processFrame(); }, FRAME_INTERVAL_MS);
       }
     }
   }, [isActive, webcamRef]);
 
   useEffect(() => {
+    // Start/stop processing based on isActive.
     if (!isActive) {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();

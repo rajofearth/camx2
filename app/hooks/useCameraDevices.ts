@@ -17,16 +17,15 @@ export function useCameraDevices(): UseCameraDevicesResult {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Enumerate video input devices, requesting camera access first for labels
   const enumerateDevices = useCallback(async (): Promise<void> => {
-    try {
-      setIsLoading(true);
-      setError(null);
+    setIsLoading(true);
+    setError(null);
 
-      // Request permission first to get device labels
+    try {
       try {
         await navigator.mediaDevices.getUserMedia({ video: true });
       } catch (err) {
-        // Permission denied or no devices
         if (
           err instanceof Error &&
           (err.name === "NotAllowedError" || err.name === "NotFoundError")
@@ -39,22 +38,21 @@ export function useCameraDevices(): UseCameraDevicesResult {
         throw err;
       }
 
-      // Enumerate devices
-      const deviceList = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = deviceList
-        .filter((device) => device.kind === "videoinput")
-        .map((device) => ({
-          deviceId: device.deviceId,
-          label: device.label || `Camera ${device.deviceId.slice(0, 8)}`,
+      const allDevices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = allDevices
+        .filter((d) => d.kind === "videoinput")
+        .map((d) => ({
+          deviceId: d.deviceId,
+          label: d.label || `Camera ${d.deviceId.slice(0, 8)}`,
         }));
 
       setDevices(videoDevices);
       setError(videoDevices.length === 0 ? "No cameras found" : null);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to enumerate devices";
-      setError(message);
       setDevices([]);
+      setError(
+        err instanceof Error ? err.message : "Failed to enumerate devices"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -63,18 +61,12 @@ export function useCameraDevices(): UseCameraDevicesResult {
   useEffect(() => {
     void enumerateDevices();
 
-    // Listen for device changes
-    const handleDeviceChange = () => {
-      void enumerateDevices();
-    };
-
+    // Handle dynamic device changes
+    const handleDeviceChange = () => void enumerateDevices();
     navigator.mediaDevices.addEventListener("devicechange", handleDeviceChange);
 
     return () => {
-      navigator.mediaDevices.removeEventListener(
-        "devicechange",
-        handleDeviceChange,
-      );
+      navigator.mediaDevices.removeEventListener("devicechange", handleDeviceChange);
     };
   }, [enumerateDevices]);
 
