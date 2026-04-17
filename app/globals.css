@@ -4,127 +4,322 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ============================================================
+   THEME: Operational Goth + Material Design 3
+   Fonts: IBM Plex Sans (UI), IBM Plex Mono (data/labels)
+   ============================================================ */
+
 @theme inline {
+  /* --- Fonts --- */
+  --font-sans: var(--font-ibm-plex-sans);
+  --font-mono: var(--font-ibm-plex-mono);
+  --font-heading: var(--font-ibm-plex-sans);
+  --font-headline: var(--font-ibm-plex-sans);
+  --font-body: var(--font-ibm-plex-sans);
+  --font-label: var(--font-ibm-plex-mono);
+
+  /* --- shadcn core tokens --- */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* --- Border radius (flat / brutalist) --- */
+  --radius-sm: 0.125rem;
+  --radius-md: 0.125rem;
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.75rem;
+  --radius-3xl: 0.75rem;
+  --radius-4xl: 0.75rem;
+
+  /* --- Operational Goth palette --- */
+  --color-op-base: var(--op-base);
+  --color-op-surface: var(--op-surface);
+  --color-op-elevated: var(--op-elevated);
+  --color-op-silver: var(--op-silver);
+  --color-op-border: var(--op-border);
+  --color-op-border-active: var(--op-border-active);
+  --color-op-text-primary: var(--op-text-primary);
+  --color-op-text-sec: var(--op-text-sec);
+  --color-op-text-muted: var(--op-text-muted);
+  --color-op-critical: var(--op-critical);
+  --color-op-warning: var(--op-warning);
+  --color-op-nominal: var(--op-nominal);
+
+  /* --- Material Design 3 surface scale --- */
+  --color-surface: var(--md-surface);
+  --color-surface-dim: var(--md-surface-dim);
+  --color-surface-bright: var(--md-surface-bright);
+  --color-surface-variant: var(--md-surface-variant);
+  --color-surface-tint: var(--md-surface-tint);
+  --color-surface-container: var(--md-surface-container);
+  --color-surface-container-low: var(--md-surface-container-low);
+  --color-surface-container-high: var(--md-surface-container-high);
+  --color-surface-container-lowest: var(--md-surface-container-lowest);
+  --color-surface-container-highest: var(--md-surface-container-highest);
+  --color-inverse-surface: var(--md-inverse-surface);
+  --color-inverse-on-surface: var(--md-inverse-on-surface);
+
+  /* --- Material Design 3 on-colors --- */
+  --color-on-background: var(--md-on-background);
+  --color-on-surface: var(--md-on-surface);
+  --color-on-surface-variant: var(--md-on-surface-variant);
+
+  /* --- Material Design 3 primary scale --- */
+  --color-on-primary: var(--md-on-primary);
+  --color-primary-container: var(--md-primary-container);
+  --color-on-primary-container: var(--md-on-primary-container);
+  --color-primary-fixed: var(--md-primary-fixed);
+  --color-primary-fixed-dim: var(--md-primary-fixed-dim);
+  --color-on-primary-fixed: var(--md-on-primary-fixed);
+  --color-on-primary-fixed-variant: var(--md-on-primary-fixed-variant);
+  --color-inverse-primary: var(--md-inverse-primary);
+
+  /* --- Material Design 3 secondary scale --- */
+  --color-on-secondary: var(--md-on-secondary);
+  --color-secondary-container: var(--md-secondary-container);
+  --color-on-secondary-container: var(--md-on-secondary-container);
+  --color-secondary-fixed: var(--md-secondary-fixed);
+  --color-secondary-fixed-dim: var(--md-secondary-fixed-dim);
+  --color-on-secondary-fixed: var(--md-on-secondary-fixed);
+  --color-on-secondary-fixed-variant: var(--md-on-secondary-fixed-variant);
+
+  /* --- Material Design 3 tertiary scale --- */
+  --color-tertiary: var(--md-tertiary);
+  --color-on-tertiary: var(--md-on-tertiary);
+  --color-tertiary-container: var(--md-tertiary-container);
+  --color-on-tertiary-container: var(--md-on-tertiary-container);
+  --color-tertiary-fixed: var(--md-tertiary-fixed);
+  --color-tertiary-fixed-dim: var(--md-tertiary-fixed-dim);
+  --color-on-tertiary-fixed: var(--md-on-tertiary-fixed);
+  --color-on-tertiary-fixed-variant: var(--md-on-tertiary-fixed-variant);
+
+  /* --- Material Design 3 error scale --- */
+  --color-on-error: var(--md-on-error);
+  --color-error-container: var(--md-error-container);
+  --color-on-error-container: var(--md-on-error-container);
+
+  /* --- Material Design 3 outline --- */
+  --color-outline: var(--md-outline);
+  --color-outline-variant: var(--md-outline-variant);
 }
+
+/* ============================================================
+   CSS CUSTOM PROPERTIES
+   Single source of truth — always dark (Operational Goth)
+   ============================================================ */
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* === Operational Goth Core Palette === */
+  --op-base: #080808;          /* Absolute void — deepest background */
+  --op-surface: #0F0F0F;       /* Primary surface — nav, panels */
+  --op-elevated: #161616;      /* Elevated layer — card headers, active items */
+  --op-silver: #C0C0C0;        /* Silver — primary highlight & interactive */
+  --op-border: #1C1C1C;        /* Default border */
+  --op-border-active: #2E2E2E; /* Hover/active border */
+  --op-text-primary: #e5e2e1;  /* Primary body text */
+  --op-text-sec: #5C5C5C;      /* Secondary/muted text */
+  --op-text-muted: #2A2A2A;    /* Very muted — placeholders */
+  --op-critical: #8B1A1A;      /* Critical threat / error red */
+  --op-warning: #D97706;       /* Warning amber */
+  --op-nominal: #1A3A28;       /* Nominal / success dark green */
+
+  /* === Material Design 3 — Primary === */
+  --md-primary: #ffffff;
+  --md-on-primary: #1a1c1c;
+  --md-primary-container: #d4d4d4;
+  --md-on-primary-container: #000000;
+  --md-primary-fixed: #5d5e5f;
+  --md-primary-fixed-dim: #464747;
+  --md-on-primary-fixed: #ffffff;
+  --md-on-primary-fixed-variant: #e3e2e2;
+  --md-inverse-primary: #5d5e5f;
+
+  /* === Material Design 3 — Secondary === */
+  --md-secondary: #c7c6c6;
+  --md-on-secondary: #1b1c1c;
+  --md-secondary-container: #464747;
+  --md-on-secondary-container: #e4e2e2;
+  --md-secondary-fixed: #c7c6c6;
+  --md-secondary-fixed-dim: #acabab;
+  --md-on-secondary-fixed: #1b1c1c;
+  --md-on-secondary-fixed-variant: #3b3b3b;
+
+  /* === Material Design 3 — Tertiary (Red accent) === */
+  --md-tertiary: #ffdad6;
+  --md-on-tertiary: #410003;
+  --md-tertiary-container: #ef635b;
+  --md-on-tertiary-container: #000000;
+  --md-tertiary-fixed: #ac322e;
+  --md-tertiary-fixed-dim: #8a1a1a;
+  --md-on-tertiary-fixed: #ffffff;
+  --md-on-tertiary-fixed-variant: #ffdad6;
+
+  /* === Material Design 3 — Error === */
+  --md-error: #ffb4ab;
+  --md-on-error: #690005;
+  --md-error-container: #8B1A1A;
+  --md-on-error-container: #ffdad6;
+
+  /* === Material Design 3 — Background & Surface scale === */
+  --md-on-background: #e5e2e1;
+  --md-on-surface: #e5e2e1;
+  --md-on-surface-variant: #5C5C5C;
+  --md-surface: #131313;
+  --md-surface-dim: #131313;
+  --md-surface-bright: #3a3939;
+  --md-surface-variant: #353534;
+  --md-surface-tint: #C0C0C0;
+  --md-surface-container: #0F0F0F;
+  --md-surface-container-low: #1c1b1b;
+  --md-surface-container-high: #161616;
+  --md-surface-container-lowest: #0e0e0e;
+  --md-surface-container-highest: #353534;
+  --md-inverse-surface: #e5e2e1;
+  --md-inverse-on-surface: #313030;
+
+  /* === Material Design 3 — Outline === */
+  --md-outline: #1C1C1C;
+  --md-outline-variant: #474747;
+
+  /* === shadcn Tokens (mapped to Operational Goth) === */
+  --background: #080808;
+  --foreground: #e5e2e1;
+  --card: #0F0F0F;
+  --card-foreground: #e5e2e1;
+  --popover: #161616;
+  --popover-foreground: #e5e2e1;
+  --primary: #C0C0C0;
+  --primary-foreground: #080808;
+  --secondary: #1C1C1C;
+  --secondary-foreground: #e5e2e1;
+  --muted: #161616;
+  --muted-foreground: #5C5C5C;
+  --accent: #2E2E2E;
+  --accent-foreground: #e5e2e1;
+  --destructive: #8B1A1A;
+  --border: #1C1C1C;
+  --input: #0F0F0F;
+  --ring: #C0C0C0;
+  --radius: 0.125rem;
+
+  /* Charts */
+  --chart-1: #C0C0C0;
+  --chart-2: #8B1A1A;
+  --chart-3: #D97706;
+  --chart-4: #1A3A28;
+  --chart-5: #5C5C5C;
+
+  /* Sidebar */
+  --sidebar: #0F0F0F;
+  --sidebar-foreground: #e5e2e1;
+  --sidebar-primary: #C0C0C0;
+  --sidebar-primary-foreground: #080808;
+  --sidebar-accent: #161616;
+  --sidebar-accent-foreground: #C0C0C0;
+  --sidebar-border: #1C1C1C;
+  --sidebar-ring: #C0C0C0;
 }
 
+/* Dark class mirrors :root since this is a dark-only application */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #080808;
+  --foreground: #e5e2e1;
+  --card: #0F0F0F;
+  --card-foreground: #e5e2e1;
+  --popover: #161616;
+  --popover-foreground: #e5e2e1;
+  --primary: #C0C0C0;
+  --primary-foreground: #080808;
+  --secondary: #1C1C1C;
+  --secondary-foreground: #e5e2e1;
+  --muted: #161616;
+  --muted-foreground: #5C5C5C;
+  --accent: #2E2E2E;
+  --accent-foreground: #e5e2e1;
+  --destructive: #8B1A1A;
+  --border: #1C1C1C;
+  --input: #0F0F0F;
+  --ring: #C0C0C0;
+  --chart-1: #C0C0C0;
+  --chart-2: #8B1A1A;
+  --chart-3: #D97706;
+  --chart-4: #1A3A28;
+  --chart-5: #5C5C5C;
+  --sidebar: #0F0F0F;
+  --sidebar-foreground: #e5e2e1;
+  --sidebar-primary: #C0C0C0;
+  --sidebar-primary-foreground: #080808;
+  --sidebar-accent: #161616;
+  --sidebar-accent-foreground: #C0C0C0;
+  --sidebar-border: #1C1C1C;
+  --sidebar-ring: #C0C0C0;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
+
   html {
     @apply font-sans;
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-ibm-plex-sans), "IBM Plex Sans", sans-serif;
+  }
+
+  /* Thin, on-brand scrollbars */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--op-base);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--op-border);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--op-border-active);
+  }
+
+  /* Material Symbols base settings */
+  .material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 24;
+    font-size: 20px;
+    line-height: 1;
+    display: inline-block;
+    user-select: none;
   }
 }
