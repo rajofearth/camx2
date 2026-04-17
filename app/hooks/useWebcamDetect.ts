@@ -59,6 +59,8 @@ export function useWebcamDetect(
   }, [isActive]);
 
   useEffect(() => {
+    // Reset derived UI state whenever the selected model changes.
+    void detectionModel;
     setDetections([]);
     setLastLatency(null);
     setError(null);

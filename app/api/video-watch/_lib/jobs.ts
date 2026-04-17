@@ -223,10 +223,13 @@ export async function getVideoJobStatus(input: {
   readonly jobId?: string | null;
   readonly fingerprint?: string | null;
 }): Promise<VideoWatchJob | null> {
-  if (input.jobId && jobsById.has(input.jobId))
-    return toPublicJob(jobsById.get(input.jobId)!);
-  if (input.fingerprint && jobsByFingerprint.has(input.fingerprint))
-    return toPublicJob(jobsByFingerprint.get(input.fingerprint)!);
+  const jobById = input.jobId ? jobsById.get(input.jobId) : undefined;
+  if (jobById) return toPublicJob(jobById);
+
+  const jobByFingerprint = input.fingerprint
+    ? jobsByFingerprint.get(input.fingerprint)
+    : undefined;
+  if (jobByFingerprint) return toPublicJob(jobByFingerprint);
 
   const fingerprint =
     input.fingerprint ||

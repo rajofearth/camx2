@@ -23,6 +23,15 @@ export function toTimestampLabel(timestampMs: number): string {
   return hours > 0 ? `${String(hours).padStart(2, "0")}:${base}` : base;
 }
 
+function hasExecutablePath(value: unknown): value is { readonly path: string } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "path" in value &&
+    typeof value.path === "string"
+  );
+}
+
 async function resolveExecutablePath(
   preferredCommand: string,
   explicitPath: string | undefined,
@@ -162,7 +171,9 @@ export async function extractFrames(
     process.env.FFMPEG_PATH,
     typeof ffmpegStatic === "string"
       ? ffmpegStatic
-      : (ffmpegStatic as any)?.path,
+      : hasExecutablePath(ffmpegStatic)
+        ? ffmpegStatic.path
+        : undefined,
   );
 
   await runCommand(ffmpegPath, [

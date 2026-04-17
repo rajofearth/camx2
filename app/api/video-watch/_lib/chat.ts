@@ -110,7 +110,9 @@ function buildTimelineExcerpt(
   const selected = new Set<number>();
 
   // Always include the start, next line, and most recent ~6 lines
-  [0, 1].forEach((idx) => selected.add(idx));
+  [0, 1].forEach((idx) => {
+    selected.add(idx);
+  });
   for (let i = Math.max(0, lines.length - 6); i < lines.length; i++)
     selected.add(i);
 

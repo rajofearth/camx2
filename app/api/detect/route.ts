@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import type { DetectionModel } from "@/app/lib/types";
+import type { Detection, DetectionModel } from "@/app/lib/types";
 import { BadRequestError, InferenceError } from "./_lib/errors";
 import { getInputName, getOutputNames, getSession } from "./_lib/model";
 import { postprocessRfDetr, postprocessYolo } from "./_lib/postprocess";
@@ -24,6 +24,19 @@ function parseDetectionModel(value: FormDataEntryValue | null): DetectionModel {
     model: value,
     supportedModels: ["rfdetr", "yolo"],
   });
+}
+
+function isDetectErrorLike(error: unknown): error is {
+  readonly errorCode: string;
+  readonly message?: string;
+  readonly details?: unknown;
+} {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "errorCode" in error &&
+    typeof error.errorCode === "string"
+  );
 }
 
 export async function POST(req: NextRequest): Promise<Response> {
@@ -78,7 +91,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     const inputName = getInputName(session, detectionModel);
     const results = await session.run({ [inputName]: tensor });
 
-    let detections;
+    let detections: Detection[] | Response;
     if (detectionModel === "rfdetr") {
       const outputNames = getOutputNames(session, "rfdetr");
       const predBoxes = results[outputNames.boxes];
@@ -141,17 +154,8 @@ export async function POST(req: NextRequest): Promise<Response> {
       );
     }
 
-    if (
-      error &&
-      typeof error === "object" &&
-      "errorCode" in error &&
-      typeof (error as any).errorCode === "string"
-    ) {
-      const detectError = error as {
-        errorCode: string;
-        message?: string;
-        details?: unknown;
-      };
+    if (isDetectErrorLike(error)) {
+      const detectError = error;
       return createErrorResponse(
         requestId,
         detectError.errorCode as BadRequestError["errorCode"],

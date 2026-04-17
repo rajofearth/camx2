@@ -5,6 +5,8 @@ export interface WatchHarmVerificationResult {
   readonly reason: string;
 }
 
+const THEN_KEY = "then";
+
 /**
  * Schema describing the expected model response.
  * Strictly enforces that `description` is provided only if `isHarm` is true.
@@ -31,7 +33,7 @@ export const WATCH_RESPONSE_SCHEMA = {
           isHarm: { const: true },
         },
       },
-      then: {
+      [THEN_KEY]: {
         properties: {
           description: {
             type: "string",
@@ -46,7 +48,7 @@ export const WATCH_RESPONSE_SCHEMA = {
           isHarm: { enum: [false, null] },
         },
       },
-      then: {
+      [THEN_KEY]: {
         properties: {
           description: {
             enum: ["", null],

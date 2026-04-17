@@ -27,7 +27,8 @@ export async function getSession(
   modelType: DetectionModel,
 ): Promise<ort.InferenceSession> {
   // Avoid reloading the same model session
-  if (sessions.has(modelType)) return sessions.get(modelType)!;
+  const existingSession = sessions.get(modelType);
+  if (existingSession) return existingSession;
   const config = MODEL_CONFIG[modelType];
   try {
     const modelPath = join(process.cwd(), "public", "models", config.fileName);

@@ -112,14 +112,16 @@ export function useWebcamWatch(
               } catch {}
               reject(new Error("Image worker timeout"));
             }, 3000);
-            const wrap =
-              (fn: any) =>
-              (...args: any[]) => {
+            const clearTimeoutBeforeCall =
+              <TArgs extends unknown[], TResult>(
+                fn: (...args: TArgs) => TResult,
+              ) =>
+              (...args: TArgs): TResult => {
                 clearTimeout(timeout);
                 return fn(...args);
               };
-            resolve = wrap(resolve);
-            reject = wrap(reject);
+            resolve = clearTimeoutBeforeCall(resolve);
+            reject = clearTimeoutBeforeCall(reject);
           } catch (err) {
             reject(err);
           }
@@ -232,7 +234,7 @@ export function useWebcamWatch(
         }, FRAME_INTERVAL_MS);
       }
     }
-  }, [isActive, webcamRef]);
+  }, [webcamRef]);
 
   useEffect(() => {
     // Start/stop processing based on isActive.

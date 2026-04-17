@@ -96,6 +96,14 @@ export async function makeSquareAndCompress(
     );
   }
 
+  function get2dContext(
+    canvas: HTMLCanvasElement | OffscreenCanvas,
+  ): CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D {
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("No 2d context");
+    return context;
+  }
+
   // Canvas to Blob, async
   function canvasToBlob(
     canvas: HTMLCanvasElement | OffscreenCanvas,
@@ -136,7 +144,7 @@ export async function makeSquareAndCompress(
 
     // Draw normalized image into a square
     const tmpCanvas = makeCanvas(finalSize, finalSize);
-    const ctx = tmpCanvas.getContext("2d") as CanvasRenderingContext2D;
+    const ctx = get2dContext(tmpCanvas);
     ctx.fillStyle = "#FFF";
     ctx.fillRect(0, 0, finalSize, finalSize);
     ctx.drawImage(
@@ -180,7 +188,7 @@ export async function makeSquareAndCompress(
     // For 'png' output, decode the lossy compressed version to bitmap, then export to PNG to preserve visuals
     const bitmap = await decodeToBitmap(resultBlob as Blob);
     const finalCanvas = makeCanvas(finalSize, finalSize);
-    const finalCtx = finalCanvas.getContext("2d")!;
+    const finalCtx = get2dContext(finalCanvas);
     finalCtx.fillStyle = "#FFF";
     finalCtx.fillRect(0, 0, finalSize, finalSize);
     finalCtx.drawImage(bitmap, 0, 0, finalSize, finalSize);
