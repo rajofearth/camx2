@@ -28,8 +28,10 @@ export function drawDetections(
   // Draw each detection's box and label
   for (let i = 0; i < detections.length; ++i) {
     const det = detections[i];
-    const x1 = det.x1 * sx, y1 = det.y1 * sy;
-    const x2 = det.x2 * sx, y2 = det.y2 * sy;
+    const x1 = det.x1 * sx,
+      y1 = det.y1 * sy;
+    const x2 = det.x2 * sx,
+      y2 = det.y2 * sy;
     const style = getDetectionStyle(det, i);
 
     ctx.strokeStyle = style.strokeCss;
@@ -73,8 +75,10 @@ function drawMask(
     for (let x = 0; x < width; ++x) {
       if (!readMaskBit(bytes, width, x, y)) continue;
       const isEdge =
-        x === 0 || y === 0 ||
-        x === width - 1 || y === height - 1 ||
+        x === 0 ||
+        y === 0 ||
+        x === width - 1 ||
+        y === height - 1 ||
         !readMaskBit(bytes, width, x - 1, y) ||
         !readMaskBit(bytes, width, x + 1, y) ||
         !readMaskBit(bytes, width, x, y - 1) ||
@@ -94,8 +98,14 @@ function drawMask(
   ctx.save();
   ctx.drawImage(
     offscreen,
-    0, 0, width, height,
-    0, 0, ctx.canvas.width, ctx.canvas.height
+    0,
+    0,
+    width,
+    height,
+    0,
+    0,
+    ctx.canvas.width,
+    ctx.canvas.height,
   );
   ctx.restore();
 }
@@ -116,7 +126,9 @@ function readMaskBit(
   y: number,
 ): boolean {
   if (x < 0 || y < 0) return false;
-  const idx = y * width + x, byteIdx = idx >> 3, bitIdx = idx & 7;
+  const idx = y * width + x,
+    byteIdx = idx >> 3,
+    bitIdx = idx & 7;
   return ((bytes[byteIdx] ?? 0) & (1 << bitIdx)) !== 0;
 }
 
@@ -147,16 +159,33 @@ function hslToRgb(
   saturation: number,
   lightness: number,
 ): [number, number, number] {
-  const s = saturation / 100, l = lightness / 100;
+  const s = saturation / 100,
+    l = lightness / 100;
   const c = (1 - Math.abs(2 * l - 1)) * s;
-  const hh = hue / 60, x = c * (1 - Math.abs((hh % 2) - 1));
-  let r = 0, g = 0, b = 0;
-  if (hh < 1) { r = c; g = x; }
-  else if (hh < 2) { r = x; g = c; }
-  else if (hh < 3) { g = c; b = x; }
-  else if (hh < 4) { g = x; b = c; }
-  else if (hh < 5) { r = x; b = c; }
-  else { r = c; b = x; }
+  const hh = hue / 60,
+    x = c * (1 - Math.abs((hh % 2) - 1));
+  let r = 0,
+    g = 0,
+    b = 0;
+  if (hh < 1) {
+    r = c;
+    g = x;
+  } else if (hh < 2) {
+    r = x;
+    g = c;
+  } else if (hh < 3) {
+    g = c;
+    b = x;
+  } else if (hh < 4) {
+    g = x;
+    b = c;
+  } else if (hh < 5) {
+    r = x;
+    b = c;
+  } else {
+    r = c;
+    b = x;
+  }
   const m = l - c / 2;
   return [
     Math.round((r + m) * 255),

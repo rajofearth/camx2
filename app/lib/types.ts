@@ -58,11 +58,7 @@ const DETECT_ERROR_CODES = new Set<DetectErrorCode>([
 ]);
 
 function isDetectionMask(value: unknown): value is DetectionMask {
-  if (
-    typeof value !== "object" ||
-    value === null
-  )
-    return false;
+  if (typeof value !== "object" || value === null) return false;
   const mask = value as Record<string, unknown>;
   const { width, height, data } = mask;
   return (
@@ -77,11 +73,7 @@ function isDetectionMask(value: unknown): value is DetectionMask {
 }
 
 function isDetection(value: unknown): value is Detection {
-  if (
-    typeof value !== "object" ||
-    value === null
-  )
-    return false;
+  if (typeof value !== "object" || value === null) return false;
   const d = value as Record<string, unknown>;
   const { x1, y1, x2, y2, confidence, class: classNum, mask } = d;
   return (
@@ -90,19 +82,17 @@ function isDetection(value: unknown): value is Detection {
     typeof x2 === "number" &&
     typeof y2 === "number" &&
     typeof confidence === "number" &&
-    confidence >= 0 && confidence <= 1 &&
+    confidence >= 0 &&
+    confidence <= 1 &&
     typeof classNum === "number" &&
-    Number.isInteger(classNum) && classNum >= 0 &&
+    Number.isInteger(classNum) &&
+    classNum >= 0 &&
     (mask === undefined || isDetectionMask(mask))
   );
 }
 
 function isFrameDimensions(value: unknown): value is FrameDimensions {
-  if (
-    typeof value !== "object" ||
-    value === null
-  )
-    return false;
+  if (typeof value !== "object" || value === null) return false;
   const f = value as Record<string, unknown>;
   const { width, height } = f;
   return (
@@ -116,7 +106,10 @@ function isFrameDimensions(value: unknown): value is FrameDimensions {
 }
 
 function isDetectErrorCode(value: unknown): value is DetectErrorCode {
-  return typeof value === "string" && DETECT_ERROR_CODES.has(value as DetectErrorCode);
+  return (
+    typeof value === "string" &&
+    DETECT_ERROR_CODES.has(value as DetectErrorCode)
+  );
 }
 
 export function parseDetectResponse(json: unknown): DetectResponse {

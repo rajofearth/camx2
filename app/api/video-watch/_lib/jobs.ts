@@ -51,7 +51,9 @@ function toPublicJob(job: InternalJob): VideoWatchJob {
   };
 }
 
-export async function loadJobFromDisk(fingerprint: string): Promise<InternalJob | null> {
+export async function loadJobFromDisk(
+  fingerprint: string,
+): Promise<InternalJob | null> {
   const cacheDir = await ensureCacheDir(fingerprint);
   const [currentVersion, storedVersion] = await Promise.all([
     computeProcessingVersionHash(),
@@ -115,7 +117,8 @@ async function processVideoJob(
     await finalizeJob(job, manifest);
   } catch (error) {
     job.status = "error";
-    job.error = error instanceof Error ? error.message : "Unknown video watch error";
+    job.error =
+      error instanceof Error ? error.message : "Unknown video watch error";
     job.updatedAt = new Date().toISOString();
     await persistState(job);
   }
@@ -131,9 +134,14 @@ export async function createOrResumeVideoJob(input: {
 
   const fingerprint = await hashVideoBuffer(input.videoBuffer);
   const processingVersion = await computeProcessingVersionHash();
-  let existingJob = jobsByFingerprint.get(fingerprint) ?? (await loadJobFromDisk(fingerprint));
+  let existingJob =
+    jobsByFingerprint.get(fingerprint) ?? (await loadJobFromDisk(fingerprint));
 
-  if (input.clientFingerprint && input.clientFingerprint.length > 0 && input.clientFingerprint !== fingerprint) {
+  if (
+    input.clientFingerprint &&
+    input.clientFingerprint.length > 0 &&
+    input.clientFingerprint !== fingerprint
+  ) {
     throw new Error("Client fingerprint did not match uploaded video bytes");
   }
 
@@ -185,7 +193,11 @@ export async function createOrResumeVideoJob(input: {
   jobsByFingerprint.set(fingerprint, job);
   await persistState(job);
 
-  job.runPromise = processVideoJob(job, targetVideoPath, input.videoBuffer.length)
+  job.runPromise = processVideoJob(
+    job,
+    targetVideoPath,
+    input.videoBuffer.length,
+  )
     .catch(() => {})
     .finally(() => {
       job.runPromise = undefined;
@@ -198,7 +210,9 @@ export async function clearVideoJobCache(input: {
   readonly jobId?: string | null;
   readonly fingerprint?: string | null;
 }): Promise<string | null> {
-  const fingerprint = input.fingerprint || (input.jobId ? await findFingerprintByJobId(input.jobId) : null);
+  const fingerprint =
+    input.fingerprint ||
+    (input.jobId ? await findFingerprintByJobId(input.jobId) : null);
   if (!fingerprint) return null;
   removeJobFromMemory(jobsByFingerprint.get(fingerprint));
   await removeCacheDir(fingerprint);
@@ -209,20 +223,27 @@ export async function getVideoJobStatus(input: {
   readonly jobId?: string | null;
   readonly fingerprint?: string | null;
 }): Promise<VideoWatchJob | null> {
-  if (input.jobId && jobsById.has(input.jobId)) return toPublicJob(jobsById.get(input.jobId)!);
-  if (input.fingerprint && jobsByFingerprint.has(input.fingerprint)) return toPublicJob(jobsByFingerprint.get(input.fingerprint)!);
+  if (input.jobId && jobsById.has(input.jobId))
+    return toPublicJob(jobsById.get(input.jobId)!);
+  if (input.fingerprint && jobsByFingerprint.has(input.fingerprint))
+    return toPublicJob(jobsByFingerprint.get(input.fingerprint)!);
 
-  const fingerprint = input.fingerprint || (input.jobId ? await findFingerprintByJobId(input.jobId) : null);
+  const fingerprint =
+    input.fingerprint ||
+    (input.jobId ? await findFingerprintByJobId(input.jobId) : null);
   if (!fingerprint) return null;
   const loaded = await loadJobFromDisk(fingerprint);
   return loaded ? toPublicJob(loaded) : null;
 }
 
 // Returns summary for a given jobId from memory or disk.
-export async function readSummaryForJob(jobId: string): Promise<VideoWatchSummary | null> {
+export async function readSummaryForJob(
+  jobId: string,
+): Promise<VideoWatchSummary | null> {
   const job = jobsById.get(jobId);
   if (job?.summary) return job.summary;
   const fingerprint = await findFingerprintByJobId(jobId);
-  const target = job ?? (fingerprint ? await loadJobFromDisk(fingerprint) : null);
+  const target =
+    job ?? (fingerprint ? await loadJobFromDisk(fingerprint) : null);
   return target?.summary ?? null;
 }

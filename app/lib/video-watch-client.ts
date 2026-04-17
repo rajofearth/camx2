@@ -10,11 +10,12 @@ import {
 export async function uploadVideoForWatch(
   video: File,
   clientFingerprint?: string,
-  options?: { readonly forceRefresh?: boolean }
+  options?: { readonly forceRefresh?: boolean },
 ): Promise<VideoWatchResponse> {
   const formData = new FormData();
   formData.append("video", video);
-  if (clientFingerprint) formData.append("clientFingerprint", clientFingerprint);
+  if (clientFingerprint)
+    formData.append("clientFingerprint", clientFingerprint);
   if (options?.forceRefresh) formData.append("forceRefresh", "true");
 
   const res = await fetch("/api/video-watch", {
@@ -44,7 +45,8 @@ export async function clearVideoWatchCache(input: {
   }
   return {
     ok: false,
-    message: typeof json.message === "string" ? json.message : "Failed to clear cache",
+    message:
+      typeof json.message === "string" ? json.message : "Failed to clear cache",
   };
 }
 

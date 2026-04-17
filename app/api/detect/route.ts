@@ -15,7 +15,8 @@ export const runtime = "nodejs";
 // Parse and validate the detection model, defaulting to "rfdetr"
 function parseDetectionModel(value: FormDataEntryValue | null): DetectionModel {
   if (value === null) return "rfdetr";
-  if (typeof value !== "string") throw new BadRequestError("Invalid 'model' field");
+  if (typeof value !== "string")
+    throw new BadRequestError("Invalid 'model' field");
   const normalized = value.trim().toLowerCase();
   if (normalized === "" || normalized === "rfdetr") return "rfdetr";
   if (normalized === "yolo") return "yolo";
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       return createErrorResponse(
         requestId,
         "BAD_REQUEST",
-        "Content-Type must be multipart/form-data"
+        "Content-Type must be multipart/form-data",
       );
     }
 
@@ -44,7 +45,8 @@ export async function POST(req: NextRequest): Promise<Response> {
     try {
       formData = await req.formData();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to parse form data";
+      const message =
+        error instanceof Error ? error.message : "Failed to parse form data";
       return createErrorResponse(requestId, "BAD_REQUEST", message);
     }
 
@@ -54,7 +56,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       return createErrorResponse(
         requestId,
         "BAD_REQUEST",
-        !file ? "Missing 'frame' field" : "Empty frame file"
+        !file ? "Missing 'frame' field" : "Empty frame file",
       );
     }
 
@@ -63,7 +65,8 @@ export async function POST(req: NextRequest): Promise<Response> {
     try {
       buffer = Buffer.from(await file.arrayBuffer());
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to read frame data";
+      const message =
+        error instanceof Error ? error.message : "Failed to read frame data";
       return createErrorResponse(requestId, "BAD_REQUEST", message);
     }
 
@@ -123,7 +126,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       requestId,
       detections,
       { width: image.origWidth, height: image.origHeight },
-      { latencyMs }
+      { latencyMs },
     );
   } catch (error) {
     const latencyMs = performance.now() - startTime;
@@ -144,7 +147,11 @@ export async function POST(req: NextRequest): Promise<Response> {
       "errorCode" in error &&
       typeof (error as any).errorCode === "string"
     ) {
-      const detectError = error as { errorCode: string; message?: string; details?: unknown };
+      const detectError = error as {
+        errorCode: string;
+        message?: string;
+        details?: unknown;
+      };
       return createErrorResponse(
         requestId,
         detectError.errorCode as BadRequestError["errorCode"],

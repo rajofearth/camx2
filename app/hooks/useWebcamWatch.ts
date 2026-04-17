@@ -37,14 +37,18 @@ export function useWebcamWatch(
 
     if (abortControllerRef.current) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => { void processFrame(); }, FRAME_INTERVAL_MS);
+      timeoutRef.current = setTimeout(() => {
+        void processFrame();
+      }, FRAME_INTERVAL_MS);
       return;
     }
 
     const imageSrc = webcamRef.current.getScreenshot();
     if (!imageSrc) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => { void processFrame(); }, FRAME_INTERVAL_MS);
+      timeoutRef.current = setTimeout(() => {
+        void processFrame();
+      }, FRAME_INTERVAL_MS);
       return;
     }
 
@@ -53,17 +57,20 @@ export function useWebcamWatch(
     setError(null);
 
     try {
-      const originalBlob = await fetch(imageSrc).then(r => r.blob());
+      const originalBlob = await fetch(imageSrc).then((r) => r.blob());
       let processedBlob: Blob | null = null;
       let workerTimings: unknown = null;
 
       // Try to process the blob with a worker or in-thread, repeatedly reducing size/quality.
-      async function processOnceWithWorker(opts: { quality: number; targetSize: number }): Promise<Blob> {
+      async function processOnceWithWorker(opts: {
+        quality: number;
+        targetSize: number;
+      }): Promise<Blob> {
         return new Promise<Blob>((resolve, reject) => {
           try {
             const worker = new Worker(
               new URL("../workers/imageWorker.ts", import.meta.url),
-              { type: "module" }
+              { type: "module" },
             );
             const id = String(Math.random()).slice(2);
             const onMessage = (ev: MessageEvent) => {
@@ -105,7 +112,12 @@ export function useWebcamWatch(
               } catch {}
               reject(new Error("Image worker timeout"));
             }, 3000);
-            const wrap = (fn: any) => (...args: any[]) => { clearTimeout(timeout); return fn(...args); };
+            const wrap =
+              (fn: any) =>
+              (...args: any[]) => {
+                clearTimeout(timeout);
+                return fn(...args);
+              };
             resolve = wrap(resolve);
             reject = wrap(reject);
           } catch (err) {
@@ -114,7 +126,10 @@ export function useWebcamWatch(
         });
       }
 
-      async function processInThread(opts: { quality: number; targetSize: number }) {
+      async function processInThread(opts: {
+        quality: number;
+        targetSize: number;
+      }) {
         return makeSquareAndCompress(originalBlob, {
           quality: opts.quality,
           mode: "crop",
@@ -148,7 +163,9 @@ export function useWebcamWatch(
           }
           if (processedBlob) {
             // Accept if image is WebP and under size target or at least smaller than original.
-            const isWebp = (processedBlob.type || "").toLowerCase().includes("webp");
+            const isWebp = (processedBlob.type || "")
+              .toLowerCase()
+              .includes("webp");
             const sizeOk = processedBlob.size <= MAX_SIZE;
             const smallerThanOriginal = processedBlob.size < originalBlob.size;
             if (isWebp && (sizeOk || smallerThanOriginal)) break;
@@ -160,7 +177,10 @@ export function useWebcamWatch(
 
       if (!processedBlob) {
         try {
-          processedBlob = await processInThread({ quality: 0.15, targetSize: 64 });
+          processedBlob = await processInThread({
+            quality: 0.15,
+            targetSize: 64,
+          });
         } catch {
           processedBlob = originalBlob;
         }
@@ -171,13 +191,13 @@ export function useWebcamWatch(
         // eslint-disable-next-line no-console
         console.debug(
           `[watch] sending frame sizes: original=${originalBlob.size} bytes, processed=${processedBlob.size} bytes`,
-          workerTimings ? { workerTimings } : undefined
+          workerTimings ? { workerTimings } : undefined,
         );
       } catch {}
 
       // Send original and processed image to backend.
       const result = await fetchWatch(originalBlob, processedBlob, {
-        signal: abortControllerRef.current.signal
+        signal: abortControllerRef.current.signal,
       });
 
       if (!result.success) {
@@ -207,7 +227,9 @@ export function useWebcamWatch(
 
       if (isActiveRef.current) {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        timeoutRef.current = setTimeout(() => { void processFrame(); }, FRAME_INTERVAL_MS);
+        timeoutRef.current = setTimeout(() => {
+          void processFrame();
+        }, FRAME_INTERVAL_MS);
       }
     }
   }, [isActive, webcamRef]);

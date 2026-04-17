@@ -31,7 +31,11 @@ export function authoritativePriorVisibleObjects(previousFrame: {
   if (entries.length === 0) return [];
   // Compose, trim, deduplicate, clip to max
   const unique = new Set<string>();
-  for (let i = 0; i < entries.length && unique.size < MAX_VISIBLE_OBJECTS; ++i) {
+  for (
+    let i = 0;
+    i < entries.length && unique.size < MAX_VISIBLE_OBJECTS;
+    ++i
+  ) {
     const [id, value] = entries[i];
     const attr = trimNarrativeText(value);
     if (attr) unique.add(`${id}: ${attr}`);
@@ -68,9 +72,8 @@ export function applyAuthoritativePriorFields(
   const prevObjects = authoritativePriorVisibleObjects(previousFrame);
   return {
     priorFrameAnalysis: authoritativePriorFrameAnalysis(previousFrame),
-    priorVisibleObjects: prevObjects.length > 0
-      ? prevObjects
-      : modelPriorVisibleObjects.slice(),
+    priorVisibleObjects:
+      prevObjects.length > 0 ? prevObjects : modelPriorVisibleObjects.slice(),
   };
 }
 
@@ -83,7 +86,10 @@ export function sanitizeStringRecord(
   let count = 0;
   for (const [rawKey, rawValue] of Object.entries(value)) {
     if (count >= maxEntries) break;
-    let key = typeof rawKey === "string" ? rawKey.replace(/\s+/g, " ").trim().toLowerCase() : "";
+    const key =
+      typeof rawKey === "string"
+        ? rawKey.replace(/\s+/g, " ").trim().toLowerCase()
+        : "";
     if (!key) continue;
     if (typeof rawValue !== "string") continue;
     const normalizedValue = trimNarrativeText(rawValue);
@@ -115,16 +121,24 @@ export function isPlaceholderFrameAnalysis(text: string): boolean {
 
 /** Legacy / model output normalization into a single narrative string. */
 export function normalizeNarrativePayload(value: unknown): string {
-  const parsed = (typeof value === "object" && value !== null)
-    ? (value as Record<string, unknown>)
-    : {};
+  const parsed =
+    typeof value === "object" && value !== null
+      ? (value as Record<string, unknown>)
+      : {};
   const raw =
-    [parsed.analysis, parsed.frameAnalysis, parsed.summaryText, parsed.description]
-      .find((x) => typeof x === "string" && x.trim().length > 0) as string | undefined || "";
+    ([
+      parsed.analysis,
+      parsed.frameAnalysis,
+      parsed.summaryText,
+      parsed.description,
+    ].find((x) => typeof x === "string" && x.trim().length > 0) as
+      | string
+      | undefined) || "";
 
   if (isSceneUnchangedAnalysis(raw)) return SCENE_UNCHANGED_SENTINEL;
 
-  let frameAnalysis = trimNarrativeText(raw) || "No meaningful visual change detected.";
+  let frameAnalysis =
+    trimNarrativeText(raw) || "No meaningful visual change detected.";
   const objects = sanitizeStringRecord(parsed.objects, MAX_OBJECT_ID_ENTRIES);
   if (isPlaceholderFrameAnalysis(frameAnalysis)) {
     const fromObjects = frameAnalysisFromTrackedObjects(objects);

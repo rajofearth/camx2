@@ -17,7 +17,10 @@ const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 const MEAN = [0.485, 0.456, 0.406] as const;
 const STD = [0.229, 0.224, 0.225] as const;
 
-const MODEL_DIMENSIONS: Record<DetectionModel, { width: number; height: number }> = {
+const MODEL_DIMENSIONS: Record<
+  DetectionModel,
+  { width: number; height: number }
+> = {
   rfdetr: { width: 312, height: 312 },
   yolo: { width: 640, height: 640 },
 };
@@ -29,7 +32,7 @@ export async function preprocess(
   if (!imageBuffer.length) throw new BadRequestError("Empty image buffer");
   if (imageBuffer.length > MAX_IMAGE_SIZE_BYTES)
     throw new BadRequestError(
-      `Image too large: ${imageBuffer.length} bytes (max: ${MAX_IMAGE_SIZE_BYTES})`
+      `Image too large: ${imageBuffer.length} bytes (max: ${MAX_IMAGE_SIZE_BYTES})`,
     );
 
   // Extract image metadata
@@ -46,7 +49,9 @@ export async function preprocess(
     !metadata.format ||
     !ALLOWED_MIME_TYPES.some((mime) => mime.includes(metadata.format))
   ) {
-    throw new UnsupportedMediaError(`Unsupported image format: ${metadata.format ?? "unknown"}`);
+    throw new UnsupportedMediaError(
+      `Unsupported image format: ${metadata.format ?? "unknown"}`,
+    );
   }
 
   const origWidth = metadata.width ?? 0;
@@ -57,10 +62,13 @@ export async function preprocess(
     !Number.isFinite(origWidth) ||
     !Number.isFinite(origHeight)
   ) {
-    throw new BadRequestError(`Invalid image dimensions: ${origWidth}x${origHeight}`);
+    throw new BadRequestError(
+      `Invalid image dimensions: ${origWidth}x${origHeight}`,
+    );
   }
 
-  const { width: modelWidth, height: modelHeight } = MODEL_DIMENSIONS[modelType];
+  const { width: modelWidth, height: modelHeight } =
+    MODEL_DIMENSIONS[modelType];
 
   // Preprocess (resize, remove alpha, get raw RGB data)
   let resized: Buffer;
@@ -79,19 +87,26 @@ export async function preprocess(
   }
 
   if (resized.length !== modelWidth * modelHeight * 3) {
-    throw new UnsupportedMediaError(`Unexpected preprocessed image size: ${resized.length}`, {
-      expected: modelWidth * modelHeight * 3,
-      width: modelWidth,
-      height: modelHeight,
-      modelType,
-    });
+    throw new UnsupportedMediaError(
+      `Unexpected preprocessed image size: ${resized.length}`,
+      {
+        expected: modelWidth * modelHeight * 3,
+        width: modelWidth,
+        height: modelHeight,
+        modelType,
+      },
+    );
   }
 
   // Convert from HWC RGB to CHW float32 tensor
   const floatData = new Float32Array(3 * modelWidth * modelHeight);
   const planeSize = modelWidth * modelHeight;
-  const rMean = MEAN[0], gMean = MEAN[1], bMean = MEAN[2];
-  const rStd = STD[0], gStd = STD[1], bStd = STD[2];
+  const rMean = MEAN[0],
+    gMean = MEAN[1],
+    bMean = MEAN[2];
+  const rStd = STD[0],
+    gStd = STD[1],
+    bStd = STD[2];
 
   if (modelType === "rfdetr") {
     for (let i = 0; i < planeSize; ++i) {

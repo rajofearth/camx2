@@ -13,19 +13,21 @@ function softmax(logits: readonly number[]): number[] {
   if (!logits.length) return [];
   const maxLogit = Math.max(...logits);
   let sum = 0;
-  const exps = logits.map(x => {
+  const exps = logits.map((x) => {
     const v = Math.exp(x - maxLogit);
     sum += v;
     return v;
   });
   return !sum || !Number.isFinite(sum)
     ? new Array(logits.length).fill(0)
-    : exps.map(e => e / sum);
+    : exps.map((e) => e / sum);
 }
 
-const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+const clamp = (v: number, min: number, max: number) =>
+  Math.max(min, Math.min(max, v));
 
-const sigmoid = (v: number) => v >= 0 ? 1 / (1 + Math.exp(-v)) : Math.exp(v) / (1 + Math.exp(v));
+const sigmoid = (v: number) =>
+  v >= 0 ? 1 / (1 + Math.exp(-v)) : Math.exp(v) / (1 + Math.exp(v));
 
 // Only handles float32/float64/int32/uint8, as expected from onnxruntime-node
 function getTensorData(
@@ -41,7 +43,9 @@ function getTensorData(
   ) {
     return data;
   }
-  throw new InferenceError(`Unsupported tensor data type for '${expectedName}'`);
+  throw new InferenceError(
+    `Unsupported tensor data type for '${expectedName}'`,
+  );
 }
 
 // Ensure tensor shape is as expected before further processing
@@ -87,13 +91,21 @@ function postprocessRfDetrDetection(
   if (
     batchSizeBoxes !== batchSizeLogits ||
     numQueriesBoxes !== numQueriesLogits ||
-    !Number.isFinite(batchSizeBoxes) || !Number.isFinite(numQueriesBoxes) || !Number.isFinite(boxWidth) ||
-    !Number.isFinite(batchSizeLogits) || !Number.isFinite(numQueriesLogits) || !Number.isFinite(numClasses) ||
-    batchSizeBoxes < 1 || numQueriesBoxes < 1 || boxWidth !== 4 ||
-    batchSizeLogits < 1 || numQueriesLogits < 1 || numClasses < 2
+    !Number.isFinite(batchSizeBoxes) ||
+    !Number.isFinite(numQueriesBoxes) ||
+    !Number.isFinite(boxWidth) ||
+    !Number.isFinite(batchSizeLogits) ||
+    !Number.isFinite(numQueriesLogits) ||
+    !Number.isFinite(numClasses) ||
+    batchSizeBoxes < 1 ||
+    numQueriesBoxes < 1 ||
+    boxWidth !== 4 ||
+    batchSizeLogits < 1 ||
+    numQueriesLogits < 1 ||
+    numClasses < 2
   ) {
     throw new InferenceError(
-      `Unexpected pred_boxes/logits shape: ${JSON.stringify(predBoxes.dims)}, ${JSON.stringify(logits.dims)}`
+      `Unexpected pred_boxes/logits shape: ${JSON.stringify(predBoxes.dims)}, ${JSON.stringify(logits.dims)}`,
     );
   }
 
@@ -104,7 +116,10 @@ function postprocessRfDetrDetection(
   for (let i = 0; i < numQueriesBoxes; i++) {
     const boxOffset = i * 4;
     const logitOffset = i * numClasses;
-    if (boxOffset + 3 >= boxData.length || logitOffset + numClasses - 1 >= logitData.length)
+    if (
+      boxOffset + 3 >= boxData.length ||
+      logitOffset + numClasses - 1 >= logitData.length
+    )
       break;
 
     const cx = +boxData[boxOffset];
@@ -115,10 +130,11 @@ function postprocessRfDetrDetection(
 
     // Softmax gives probabilities
     const row = Array.from({ length: numClasses }, (_, j) =>
-      Number(logitData[logitOffset + j] ?? 0)
+      Number(logitData[logitOffset + j] ?? 0),
     );
     const probabilities = softmax(row);
-    let maxClass = 0, maxConfidence = -Infinity;
+    let maxClass = 0,
+      maxConfidence = -Infinity;
     for (let j = 0; j < numClasses; j++) {
       const p = probabilities[j] ?? 0;
       if (p > maxConfidence) {
@@ -126,16 +142,43 @@ function postprocessRfDetrDetection(
         maxClass = j;
       }
     }
-    if (!Number.isFinite(maxConfidence) || maxConfidence < RF_DETR_CONFIDENCE_THRESHOLD) continue;
+    if (
+      !Number.isFinite(maxConfidence) ||
+      maxConfidence < RF_DETR_CONFIDENCE_THRESHOLD
+    )
+      continue;
 
     // Convert normalized (cx,cy,w,h) to [x1,y1,x2,y2] in original image
-    const x1 = clamp((cx - width / 2) * imageInfo.origWidth, 0, imageInfo.origWidth);
-    const y1 = clamp((cy - height / 2) * imageInfo.origHeight, 0, imageInfo.origHeight);
-    const x2 = clamp((cx + width / 2) * imageInfo.origWidth, 0, imageInfo.origWidth);
-    const y2 = clamp((cy + height / 2) * imageInfo.origHeight, 0, imageInfo.origHeight);
+    const x1 = clamp(
+      (cx - width / 2) * imageInfo.origWidth,
+      0,
+      imageInfo.origWidth,
+    );
+    const y1 = clamp(
+      (cy - height / 2) * imageInfo.origHeight,
+      0,
+      imageInfo.origHeight,
+    );
+    const x2 = clamp(
+      (cx + width / 2) * imageInfo.origWidth,
+      0,
+      imageInfo.origWidth,
+    );
+    const y2 = clamp(
+      (cy + height / 2) * imageInfo.origHeight,
+      0,
+      imageInfo.origHeight,
+    );
     if (x2 <= x1 || y2 <= y1) continue;
 
-    detections.push({ x1, y1, x2, y2, confidence: maxConfidence, class: maxClass });
+    detections.push({
+      x1,
+      y1,
+      x2,
+      y2,
+      confidence: maxConfidence,
+      class: maxClass,
+    });
   }
 
   // Limit to MAX_DETECTIONS
@@ -154,27 +197,46 @@ function postprocessRfDetrSegmentation(
   const logitShape = validateShape(logits.dims, 3, "logits");
   const maskShape = validateShape(masks.dims, 4, "masks");
 
-  const batchSizeBoxes = +boxShape[0], numQueriesBoxes = +boxShape[1], boxWidth = +boxShape[2];
-  const batchSizeLogits = +logitShape[0], numQueriesLogits = +logitShape[1], numClasses = +logitShape[2];
-  const batchSizeMasks = +maskShape[0], numQueriesMasks = +maskShape[1];
-  const maskHeight = +maskShape[2], maskWidth = +maskShape[3];
+  const batchSizeBoxes = +boxShape[0],
+    numQueriesBoxes = +boxShape[1],
+    boxWidth = +boxShape[2];
+  const batchSizeLogits = +logitShape[0],
+    numQueriesLogits = +logitShape[1],
+    numClasses = +logitShape[2];
+  const batchSizeMasks = +maskShape[0],
+    numQueriesMasks = +maskShape[1];
+  const maskHeight = +maskShape[2],
+    maskWidth = +maskShape[3];
 
   if (
     batchSizeBoxes !== batchSizeLogits ||
     batchSizeBoxes !== batchSizeMasks ||
     numQueriesBoxes !== numQueriesLogits ||
     numQueriesBoxes !== numQueriesMasks ||
-    !Number.isFinite(batchSizeBoxes) || !Number.isFinite(numQueriesBoxes) || !Number.isFinite(boxWidth) ||
-    !Number.isFinite(batchSizeLogits) || !Number.isFinite(numQueriesLogits) || !Number.isFinite(numClasses) ||
-    !Number.isFinite(batchSizeMasks) || !Number.isFinite(numQueriesMasks) ||
-    !Number.isFinite(maskHeight) || !Number.isFinite(maskWidth) ||
-    batchSizeBoxes < 1 || numQueriesBoxes < 1 || boxWidth !== 4 ||
-    batchSizeLogits < 1 || numQueriesLogits < 1 || numClasses < 2 ||
-    batchSizeMasks < 1 || numQueriesMasks < 1|| maskHeight < 1 || maskWidth < 1
+    !Number.isFinite(batchSizeBoxes) ||
+    !Number.isFinite(numQueriesBoxes) ||
+    !Number.isFinite(boxWidth) ||
+    !Number.isFinite(batchSizeLogits) ||
+    !Number.isFinite(numQueriesLogits) ||
+    !Number.isFinite(numClasses) ||
+    !Number.isFinite(batchSizeMasks) ||
+    !Number.isFinite(numQueriesMasks) ||
+    !Number.isFinite(maskHeight) ||
+    !Number.isFinite(maskWidth) ||
+    batchSizeBoxes < 1 ||
+    numQueriesBoxes < 1 ||
+    boxWidth !== 4 ||
+    batchSizeLogits < 1 ||
+    numQueriesLogits < 1 ||
+    numClasses < 2 ||
+    batchSizeMasks < 1 ||
+    numQueriesMasks < 1 ||
+    maskHeight < 1 ||
+    maskWidth < 1
   ) {
     throw new InferenceError(
       `Unexpected RF-DETR segm output: pred_boxes=${JSON.stringify(predBoxes.dims)}, ` +
-      `logits=${JSON.stringify(logits.dims)}, masks=${JSON.stringify(masks.dims)}`
+        `logits=${JSON.stringify(logits.dims)}, masks=${JSON.stringify(masks.dims)}`,
     );
   }
 
@@ -187,7 +249,8 @@ function postprocessRfDetrSegmentation(
   // Calculate max score, class for each query
   for (let i = 0; i < numQueriesBoxes; i++) {
     const logitOffset = i * numClasses;
-    let maxConfidence = -Infinity, maxClass = 0;
+    let maxConfidence = -Infinity,
+      maxClass = 0;
     for (let j = 0; j < numClasses; j++) {
       const conf = sigmoid(Number(logitData[logitOffset + j] ?? 0));
       if (conf > maxConfidence) {
@@ -200,32 +263,66 @@ function postprocessRfDetrSegmentation(
   }
 
   // indices sorted by score descending
-  const sortedIndices = Array.from({ length: numQueriesBoxes }, (_, i) => i)
-    .sort((a, b) => (queryScores[b] ?? 0) - (queryScores[a] ?? 0));
+  const sortedIndices = Array.from(
+    { length: numQueriesBoxes },
+    (_, i) => i,
+  ).sort((a, b) => (queryScores[b] ?? 0) - (queryScores[a] ?? 0));
 
   const detections: Detection[] = [];
   for (let c = 0; c < Math.min(sortedIndices.length, MAX_DETECTIONS); c++) {
     const i = sortedIndices[c];
     const confidence = queryScores[i] ?? 0;
-    if (!Number.isFinite(confidence) || confidence < RF_DETR_CONFIDENCE_THRESHOLD) continue;
+    if (
+      !Number.isFinite(confidence) ||
+      confidence < RF_DETR_CONFIDENCE_THRESHOLD
+    )
+      continue;
 
     const boxOffset = i * 4;
-    const cx = +boxData[boxOffset], cy = +boxData[boxOffset + 1], width = +boxData[boxOffset + 2], height = +boxData[boxOffset + 3];
+    const cx = +boxData[boxOffset],
+      cy = +boxData[boxOffset + 1],
+      width = +boxData[boxOffset + 2],
+      height = +boxData[boxOffset + 3];
     if (![cx, cy, width, height].every(Number.isFinite)) continue;
 
-    const x1 = clamp((cx - width/2) * imageInfo.origWidth, 0, imageInfo.origWidth);
-    const y1 = clamp((cy - height/2) * imageInfo.origHeight, 0, imageInfo.origHeight);
-    const x2 = clamp((cx + width/2) * imageInfo.origWidth, 0, imageInfo.origWidth);
-    const y2 = clamp((cy + height/2) * imageInfo.origHeight, 0, imageInfo.origHeight);
+    const x1 = clamp(
+      (cx - width / 2) * imageInfo.origWidth,
+      0,
+      imageInfo.origWidth,
+    );
+    const y1 = clamp(
+      (cy - height / 2) * imageInfo.origHeight,
+      0,
+      imageInfo.origHeight,
+    );
+    const x2 = clamp(
+      (cx + width / 2) * imageInfo.origWidth,
+      0,
+      imageInfo.origWidth,
+    );
+    const y2 = clamp(
+      (cy + height / 2) * imageInfo.origHeight,
+      0,
+      imageInfo.origHeight,
+    );
     if (x2 <= x1 || y2 <= y1) continue;
 
     const mask = resizeAndPackMask(
-      maskData, 0, i, numQueriesBoxes,
-      maskWidth, maskHeight, imageInfo.origWidth, imageInfo.origHeight
+      maskData,
+      0,
+      i,
+      numQueriesBoxes,
+      maskWidth,
+      maskHeight,
+      imageInfo.origWidth,
+      imageInfo.origHeight,
     );
 
     detections.push({
-      x1, y1, x2, y2,
+      x1,
+      y1,
+      x2,
+      y2,
       confidence,
       class: queryLabels[i] ?? 0,
       ...(mask ? { mask } : {}),
@@ -248,15 +345,21 @@ function resizeAndPackMask(
   const sourcePlaneSize = sourceWidth * sourceHeight;
   const offset = (batchIndex * numQueries + queryIndex) * sourcePlaneSize;
   if (offset + sourcePlaneSize > maskData.length) return;
-  const packed = new Uint8Array(Math.ceil(targetWidth * targetHeight / 8));
+  const packed = new Uint8Array(Math.ceil((targetWidth * targetHeight) / 8));
   let hasForeground = false;
 
   for (let ty = 0; ty < targetHeight; ty++) {
-    const sy = targetHeight === 1 ? 0 : (ty * (sourceHeight - 1)) / (targetHeight - 1);
-    const y0 = Math.floor(sy), y1 = Math.min(y0 + 1, sourceHeight - 1), yLerp = sy - y0;
+    const sy =
+      targetHeight === 1 ? 0 : (ty * (sourceHeight - 1)) / (targetHeight - 1);
+    const y0 = Math.floor(sy),
+      y1 = Math.min(y0 + 1, sourceHeight - 1),
+      yLerp = sy - y0;
     for (let tx = 0; tx < targetWidth; tx++) {
-      const sx = targetWidth === 1 ? 0 : (tx * (sourceWidth - 1)) / (targetWidth - 1);
-      const x0 = Math.floor(sx), x1 = Math.min(x0 + 1, sourceWidth - 1), xLerp = sx - x0;
+      const sx =
+        targetWidth === 1 ? 0 : (tx * (sourceWidth - 1)) / (targetWidth - 1);
+      const x0 = Math.floor(sx),
+        x1 = Math.min(x0 + 1, sourceWidth - 1),
+        xLerp = sx - x0;
       // Bilinear interpolation
       const topLeft = +maskData[offset + y0 * sourceWidth + x0] || 0;
       const topRight = +maskData[offset + y0 * sourceWidth + x1] || 0;
@@ -267,8 +370,10 @@ function resizeAndPackMask(
       const interpolated = top + (bottom - top) * yLerp;
 
       if (interpolated > 0) {
-        const pi = ty * targetWidth + tx, byteI = pi >> 3, bitI = pi & 7;
-        packed[byteI] |= (1 << bitI);
+        const pi = ty * targetWidth + tx,
+          byteI = pi >> 3,
+          bitI = pi & 7;
+        packed[byteI] |= 1 << bitI;
         hasForeground = true;
       }
     }
@@ -283,9 +388,12 @@ function resizeAndPackMask(
 
 // Standard box iou
 function intersectionOverUnion(a: Detection, b: Detection): number {
-  const x1 = Math.max(a.x1, b.x1), y1 = Math.max(a.y1, b.y1);
-  const x2 = Math.min(a.x2, b.x2), y2 = Math.min(a.y2, b.y2);
-  const iw = Math.max(0, x2 - x1), ih = Math.max(0, y2 - y1);
+  const x1 = Math.max(a.x1, b.x1),
+    y1 = Math.max(a.y1, b.y1);
+  const x2 = Math.min(a.x2, b.x2),
+    y2 = Math.min(a.y2, b.y2);
+  const iw = Math.max(0, x2 - x1),
+    ih = Math.max(0, y2 - y1);
   const inter = iw * ih;
   if (inter <= 0) return 0;
   const areaA = Math.max(0, a.x2 - a.x1) * Math.max(0, a.y2 - a.y1);
@@ -305,7 +413,8 @@ function applyClassAwareNms(
   for (const d of sorted) {
     if (
       !kept.some(
-        k => k.class === d.class && intersectionOverUnion(k, d) > iouThreshold
+        (k) =>
+          k.class === d.class && intersectionOverUnion(k, d) > iouThreshold,
       )
     ) {
       kept.push(d);
@@ -320,12 +429,16 @@ export function postprocessYolo(
   imageInfo: ImageInfo,
 ): Detection[] {
   const shape = validateShape(output.dims, 3, "output0");
-  const batchSize = +shape[0], channelCount = +shape[1], anchorCount = +shape[2];
+  const batchSize = +shape[0],
+    channelCount = +shape[1],
+    anchorCount = +shape[2];
   if (
     !Number.isFinite(batchSize) ||
     !Number.isFinite(channelCount) ||
     !Number.isFinite(anchorCount) ||
-    batchSize < 1 || channelCount < 5 || anchorCount < 1
+    batchSize < 1 ||
+    channelCount < 5 ||
+    anchorCount < 1
   ) {
     throw new InferenceError(
       `Unexpected YOLO output shape: ${JSON.stringify(output.dims)}`,
@@ -339,7 +452,8 @@ export function postprocessYolo(
 
   for (let anchorIndex = 0; anchorIndex < anchorCount; anchorIndex++) {
     // Find most confident class for this anchor
-    let maxConfidence = -Infinity, maxClass = 0;
+    let maxConfidence = -Infinity,
+      maxClass = 0;
     for (let classIdx = 0; classIdx < classCount; classIdx++) {
       const si = (classIdx + 4) * anchorCount + anchorIndex;
       const score = +(outputData[si] ?? 0);
@@ -348,7 +462,10 @@ export function postprocessYolo(
         maxClass = classIdx;
       }
     }
-    if (!Number.isFinite(maxConfidence) || maxConfidence < YOLO_CONFIDENCE_THRESHOLD)
+    if (
+      !Number.isFinite(maxConfidence) ||
+      maxConfidence < YOLO_CONFIDENCE_THRESHOLD
+    )
       continue;
     // YOLO layout: [anchors for cx][anchors for cy][anchors for w][anchors for h]
     const cx = +outputData[anchorIndex];
@@ -363,7 +480,14 @@ export function postprocessYolo(
     const y2 = clamp((cy + height / 2) * yScale, 0, imageInfo.origHeight);
     if (x2 <= x1 || y2 <= y1) continue;
 
-    detections.push({ x1, y1, x2, y2, confidence: maxConfidence, class: maxClass });
+    detections.push({
+      x1,
+      y1,
+      x2,
+      y2,
+      confidence: maxConfidence,
+      class: maxClass,
+    });
   }
 
   return applyClassAwareNms(detections, YOLO_NMS_IOU_THRESHOLD);

@@ -98,10 +98,14 @@ export type VideoWatchChatResponse = VideoWatchChatOk | VideoWatchChatError;
 
 // Validates and parses VideoWatch API response object
 export function parseVideoWatchResponse(json: unknown): VideoWatchResponse {
-  if (!json || typeof json !== "object") throw new Error("Invalid video watch response");
+  if (!json || typeof json !== "object")
+    throw new Error("Invalid video watch response");
   const value = json as Record<string, unknown>;
   if (value.ok === false) {
-    if (typeof value.errorCode === "string" && typeof value.message === "string") {
+    if (
+      typeof value.errorCode === "string" &&
+      typeof value.message === "string"
+    ) {
       return {
         ok: false,
         errorCode: value.errorCode as VideoWatchError["errorCode"],
@@ -127,15 +131,22 @@ export function parseVideoWatchResponse(json: unknown): VideoWatchResponse {
 }
 
 // Validates and parses VideoWatch chat API response object
-export function parseVideoWatchChatResponse(json: unknown): VideoWatchChatResponse {
-  if (!json || typeof json !== "object") throw new Error("Invalid video watch chat response");
+export function parseVideoWatchChatResponse(
+  json: unknown,
+): VideoWatchChatResponse {
+  if (!json || typeof json !== "object")
+    throw new Error("Invalid video watch chat response");
   const value = json as Record<string, unknown>;
   if (value.ok === true) {
-    if (typeof value.answer !== "string" || typeof value.modelKey !== "string") {
+    if (
+      typeof value.answer !== "string" ||
+      typeof value.modelKey !== "string"
+    ) {
       throw new Error("Invalid video watch chat success response");
     }
     return value as unknown as VideoWatchChatOk;
   }
-  if (typeof value.message !== "string") throw new Error("Invalid video watch chat error response");
+  if (typeof value.message !== "string")
+    throw new Error("Invalid video watch chat error response");
   return value as unknown as VideoWatchChatError;
 }

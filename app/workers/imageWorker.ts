@@ -48,12 +48,20 @@ workerScope.addEventListener("message", async (ev: MessageEvent) => {
 
     const processingStart = performance.now();
     const srcBitmap = await createImageBitmap(inputBlob);
-    const srcW = srcBitmap.width, srcH = srcBitmap.height;
+    const srcW = srcBitmap.width,
+      srcH = srcBitmap.height;
 
     // Calculate cropping and scaling
-    const squareSize = mode === "crop" ? Math.min(srcW, srcH) : Math.max(srcW, srcH);
-    const finalSize = typeof targetSize === "number" ? Math.min(squareSize, targetSize) : squareSize;
-    let sx = 0, sy = 0, sWidth = srcW, sHeight = srcH;
+    const squareSize =
+      mode === "crop" ? Math.min(srcW, srcH) : Math.max(srcW, srcH);
+    const finalSize =
+      typeof targetSize === "number"
+        ? Math.min(squareSize, targetSize)
+        : squareSize;
+    let sx = 0,
+      sy = 0,
+      sWidth = srcW,
+      sHeight = srcH;
     if (mode === "crop") {
       sx = Math.floor((srcW - squareSize) / 2);
       sy = Math.floor((srcH - squareSize) / 2);
@@ -74,7 +82,17 @@ workerScope.addEventListener("message", async (ev: MessageEvent) => {
 
     ctx.fillStyle = "#FFF";
     ctx.fillRect(0, 0, finalSize, finalSize);
-    ctx.drawImage(srcBitmap, sx, sy, sWidth, sHeight, 0, 0, finalSize, finalSize);
+    ctx.drawImage(
+      srcBitmap,
+      sx,
+      sy,
+      sWidth,
+      sHeight,
+      0,
+      0,
+      finalSize,
+      finalSize,
+    );
     srcBitmap.close?.();
 
     // Convert OffscreenCanvas to Blob, fallback if needed
@@ -137,7 +155,8 @@ workerScope.addEventListener("message", async (ev: MessageEvent) => {
         id: msg?.id,
         success: true,
         arrayBuffer: producedArrayBuffer,
-        mimeType: producedBlob.type || (output === "webp" ? "image/webp" : "image/png"),
+        mimeType:
+          producedBlob.type || (output === "webp" ? "image/webp" : "image/png"),
         timings,
       },
       [producedArrayBuffer],
@@ -147,7 +166,11 @@ workerScope.addEventListener("message", async (ev: MessageEvent) => {
       workerScope.postMessage({
         id: msg.id,
         success: false,
-        error: String((err as Error)?.message ?? (err as Error) ?? "Unknown error in image worker"),
+        error: String(
+          (err as Error)?.message ??
+            (err as Error) ??
+            "Unknown error in image worker",
+        ),
       });
     } catch {
       // Silent

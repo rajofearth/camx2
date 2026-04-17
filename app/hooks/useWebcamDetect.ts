@@ -46,7 +46,8 @@ export function useWebcamDetect(
   const [lastLatency, setLastLatency] = useState<number | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [frameDimensions, setFrameDimensions] = useState<FrameDimensions | null>(null);
+  const [frameDimensions, setFrameDimensions] =
+    useState<FrameDimensions | null>(null);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -73,7 +74,10 @@ export function useWebcamDetect(
 
     if (sinceLast < minIntervalMs) {
       // Throttle detection loop
-      timeoutRef.current = setTimeout(() => void processFrame(), minIntervalMs - sinceLast);
+      timeoutRef.current = setTimeout(
+        () => void processFrame(),
+        minIntervalMs - sinceLast,
+      );
       return;
     }
 
@@ -90,7 +94,7 @@ export function useWebcamDetect(
     lastRequestTimeRef.current = now;
 
     try {
-      const blob = await fetch(imageSrc).then(r => r.blob());
+      const blob = await fetch(imageSrc).then((r) => r.blob());
       const result = await fetchDetect(blob, {
         signal: abortControllerRef.current.signal,
         model: detectionModel,
@@ -104,7 +108,9 @@ export function useWebcamDetect(
           setFrameDimensions(null);
         });
       } else {
-        const filtered = result.data.detections.filter(d => d.confidence >= minConfidence);
+        const filtered = result.data.detections.filter(
+          (d) => d.confidence >= minConfidence,
+        );
         startTransition(() => {
           setDetections(filtered);
           setLastLatency(result.data.meta?.latencyMs ?? null);
@@ -126,7 +132,10 @@ export function useWebcamDetect(
       setIsProcessing(false);
       abortControllerRef.current = null;
       if (isActiveRef.current) {
-        const delay = Math.max(0, minIntervalMs - (performance.now() - lastRequestTimeRef.current));
+        const delay = Math.max(
+          0,
+          minIntervalMs - (performance.now() - lastRequestTimeRef.current),
+        );
         timeoutRef.current = setTimeout(() => void processFrame(), delay);
       }
     }

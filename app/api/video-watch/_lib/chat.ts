@@ -23,30 +23,36 @@ type LlmChatMessage = {
 type ContextAwareModel = {
   applyPromptTemplate: (history: readonly LlmChatMessage[]) => Promise<string>;
   countTokens: (inputString: string) => Promise<number>;
-  getModelInfo: () => Promise<{ contextLength: number; maxContextLength: number }>;
+  getModelInfo: () => Promise<{
+    contextLength: number;
+    maxContextLength: number;
+  }>;
   respond: (
     history: readonly LlmChatMessage[],
-    opts: { temperature: number; maxTokens: number; contextOverflowPolicy: "rollingWindow"; }
+    opts: {
+      temperature: number;
+      maxTokens: number;
+      contextOverflowPolicy: "rollingWindow";
+    },
   ) => Promise<{ content?: string }>;
 };
 
 // Ensures chat history is consistent and most recent question is present
 function normalizeChatHistory(
   messages: readonly VideoWatchChatMessage[] | undefined,
-  question: string
+  question: string,
 ): VideoWatchChatMessage[] {
-  const normalized = messages?.reduce<VideoWatchChatMessage[]>((arr, msg) => {
-    const content = msg.content.trim();
-    if (content) arr.push({ role: msg.role, content });
-    return arr;
-  }, []) ?? [];
+  const normalized =
+    messages?.reduce<VideoWatchChatMessage[]>((arr, msg) => {
+      const content = msg.content.trim();
+      if (content) arr.push({ role: msg.role, content });
+      return arr;
+    }, []) ?? [];
 
-  if (!normalized.length)
-    return [{ role: "user", content: question }];
+  if (!normalized.length) return [{ role: "user", content: question }];
 
   const latest = normalized.at(-1);
-  if (latest?.role === "user" && latest.content === question)
-    return normalized;
+  if (latest?.role === "user" && latest.content === question) return normalized;
 
   return [...normalized, { role: "user", content: question }];
 }
@@ -61,21 +67,29 @@ function trimTextToCharLimit(text: string, limit: number): string {
 // Extract search terms (≥3 chars, not stopwords)
 function extractSearchTerms(text: string): string[] {
   const unique = new Set<string>();
-  text.toLowerCase().split(/[^a-z0-9]+/).forEach(token => {
-    if (token.length >= 3 && !CHAT_STOPWORDS.has(token)) unique.add(token);
-  });
+  text
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .forEach((token) => {
+      if (token.length >= 3 && !CHAT_STOPWORDS.has(token)) unique.add(token);
+    });
   return [...unique];
 }
 
 // Assign score to a timeline line based on query relevance
 function scoreTimelineLine(line: string, terms: readonly string[]): number {
   const normalized = line.toLowerCase();
-  return terms.reduce((score, term) => normalized.includes(term) ? score + 1 : score, 0);
+  return terms.reduce(
+    (score, term) => (normalized.includes(term) ? score + 1 : score),
+    0,
+  );
 }
 
 // Is the question asking for a timeline/list?
 function wantsEnumerateFullTimeline(queryText: string): boolean {
-  return /\b(list|lists|series|chronolog|chronicle|timeline|every frame|each second|all events|full sequence|enumerate|step by step|second by second)\b/i.test(queryText);
+  return /\b(list|lists|series|chronolog|chronicle|timeline|every frame|each second|all events|full sequence|enumerate|step by step|second by second)\b/i.test(
+    queryText,
+  );
 }
 
 // Select relevant lines from the timeline, prioritizing around query terms and start/end
@@ -86,7 +100,7 @@ function buildTimelineExcerpt(
 ): string {
   const lines = timelineText
     .split(/\r?\n/)
-    .map(l => l.trim())
+    .map((l) => l.trim())
     .filter(Boolean);
 
   if (!lines.length) return "No timeline entries available.";
@@ -96,25 +110,29 @@ function buildTimelineExcerpt(
   const selected = new Set<number>();
 
   // Always include the start, next line, and most recent ~6 lines
-  [0, 1].forEach(idx => selected.add(idx));
+  [0, 1].forEach((idx) => selected.add(idx));
   for (let i = Math.max(0, lines.length - 6); i < lines.length; i++)
     selected.add(i);
 
   // Score lines for relevance; select the highest-scoring and neighbours
-  const scored = lines.map((line, idx) => ({ idx, score: scoreTimelineLine(line, terms) }))
-    .filter(obj => obj.score > 0)
+  const scored = lines
+    .map((line, idx) => ({ idx, score: scoreTimelineLine(line, terms) }))
+    .filter((obj) => obj.score > 0)
     .sort((a, b) => b.score - a.score || a.idx - b.idx);
 
   for (const { idx } of scored) {
     if (selected.size >= lineLimit) break;
-    [idx - 1, idx, idx + 1].forEach(i => {
-      if (i >= 0 && i < lines.length && selected.size < lineLimit) selected.add(i);
+    [idx - 1, idx, idx + 1].forEach((i) => {
+      if (i >= 0 && i < lines.length && selected.size < lineLimit)
+        selected.add(i);
     });
   }
 
   // Fill selection with more lines as needed, favoring end and then start
-  for (let i = lines.length - 1; i >= 0 && selected.size < lineLimit; i--) selected.add(i);
-  for (let i = 0; i < lines.length && selected.size < lineLimit; i++) selected.add(i);
+  for (let i = lines.length - 1; i >= 0 && selected.size < lineLimit; i--)
+    selected.add(i);
+  for (let i = 0; i < lines.length && selected.size < lineLimit; i++)
+    selected.add(i);
 
   // Build result and indicate omitted gaps
   const ordered = Array.from(selected).sort((a, b) => a - b);
@@ -137,8 +155,15 @@ function buildVideoEvidenceBlock(input: {
   readonly timelineLineLimit: number;
   readonly enumerateFullTimeline?: boolean;
 }): string {
-  const trimmedSummary = trimTextToCharLimit(input.summary.summaryText.trim(), input.summaryCharLimit);
-  const timelineExcerpt = buildTimelineExcerpt(input.summary.timelineText, input.queryText, input.timelineLineLimit);
+  const trimmedSummary = trimTextToCharLimit(
+    input.summary.summaryText.trim(),
+    input.summaryCharLimit,
+  );
+  const timelineExcerpt = buildTimelineExcerpt(
+    input.summary.timelineText,
+    input.queryText,
+    input.timelineLineLimit,
+  );
 
   const base = [
     "Video briefing (primary — answer from this first):",
@@ -171,15 +196,15 @@ function buildPromptMessages(input: {
         input.evidenceBlock,
       ].join("\n"),
     },
-    ...input.history.map(m => ({ role: m.role, content: m.content })),
-    { role: "user", content: input.latestQuestion }
+    ...input.history.map((m) => ({ role: m.role, content: m.content })),
+    { role: "user", content: input.latestQuestion },
   ];
 }
 
 // Counts tokens in a chat prompt for budget control
 async function countChatTokens(
   model: ContextAwareModel,
-  history: readonly LlmChatMessage[]
+  history: readonly LlmChatMessage[],
 ): Promise<number> {
   const prompt = await model.applyPromptTemplate(history);
   return model.countTokens(prompt);
@@ -197,26 +222,34 @@ async function buildChatPrompt(
 
   const contextWindow = Math.max(
     MIN_CHAT_PROMPT_TOKENS + CHAT_CONTEXT_BUFFER_TOKENS,
-    Math.min(modelInfo.contextLength, modelInfo.maxContextLength)
+    Math.min(modelInfo.contextLength, modelInfo.maxContextLength),
   );
   const maxTokens = Math.max(
     256,
-    Math.min(CHAT_MAX_RESPONSE_TOKENS, Math.floor(contextWindow * 0.35))
+    Math.min(CHAT_MAX_RESPONSE_TOKENS, Math.floor(contextWindow * 0.35)),
   );
   const promptBudget = Math.max(
     MIN_CHAT_PROMPT_TOKENS,
-    contextWindow - maxTokens - CHAT_CONTEXT_BUFFER_TOKENS
+    contextWindow - maxTokens - CHAT_CONTEXT_BUFFER_TOKENS,
   );
 
-  const queryText = conversation.map(m => m.content).join("\n");
-  const totalTimelineLines = summary.timelineText.split(/\r?\n/).filter(l => l.trim().length > 0).length;
+  const queryText = conversation.map((m) => m.content).join("\n");
+  const totalTimelineLines = summary.timelineText
+    .split(/\r?\n/)
+    .filter((l) => l.trim().length > 0).length;
   const fullTimelineAsk = wantsEnumerateFullTimeline(queryText);
 
   let timelineLineLimit = fullTimelineAsk
-    ? Math.min(LIST_TIMELINE_LINE_CAP, Math.max(totalTimelineLines, MIN_TIMELINE_LINE_LIMIT))
+    ? Math.min(
+        LIST_TIMELINE_LINE_CAP,
+        Math.max(totalTimelineLines, MIN_TIMELINE_LINE_LIMIT),
+      )
     : Math.max(MIN_TIMELINE_LINE_LIMIT, totalTimelineLines);
 
-  let summaryCharLimit = Math.max(MIN_SUMMARY_CHAR_LIMIT, summary.summaryText.trim().length);
+  let summaryCharLimit = Math.max(
+    MIN_SUMMARY_CHAR_LIMIT,
+    summary.summaryText.trim().length,
+  );
   let historyStartIndex = 0;
   let fallbackChat: LlmChatMessage[] = [];
 
@@ -242,7 +275,10 @@ async function buildChatPrompt(
     }
 
     if (timelineLineLimit > MIN_TIMELINE_LINE_LIMIT) {
-      timelineLineLimit = Math.max(MIN_TIMELINE_LINE_LIMIT, Math.floor(timelineLineLimit * 0.7));
+      timelineLineLimit = Math.max(
+        MIN_TIMELINE_LINE_LIMIT,
+        Math.floor(timelineLineLimit * 0.7),
+      );
       continue;
     }
     if (historyStartIndex < priorHistory.length) {
@@ -250,7 +286,10 @@ async function buildChatPrompt(
       continue;
     }
     if (summaryCharLimit > MIN_SUMMARY_CHAR_LIMIT) {
-      summaryCharLimit = Math.max(MIN_SUMMARY_CHAR_LIMIT, Math.floor(summaryCharLimit * 0.75));
+      summaryCharLimit = Math.max(
+        MIN_SUMMARY_CHAR_LIMIT,
+        Math.floor(summaryCharLimit * 0.75),
+      );
       continue;
     }
     return { chat: fallbackChat, maxTokens };
@@ -267,7 +306,9 @@ export async function answerQuestionAboutVideo(input: {
   if (!summary) throw new Error("Video analysis is not ready yet");
 
   const resolvedSummaryModelKey = await resolveModelKey(SUMMARY_MODEL_KEY);
-  const model = (await getClient().llm.model(resolvedSummaryModelKey)) as ContextAwareModel;
+  const model = (await getClient().llm.model(
+    resolvedSummaryModelKey,
+  )) as ContextAwareModel;
   const conversation = normalizeChatHistory(input.messages, input.question);
   const prompt = await buildChatPrompt(model, summary, conversation);
 

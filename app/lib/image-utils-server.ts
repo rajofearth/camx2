@@ -33,16 +33,24 @@ export async function makeSquareAndCompressServer(
   // Square and resize
   const resized =
     mode === "crop"
-      ? base.resize(size, size, { fit: "cover", position: "centre", kernel: sharp.kernel.lanczos3 })
+      ? base.resize(size, size, {
+          fit: "cover",
+          position: "centre",
+          kernel: sharp.kernel.lanczos3,
+        })
       : base.resize(size, size, { fit: "fill", kernel: sharp.kernel.lanczos3 });
 
   if (output === "webp")
     return resized.webp({ quality: Math.round(q * 100) }).toBuffer();
 
   if (output === "jpeg" || output === "jpg")
-    return resized.jpeg({ quality: Math.round(q * 100), mozjpeg: true }).toBuffer();
+    return resized
+      .jpeg({ quality: Math.round(q * 100), mozjpeg: true })
+      .toBuffer();
 
   // For PNG, match client: visually compress first, then PNG
-  const lossyWebp = await resized.webp({ quality: Math.round(q * 100) }).toBuffer();
+  const lossyWebp = await resized
+    .webp({ quality: Math.round(q * 100) })
+    .toBuffer();
   return sharp(lossyWebp, { failOn: "error" }).removeAlpha().png().toBuffer();
 }

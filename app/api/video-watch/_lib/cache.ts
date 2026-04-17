@@ -54,35 +54,50 @@ export async function computeProcessingVersionHash(): Promise<string> {
 }
 
 export async function removeCacheDir(fingerprint: string): Promise<void> {
-  await fs.rm(path.join(CACHE_ROOT, fingerprint), { recursive: true, force: true });
+  await fs.rm(path.join(CACHE_ROOT, fingerprint), {
+    recursive: true,
+    force: true,
+  });
 }
 
-export async function findFingerprintByJobId(jobId: string): Promise<string | null> {
+export async function findFingerprintByJobId(
+  jobId: string,
+): Promise<string | null> {
   const cacheDirs = await fs.readdir(CACHE_ROOT).catch(() => []);
   for (const dirName of cacheDirs) {
-    const state = await readJson<PersistedState>(path.join(CACHE_ROOT, dirName, "state.json"));
+    const state = await readJson<PersistedState>(
+      path.join(CACHE_ROOT, dirName, "state.json"),
+    );
     if (state?.jobId === jobId) return state.fingerprint;
   }
   return null;
 }
 
 // Writes a single frame result to the cache
-export async function writeFrameResult(cacheDir: string, result: VideoWatchFrameResult): Promise<void> {
+export async function writeFrameResult(
+  cacheDir: string,
+  result: VideoWatchFrameResult,
+): Promise<void> {
   const dir = resultsDir(cacheDir);
   await fs.mkdir(dir, { recursive: true });
-  await writeJson(path.join(dir, `frame-${String(result.frameIndex).padStart(6, "0")}.json`), result);
+  await writeJson(
+    path.join(dir, `frame-${String(result.frameIndex).padStart(6, "0")}.json`),
+    result,
+  );
 }
 
 // Reads all frame results from cache, returning them ordered and normalized
-export async function readAllFrameResults(cacheDir: string): Promise<VideoWatchFrameResult[]> {
+export async function readAllFrameResults(
+  cacheDir: string,
+): Promise<VideoWatchFrameResult[]> {
   const dir = resultsDir(cacheDir);
   const entries = await fs.readdir(dir).catch(() => []);
   // Only read and parse relevant JSON files
   const results = await Promise.all(
     entries
-      .filter(f => f.endsWith(".json"))
+      .filter((f) => f.endsWith(".json"))
       .sort()
-      .map(f => readJson<VideoWatchFrameResult>(path.join(dir, f)))
+      .map((f) => readJson<VideoWatchFrameResult>(path.join(dir, f))),
   );
   const sorted = results
     .filter((v): v is VideoWatchFrameResult => v !== null)

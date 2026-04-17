@@ -201,16 +201,16 @@ export async function POST(req: NextRequest): Promise<Response> {
       await fs.mkdir(DEBUG_DIR, { recursive: true });
 
       // Determine extensions for processed and original files
-      const processedExt =
-        mimeType?.includes("/") ? mimeType.split("/")[1] : "bin";
+      const processedExt = mimeType?.includes("/")
+        ? mimeType.split("/")[1]
+        : "bin";
       const originalMime =
         originalFile && originalFile instanceof Blob && originalFile.type
           ? (originalFile as Blob).type
           : mimeType;
-      const originalExt =
-        originalMime?.includes("/")
-          ? originalMime.split("/")[1]
-          : processedExt;
+      const originalExt = originalMime?.includes("/")
+        ? originalMime.split("/")[1]
+        : processedExt;
 
       const originalPath = path.join(
         DEBUG_DIR,

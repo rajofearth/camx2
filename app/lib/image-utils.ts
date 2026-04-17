@@ -22,7 +22,9 @@ export async function makeSquareAndCompress(
   // Decode Blob to ImageBitmap, fall back to img & canvas
   async function decodeToBitmap(blob: Blob): Promise<ImageBitmap> {
     if (typeof createImageBitmap === "function") {
-      try { return await createImageBitmap(blob); } catch {}
+      try {
+        return await createImageBitmap(blob);
+      } catch {}
     }
     return await new Promise<ImageBitmap>((resolve, reject) => {
       const url = URL.createObjectURL(blob);
@@ -39,33 +41,59 @@ export async function makeSquareAndCompress(
           c.width = img.naturalWidth || img.width;
           c.height = img.naturalHeight || img.height;
           const ctx = c.getContext("2d");
-          if (!ctx) { URL.revokeObjectURL(url); reject(new Error("No 2d context")); return; }
+          if (!ctx) {
+            URL.revokeObjectURL(url);
+            reject(new Error("No 2d context"));
+            return;
+          }
           ctx.drawImage(img, 0, 0);
-          const blob2 = await new Promise<Blob | null>((res) => c.toBlob(res, "image/png"));
-          if (!blob2) { URL.revokeObjectURL(url); reject(new Error("Failed to create intermediate blob")); return; }
+          const blob2 = await new Promise<Blob | null>((res) =>
+            c.toBlob(res, "image/png"),
+          );
+          if (!blob2) {
+            URL.revokeObjectURL(url);
+            reject(new Error("Failed to create intermediate blob"));
+            return;
+          }
           const bmp2 = await createImageBitmap(blob2);
           URL.revokeObjectURL(url);
           resolve(bmp2);
-        } catch (err) { URL.revokeObjectURL(url); reject(err); }
+        } catch (err) {
+          URL.revokeObjectURL(url);
+          reject(err);
+        }
       };
-      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Failed to load image")); };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("Failed to load image"));
+      };
       img.src = url;
     });
   }
 
   // Create canvas (prefers offscreen when supported)
-  function makeCanvas(w: number, h: number): HTMLCanvasElement | OffscreenCanvas {
+  function makeCanvas(
+    w: number,
+    h: number,
+  ): HTMLCanvasElement | OffscreenCanvas {
     const OffscreenCanvasCtor = globalThis.OffscreenCanvas;
     if (typeof OffscreenCanvasCtor !== "undefined") {
-      try { return new OffscreenCanvasCtor(w, h); } catch {}
+      try {
+        return new OffscreenCanvasCtor(w, h);
+      } catch {}
     }
     const c = document.createElement("canvas");
-    c.width = w; c.height = h;
+    c.width = w;
+    c.height = h;
     return c;
   }
 
-  function isOffscreenCanvas(c: HTMLCanvasElement | OffscreenCanvas): c is OffscreenCanvas {
-    return typeof OffscreenCanvas !== "undefined" && c instanceof OffscreenCanvas;
+  function isOffscreenCanvas(
+    c: HTMLCanvasElement | OffscreenCanvas,
+  ): c is OffscreenCanvas {
+    return (
+      typeof OffscreenCanvas !== "undefined" && c instanceof OffscreenCanvas
+    );
   }
 
   // Canvas to Blob, async
@@ -74,19 +102,32 @@ export async function makeSquareAndCompress(
     type: string,
     quality?: number,
   ): Promise<Blob | null> {
-    if (isOffscreenCanvas(canvas)) return canvas.convertToBlob({type, quality});
+    if (isOffscreenCanvas(canvas))
+      return canvas.convertToBlob({ type, quality });
     return new Promise((resolve) => {
-      (canvas as HTMLCanvasElement).toBlob((blob) => resolve(blob), type, quality);
+      (canvas as HTMLCanvasElement).toBlob(
+        (blob) => resolve(blob),
+        type,
+        quality,
+      );
     });
   }
 
   const srcBitmap = await decodeToBitmap(file);
   try {
-    const srcW = srcBitmap.width, srcH = srcBitmap.height;
-    const squareSrcSize = mode === "crop" ? Math.min(srcW, srcH) : Math.max(srcW, srcH);
-    const finalSize = Math.max(1, Math.floor(Math.min(targetSize, squareSrcSize)));
+    const srcW = srcBitmap.width,
+      srcH = srcBitmap.height;
+    const squareSrcSize =
+      mode === "crop" ? Math.min(srcW, srcH) : Math.max(srcW, srcH);
+    const finalSize = Math.max(
+      1,
+      Math.floor(Math.min(targetSize, squareSrcSize)),
+    );
 
-    let sx = 0, sy = 0, sWidth = srcW, sHeight = srcH;
+    let sx = 0,
+      sy = 0,
+      sWidth = srcW,
+      sHeight = srcH;
     if (mode === "crop") {
       sx = Math.floor((srcW - squareSrcSize) / 2);
       sy = Math.floor((srcH - squareSrcSize) / 2);
@@ -98,7 +139,17 @@ export async function makeSquareAndCompress(
     const ctx = tmpCanvas.getContext("2d") as CanvasRenderingContext2D;
     ctx.fillStyle = "#FFF";
     ctx.fillRect(0, 0, finalSize, finalSize);
-    ctx.drawImage(srcBitmap, sx, sy, sWidth, sHeight, 0, 0, finalSize, finalSize);
+    ctx.drawImage(
+      srcBitmap,
+      sx,
+      sy,
+      sWidth,
+      sHeight,
+      0,
+      0,
+      finalSize,
+      finalSize,
+    );
 
     // Try exporting to WebP; if not supported, will try JPEG if needed
     let resultBlob: Blob | null = null;
@@ -139,6 +190,8 @@ export async function makeSquareAndCompress(
     if (!pngBlob) throw new Error("PNG export failed");
     return pngBlob;
   } finally {
-    try { srcBitmap.close?.(); } catch {}
+    try {
+      srcBitmap.close?.();
+    } catch {}
   }
 }

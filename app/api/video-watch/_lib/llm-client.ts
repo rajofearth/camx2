@@ -41,7 +41,7 @@ export async function resolveModelKey(modelKey: string): Promise<string> {
   } catch (error) {
     if (isConnectionError(error))
       throw new Error(
-        "LM Studio local server is not running or is unreachable at ws://127.0.0.1:1234"
+        "LM Studio local server is not running or is unreachable at ws://127.0.0.1:1234",
       );
     throw error;
   }
@@ -50,7 +50,7 @@ export async function resolveModelKey(modelKey: string): Promise<string> {
   let loadedTarget: LoadedLlmHandle | undefined;
   for (const key of candidateKeys) {
     loadedTarget = loadedModels.find(
-      (model) => model.modelKey === key || model.identifier === key
+      (model) => model.modelKey === key || model.identifier === key,
     );
     if (loadedTarget) break;
   }
@@ -75,12 +75,12 @@ export async function resolveModelKey(modelKey: string): Promise<string> {
 
   const downloadedModels = await client.system.listDownloadedModels("llm");
   const downloadedTarget = downloadedModels.find(
-    (model) => model.modelKey === cached || model.modelKey === modelKey
+    (model) => model.modelKey === cached || model.modelKey === modelKey,
   );
 
   if (!downloadedTarget)
     throw new Error(
-      `Required LM Studio model "${modelKey}" is not loaded and not available locally`
+      `Required LM Studio model "${modelKey}" is not loaded and not available locally`,
     );
 
   const loadedModel = await client.llm.load(downloadedTarget.modelKey, {

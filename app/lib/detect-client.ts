@@ -53,7 +53,8 @@ export async function fetchDetect(
   try {
     json = await response.json();
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to parse response";
+    const message =
+      error instanceof Error ? error.message : "Failed to parse response";
     return { success: false, error: `Invalid response: ${message}` };
   }
 

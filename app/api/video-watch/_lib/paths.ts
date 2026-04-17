@@ -15,12 +15,18 @@ function joinPath(cacheDir: string, subPath: string): string {
 }
 
 export const statePath = (cacheDir: string) => joinPath(cacheDir, PATHS.state);
-export const manifestPath = (cacheDir: string) => joinPath(cacheDir, PATHS.manifest);
-export const resultsDir = (cacheDir: string) => joinPath(cacheDir, PATHS.resultsDir);
-export const framesDir = (cacheDir: string) => joinPath(cacheDir, PATHS.framesDir);
-export const summaryPath = (cacheDir: string) => joinPath(cacheDir, PATHS.summary);
-export const timelinePath = (cacheDir: string) => joinPath(cacheDir, PATHS.timeline);
-export const versionPath = (cacheDir: string) => joinPath(cacheDir, PATHS.version);
+export const manifestPath = (cacheDir: string) =>
+  joinPath(cacheDir, PATHS.manifest);
+export const resultsDir = (cacheDir: string) =>
+  joinPath(cacheDir, PATHS.resultsDir);
+export const framesDir = (cacheDir: string) =>
+  joinPath(cacheDir, PATHS.framesDir);
+export const summaryPath = (cacheDir: string) =>
+  joinPath(cacheDir, PATHS.summary);
+export const timelinePath = (cacheDir: string) =>
+  joinPath(cacheDir, PATHS.timeline);
+export const versionPath = (cacheDir: string) =>
+  joinPath(cacheDir, PATHS.version);
 
 export function videoPath(cacheDir: string, sourceFileName: string): string {
   // Assumes sourceFileName has at least a name, fallback to .bin

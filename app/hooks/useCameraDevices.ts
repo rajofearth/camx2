@@ -51,7 +51,7 @@ export function useCameraDevices(): UseCameraDevicesResult {
     } catch (err) {
       setDevices([]);
       setError(
-        err instanceof Error ? err.message : "Failed to enumerate devices"
+        err instanceof Error ? err.message : "Failed to enumerate devices",
       );
     } finally {
       setIsLoading(false);
@@ -66,7 +66,10 @@ export function useCameraDevices(): UseCameraDevicesResult {
     navigator.mediaDevices.addEventListener("devicechange", handleDeviceChange);
 
     return () => {
-      navigator.mediaDevices.removeEventListener("devicechange", handleDeviceChange);
+      navigator.mediaDevices.removeEventListener(
+        "devicechange",
+        handleDeviceChange,
+      );
     };
   }, [enumerateDevices]);
 

@@ -28,13 +28,20 @@ export function normalizeFrameResult(
   if (result.llm) {
     let frameAnalysis = result.frameAnalysis;
     try {
-      frameAnalysis = parseNarrativeAnalysisFromResponseRaw(result.llm.narrative.responseRaw);
+      frameAnalysis = parseNarrativeAnalysisFromResponseRaw(
+        result.llm.narrative.responseRaw,
+      );
     } catch {}
     let objects: Record<string, string>;
     try {
-      objects = parseTrackingObjectsFromResponseRaw(result.llm.tracking.responseRaw);
+      objects = parseTrackingObjectsFromResponseRaw(
+        result.llm.tracking.responseRaw,
+      );
     } catch {
-      objects = sanitizeStringRecord(result.objects ?? legacy.objects, MAX_OBJECT_ID_ENTRIES);
+      objects = sanitizeStringRecord(
+        result.objects ?? legacy.objects,
+        MAX_OBJECT_ID_ENTRIES,
+      );
     }
     return {
       ...result,
@@ -51,7 +58,10 @@ export function normalizeFrameResult(
   }
 
   // Back-compat branch for legacy results without llm metadata
-  const objects = sanitizeStringRecord(result.objects ?? legacy.objects, MAX_OBJECT_ID_ENTRIES);
+  const objects = sanitizeStringRecord(
+    result.objects ?? legacy.objects,
+    MAX_OBJECT_ID_ENTRIES,
+  );
   const payload = normalizeNarrativePayload({
     analysis: result.frameAnalysis,
     frameAnalysis: result.frameAnalysis,
@@ -97,7 +107,10 @@ export function repairOrderedResultsPriorFields(
     }
     const prev = ordered[index - 1];
     if (!prev) return frame;
-    const fixed = applyAuthoritativePriorFields(prev, frame.priorVisibleObjects);
+    const fixed = applyAuthoritativePriorFields(
+      prev,
+      frame.priorVisibleObjects,
+    );
     return {
       ...frame,
       priorFrameAnalysis: fixed.priorFrameAnalysis,

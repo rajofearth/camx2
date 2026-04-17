@@ -439,9 +439,12 @@ const SPEEDS: Record<string, number> = {
   fast: 400,
 };
 
-const resolvePattern = (pattern: PresetPattern | GridMatrix | undefined): GridMatrix => {
+const resolvePattern = (
+  pattern: PresetPattern | GridMatrix | undefined,
+): GridMatrix => {
   if (!pattern) return PATTERNS["plus-hollow"];
-  if (typeof pattern === "string") return PATTERNS[pattern] ?? PATTERNS["plus-hollow"];
+  if (typeof pattern === "string")
+    return PATTERNS[pattern] ?? PATTERNS["plus-hollow"];
   return pattern;
 };
 
@@ -450,7 +453,9 @@ const resolveColor = (color: string | undefined): string => {
   return COLORS[color] ?? color;
 };
 
-const resolveSize = (size: "sm" | "md" | "lg" | "xl" | number | undefined): number => {
+const resolveSize = (
+  size: "sm" | "md" | "lg" | "xl" | number | undefined,
+): number => {
   if (size === undefined) return SIZES.md;
   if (typeof size === "number") return size;
   return SIZES[size] ?? SIZES.md;
@@ -546,7 +551,12 @@ const GridLoader = ({
   const disableAnimation = isStatic || shouldReduceMotion;
 
   useEffect(() => {
-    if (mode !== "sequence" || !sequence || sequence.length === 0 || disableAnimation) {
+    if (
+      mode !== "sequence" ||
+      !sequence ||
+      sequence.length === 0 ||
+      disableAnimation
+    ) {
       return;
     }
 
@@ -590,7 +600,9 @@ const GridLoader = ({
   return (
     <output
       aria-label="Loading"
-      className={className ? `grid grid-cols-3 ${className}` : "grid grid-cols-3"}
+      className={
+        className ? `grid grid-cols-3 ${className}` : "grid grid-cols-3"
+      }
       style={{
         width: sizeInPx,
         height: sizeInPx,
