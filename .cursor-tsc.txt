@@ -1,0 +1,27 @@
+app/api/video-watch/_lib/video-extract.ts(175,24): error TS2339: Property 'path' does not exist on type 'never'.
+components/data-table/data-table-faceted-filter.tsx(6,15): error TS2305: Module '"@/components/data-table/data-table"' has no exported member 'Option'.
+components/data-table/data-table-filter-list.tsx(222,22): error TS7006: Parameter 'item' implicitly has an 'any' type.
+components/data-table/data-table-skeleton.tsx(1,26): error TS2307: Cannot find module '@/components/ui/skeleton' or its corresponding type declarations.
+components/data-table/data-table-slider-filter.tsx(8,23): error TS2307: Cannot find module '@/components/ui/label' or its corresponding type declarations.
+components/data-table/data-table-sort-list.tsx(167,22): error TS7006: Parameter 'item' implicitly has an 'any' type.
+components/data-table/data-table.tsx(3,10): error TS2303: Circular definition of import alias 'getColumnPinningStyle'.
+components/data-table/data-table.tsx(3,10): error TS2459: Module '"@/components/data-table/data-table"' declares 'getColumnPinningStyle' locally, but it is not exported.
+components/ui/sortable.tsx(23,8): error TS2307: Cannot find module '@dnd-kit/core' or its corresponding type declarations.
+components/ui/sortable.tsx(28,8): error TS2307: Cannot find module '@dnd-kit/modifiers' or its corresponding type declarations.
+components/ui/sortable.tsx(37,8): error TS2307: Cannot find module '@dnd-kit/sortable' or its corresponding type declarations.
+components/ui/sortable.tsx(38,21): error TS2307: Cannot find module '@dnd-kit/utilities' or its corresponding type declarations.
+components/ui/sortable.tsx(39,22): error TS2307: Cannot find module '@radix-ui/react-slot' or its corresponding type declarations.
+components/ui/sortable.tsx(140,11): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ vertical: { modifiers: any[]; strategy: any; collisionDetection: any; }; horizontal: { modifiers: any[]; strategy: any; collisionDetection: any; }; mixed: { modifiers: any[]; strategy: undefined; collisionDetection: any; }; }'.
+components/ui/sortable.tsx(157,23): error TS7006: Parameter 'item' implicitly has an 'any' type.
+components/ui/sortable.tsx(180,12): error TS7006: Parameter 'item' implicitly has an 'any' type.
+components/ui/sortable.tsx(183,12): error TS7006: Parameter 'item' implicitly has an 'any' type.
+components/ui/sortable.tsx(210,21): error TS7031: Binding element 'active' implicitly has an 'any' type.
+components/ui/sortable.tsx(214,20): error TS7031: Binding element 'active' implicitly has an 'any' type.
+components/ui/sortable.tsx(214,28): error TS7031: Binding element 'over' implicitly has an 'any' type.
+components/ui/sortable.tsx(224,19): error TS7031: Binding element 'active' implicitly has an 'any' type.
+components/ui/sortable.tsx(224,27): error TS7031: Binding element 'over' implicitly has an 'any' type.
+components/ui/sortable.tsx(232,22): error TS7031: Binding element 'active' implicitly has an 'any' type.
+components/ui/sortable.tsx(237,20): error TS7031: Binding element 'active' implicitly has an 'any' type.
+components/ui/sortable.tsx(237,28): error TS7031: Binding element 'over' implicitly has an 'any' type.
+hooks/use-data-table.ts(30,3): error TS2305: Module '"@/components/data-table/data-table"' has no exported member 'ExtendedColumnSort'.
+hooks/use-data-table.ts(31,3): error TS2305: Module '"@/components/data-table/data-table"' has no exported member 'QueryKeys'.

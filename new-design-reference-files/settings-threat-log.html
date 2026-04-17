@@ -183,89 +183,110 @@
         </nav>
         <!-- Main Layout -->
         <div class="flex flex-1 overflow-hidden">
-            <!-- Left Navigation (Settings Context) -->
-            <aside
-                class="w-64 bg-[#0F0F0F] border-r border-[#1C1C1C] flex-shrink-0 flex flex-col z-40 overflow-y-auto"
-            >
-                <div class="p-4">
-                    <h2
-                        class="text-xs font-mono text-[#5C5C5C] uppercase tracking-widest mb-4"
+                        <!-- Left Navigation -->
+                        <aside
+                        class="w-64 bg-[#0F0F0F] border-r border-[#1C1C1C] flex flex-col shrink-0 overflow-y-auto"
                     >
-                        System Settings
-                    </h2>
-                    <nav class="space-y-1">
-                        <a
-                            class="flex items-center px-3 py-2 text-sm text-[#E2E2E2] hover:bg-[#161616] transition-colors group"
-                            href="#"
-                        >
-                            <span
-                                class="material-symbols-outlined mr-3 text-[18px] text-[#5C5C5C] group-hover:text-[#E2E2E2]"
-                                >tune</span
+                        <div class="p-4 border-b border-[#1C1C1C]">
+                            <h2
+                                class="text-xs font-mono text-[#5C5C5C] uppercase tracking-wider"
                             >
-                            General
-                        </a>
-                        <a
-                            class="flex items-center px-3 py-2 text-sm text-[#E2E2E2] hover:bg-[#161616] transition-colors group"
-                            href="#"
-                        >
-                            <span
-                                class="material-symbols-outlined mr-3 text-[18px] text-[#5C5C5C] group-hover:text-[#E2E2E2]"
-                                >videocam</span
-                            >
-                            Camera Nodes
-                        </a>
-                        <a
-                            class="flex items-center px-3 py-2 text-sm text-[#E2E2E2] hover:bg-[#161616] transition-colors group"
-                            href="#"
-                        >
-                            <span
-                                class="material-symbols-outlined mr-3 text-[18px] text-[#5C5C5C] group-hover:text-[#E2E2E2]"
-                                >memory</span
-                            >
-                            VLM Inference
-                        </a>
-                    </nav>
-                </div>
-                <div class="px-4 py-2 mt-2 border-t border-[#1C1C1C]">
-                    <h2
-                        class="text-xs font-mono text-[#5C5C5C] uppercase tracking-widest mb-4 mt-4"
-                    >
-                        Security &amp; Logs
-                    </h2>
-                    <nav class="space-y-1">
-                        <a
-                            class="flex items-center px-3 py-2 text-sm text-[#E2E2E2] hover:bg-[#161616] transition-colors group"
-                            href="#"
-                        >
-                            <span
-                                class="material-symbols-outlined mr-3 text-[18px] text-[#5C5C5C] group-hover:text-[#E2E2E2]"
-                                >shield_person</span
-                            >
-                            Access Control
-                        </a>
-                        <a
-                            class="flex items-center px-3 py-2 text-sm bg-[#161616] text-[#C0C0C0] border-l-2 border-[#C0C0C0] group"
-                            href="#"
-                        >
-                            <span
-                                class="material-symbols-outlined mr-3 text-[18px] text-[#C0C0C0]"
-                                >history_edu</span
-                            >
-                            Threat Log
-                        </a>
-                        <a
-                            class="flex items-center px-3 py-2 text-sm text-[#E2E2E2] hover:bg-[#161616] transition-colors group"
-                            href="#"
-                        >
-                            <span
-                                class="material-symbols-outlined mr-3 text-[18px] text-[#5C5C5C] group-hover:text-[#E2E2E2]"
-                                >receipt_long</span
-                            >
-                            Audit Trail
-                        </a>
-                    </nav>
-                </div>
-            </aside>
+                                System Settings
+                            </h2>
+                        </div>
+                        <nav class="flex-1 py-2">
+                            <ul class="space-y-[1px]">
+                                <li>
+                                    <a
+                                        class="flex items-center px-4 py-2 text-sm text-[#E5E2E1] hover:bg-[#161616] transition-colors duration-75"
+                                        href="#"
+                                    >
+                                        <span
+                                            class="material-symbols-outlined mr-3 text-base text-[#5C5C5C]"
+                                            >dns</span
+                                        >
+                                        Deployment Profile
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
+                                        class="flex items-center px-4 py-2 text-sm text-[#E5E2E1] hover:bg-[#161616] transition-colors duration-75"
+                                        href="#"
+                                    >
+                                        <span
+                                            class="material-symbols-outlined mr-3 text-base text-[#080808]"
+                                            >videocam</span
+                                        >
+                                        Camera Management
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
+                                        class="flex items-center px-4 py-2 text-sm text-[#E5E2E1] hover:bg-[#161616] transition-colors duration-75"
+                                        href="#"
+                                    >
+                                        <span
+                                            class="material-symbols-outlined mr-3 text-base text-[#5C5C5C]"
+                                            >warning</span
+                                        >
+                                        Alert Configuration
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
+                                        class="flex items-center px-4 py-2 text-sm text-[#E5E2E1] hover:bg-[#161616] transition-colors duration-75"
+                                        href="#"
+                                    >
+                                        <span
+                                            class="material-symbols-outlined mr-3 text-base text-[#5C5C5C]"
+                                            >face_retouching_natural</span
+                                        >
+                                        Face Enrollment
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
+                                        class="flex items-center px-4 py-2 text-sm text-[#E5E2E1] hover:bg-[#161616] transition-colors duration-75"
+                                        href="#"
+                                    >
+                                        <span
+                                            class="material-symbols-outlined mr-3 text-base text-[#5C5C5C]"
+                                            >model_training</span
+                                        >
+                                        Model Configuration
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
+                                        class="flex items-center px-4 py-2 text-sm text-[#080808] bg-[#C0C0C0] font-medium transition-colors duration-75"
+                                        href="#"
+                                    >
+                                        <span
+                                            class="material-symbols-outlined mr-3 text-base text-[#5C5C5C]"
+                                            style="
+                                                font-variation-settings: &quot;FILL&quot;
+                                                    1;
+                                            "
+                                            >gpp_bad</span
+                                        >
+                                        Threat Log
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
+                                        class="flex items-center px-4 py-2 text-sm text-[#E5E2E1] hover:bg-[#161616] transition-colors duration-75"
+                                        href="#"
+                                    >
+                                        <span
+                                            class="material-symbols-outlined mr-3 text-base text-[#5C5C5C]"
+                                            >group</span
+                                        >
+                                        User Management
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </aside>
             <!-- Content Area -->
             <main
                 class="flex-1 flex flex-col bg-[#080808] relative overflow-hidden"

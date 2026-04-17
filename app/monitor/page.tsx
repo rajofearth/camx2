@@ -16,6 +16,7 @@
  * ────────────────────────────────────────────────────────────────────────────
  */
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Webcam from "react-webcam";
 import { useCameraDevices } from "@/app/hooks/useCameraDevices";
@@ -23,6 +24,7 @@ import { useWebcamDetect } from "@/app/hooks/useWebcamDetect";
 import { useWebcamWatch } from "@/app/hooks/useWebcamWatch";
 import type { CameraSourceRef } from "@/app/lib/camera-source";
 import { cocoClassName } from "@/app/lib/coco";
+import { appendThreatLogEntry } from "@/app/lib/threat-log-store";
 import type { Detection } from "@/app/lib/types";
 import type { WatchResult } from "@/app/lib/watch-types";
 import { OverlayCanvas } from "@/components/OverlayCanvas";
@@ -148,6 +150,24 @@ function deriveVlmStatus(
   if (watchResult.isHarm === true) return "THREAT";
   if (watchResult.isHarm === false) return "NOMINAL";
   return "NOMINAL";
+}
+
+function isVerifiedThreat(
+  watchResult: WatchResult | null,
+  verificationMeta:
+    | {
+        applied?: boolean;
+        matchesPrompt?: boolean | null;
+        overturned?: boolean;
+      }
+    | null
+    | undefined,
+): boolean {
+  if (watchResult?.isHarm !== true || !watchResult.description) return false;
+  if (!verificationMeta?.applied) return false;
+  if (verificationMeta.overturned === true) return false;
+  if (verificationMeta.matchesPrompt === false) return false;
+  return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -277,6 +297,8 @@ export default function LiveMonitorPage() {
   // ── Watch hook ────────────────────────────────────────────────────────────
   const {
     latest: watchResult,
+    lastMeta,
+    lastRequestId,
     isProcessing: isWatchProcessing,
     error: _watchError,
   } = useWebcamWatch(cameraSourceRef, isCameraReady && isWatchActive);
@@ -359,6 +381,63 @@ export default function LiveMonitorPage() {
       },
     ]);
   }, [watchResult]);
+
+  const lastLoggedThreatRequestIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!lastRequestId) return;
+    if (lastLoggedThreatRequestIdRef.current === lastRequestId) return;
+    if (!isVerifiedThreat(watchResult, lastMeta?.verification)) return;
+
+    const screenshot = webcamRef.current?.getScreenshot() ?? null;
+    const verification = lastMeta?.verification ?? null;
+    const description = watchResult?.description ?? "Verified threat detected.";
+    const confidence =
+      detections.length > 0
+        ? Math.round(Math.max(...detections.map((d) => d.confidence)) * 100)
+        : 90;
+
+    appendThreatLogEntry({
+      requestId: lastRequestId,
+      timestamp: new Date().toISOString(),
+      cameraId: PRIMARY_CAM_ID,
+      classification: description,
+      confidence,
+      previewText: description,
+      frameSrc: screenshot,
+      frameId: `FRAME_CAP_${nowTimestamp().replace(/:/g, "")}`,
+      vlmAnalysis: [
+        description,
+        verification?.reason ?? "Verification confirmed the watch output.",
+      ],
+      verification: {
+        applied: verification?.applied ?? false,
+        matchesPrompt: verification?.matchesPrompt ?? null,
+        overturned: verification?.overturned ?? false,
+        reason: verification?.reason ?? null,
+        modelKey: verification?.modelKey ?? null,
+        latencyMs: verification?.latencyMs ?? null,
+      },
+      tags: [
+        "WATCH_VERIFIED",
+        ...(verification?.modelKey ? [verification.modelKey] : []),
+      ],
+    });
+
+    lastLoggedThreatRequestIdRef.current = lastRequestId;
+    setLogEntries((prev) => [
+      ...prev.slice(-49),
+      {
+        id: uid(),
+        timestamp: nowTimestamp(),
+        source: "SYS",
+        message: (
+          <>
+            · Verified threat archived in <IntelTag>THREAT_LOG</IntelTag>.
+          </>
+        ),
+      },
+    ]);
+  }, [detections, lastMeta, lastRequestId, watchResult]);
 
   // ── [4] THREAT_MODAL: trigger on harm ────────────────────────────────────
   useEffect(() => {
@@ -672,6 +751,16 @@ export default function LiveMonitorPage() {
                   variant="silver"
                 />
               </div>
+
+              <Link
+                className="mt-3 inline-flex items-center gap-2 border-t border-op-border pt-3 font-mono text-[10px] uppercase tracking-widest text-op-text-sec transition-colors hover:text-op-silver"
+                href="/settings/threat-log"
+              >
+                <span className="material-symbols-outlined text-[14px]">
+                  open_in_new
+                </span>
+                View Threat Log
+              </Link>
             </div>
           </div>
         </div>
