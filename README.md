@@ -1,20 +1,30 @@
 # camx2
 
-Two local experiences:
+Local AI workflows:
 
-1. **Live webcam object detection** (multi-camera) using **YOLO/RF-DETR exported to ONNX**, running **locally** with **WebGPU** (with CPU fallback).
-2. **Chat with recorded footage**: upload a video, the server extracts/analyzes frames, then you can ask questions about what’s happening.
+1. **Live camera intelligence** (multi-camera) using **YOLO/RF-DETR exported to ONNX** + a local “harm” verification pass, running **locally** with **WebGPU** (with CPU fallback).
+   - Live grid on `/`
+   - Consolidated dashboard on `/monitor`
+2. **Video intelligence**: upload a video, the server extracts/analyzes frames and builds a cached timeline, then you can ask questions via `/analysis/query`.
+   - Upload + pipeline on `/analysis`
+   - Legacy chat UI still exists at `/chat`
 
 ## What this is
 
 On your machine, you get:
 
-- **Home (`/`)**: multi-camera webcam detection.
-  - **Client**: captures frames and draws boxes (and RF-DETR instance masks when available).
-  - **Server (Next.js route)**: preprocesses the frame, runs ONNX inference with **WebGPU** via `onnxruntime-node`, then postprocesses detections.
-- **Chat (`/chat`)**: video upload + timeline-based Q&A.
-  - **Client**: uploads a video file and streams a job status.
-  - **Server (Next.js route)**: extracts frames, builds a cached “timeline”, and answers your questions.
+- **Live camera intelligence (`/` + `/monitor`)**:
+  - **`/`**: multi-camera grid with bounding boxes (and RF-DETR instance masks when available).
+    - Each camera runs detection and (optionally) a local “harm” watch/verification pass.
+  - **`/monitor`**: primary camera feed + overlay, intel stream log, and an “active detections” summary panel.
+    - When a watch result indicates a verified threat, a modal opens and the event can be viewed in the **Threat Log** under `/settings/threat-log`.
+- **Video intelligence (`/analysis` + `/analysis/query`)**:
+  - **`/analysis`**: upload a video and run the frame pipeline + cached timeline build.
+  - **`/analysis/query`**: ask questions about the uploaded/analyzed footage.
+- **Legacy chat UI (`/chat`)**:
+  - Functionally similar to the analysis/query workflow, but with the older chat-focused interface (`components/VideoChatExperience.tsx`).
+- **Settings (`/settings/*`)**:
+  - Manage deployment/camera/alert settings, model configuration, face enrollment, user management, and view the persisted **Threat Log** (`/settings/threat-log`).
 
 ## The vibe (my fun take)
 
@@ -25,7 +35,7 @@ On your machine, you get:
 - Node.js (recent)
 - **pnpm** (this repo uses `pnpm-lock.yaml`)
 - A GPU + drivers that support **WebGPU** on your platform
-- For `/chat`: an LLM backend compatible with the server config (defaults to **LM Studio** over WebSocket at `ws://127.0.0.1:1234`).
+- For **Analysis/Query** (and legacy `/chat`): an LLM backend compatible with the server config (defaults to **LM Studio** over WebSocket at `ws://127.0.0.1:1234`).
 
 ## Environment variables (example)
 
@@ -61,26 +71,36 @@ pnpm dev
 
 Open `http://localhost:3000`.
 
-Then also visit `http://localhost:3000/chat` for the video chat experience.
+From there:
+- `http://localhost:3000/monitor` for the consolidated live dashboard
+- `http://localhost:3000/analysis` to upload video and run the analysis pipeline
+- `http://localhost:3000/analysis/query` to ask questions about the analyzed footage
+- `http://localhost:3000/chat` (optional) for the legacy chat UI
+- `http://localhost:3000/settings/threat-log` to review archived verified threats (plus other settings pages)
 
 ## How it works (code map)
 
-- **Live detection UI (home `/`)**:
-  - **UI**: `components/DetectView.tsx` + `components/CameraCard.tsx`
-    - `DetectView` lays out multiple camera panels.
-    - `CameraCard` uses `react-webcam` (or an optional local video file) and starts detection via `useWebcamDetect`.
-    - Renders detections on `OverlayCanvas` (boxes, and RF-DETR instance masks when available).
-  - **Capture loop**: `app/hooks/useWebcamDetect.ts`
-    - Grabs screenshots and calls the detect endpoint at a capped FPS.
+- **Live camera intelligence (`/` + `/monitor`)**:
+  - **UI**:
+    - Grid (`/`): `components/DetectView.tsx` -> `components/CameraCard.tsx`
+    - Dashboard (`/monitor`): `app/monitor/page.tsx`
+  - **Client loops**:
+    - Detection: `app/hooks/useWebcamDetect.ts` (screenshots -> `/api/detect`)
+    - Harm watch/verification: `app/hooks/useWebcamWatch.ts` (watch -> `/api/watch`)
   - **Detect endpoint**: `app/api/detect/route.ts`
     - Accepts `multipart/form-data` with a `frame` image (and optional `model`: `rfdetr` or `yolo`).
     - Preprocesses the image, runs ONNX inference, then postprocesses detections (and masks when present).
   - **Model session**: `app/api/detect/_lib/model.ts`
     - Loads ONNX models from `public/models/` and caches sessions for `rfdetr` and `yolo`.
     - Creates an ONNX Runtime session with execution providers: `["webgpu", "cpu"]` (WebGPU first, CPU fallback).
+  - **Watch endpoint**: `app/api/watch/route.ts`
+    - Performs the “harm” verification pass used by the live watch flow.
+  - **Overlay rendering**: `components/OverlayCanvas`
 
-- **Video chat UI (`/chat`)**:
-  - **UI**: `components/VideoChatExperience.tsx`
+- **Video intelligence (`/analysis` + `/analysis/query`)**:
+  - **UI**:
+    - Upload + pipeline: `app/analysis/page.tsx`
+    - Query chat: `app/analysis/query/page.tsx`
   - **Client API**: `app/lib/video-watch-client.ts`
     - `POST /api/video-watch` to upload and create/resume a job
     - `GET /api/video-watch?jobId=...` to poll job status
@@ -88,6 +108,14 @@ Then also visit `http://localhost:3000/chat` for the video chat experience.
   - **Server routes**:
     - `app/api/video-watch/route.ts` (upload/status/cache management)
     - `app/api/video-watch/chat/route.ts` (answer questions)
+
+- **Legacy chat UI (`/chat`)**:
+  - **UI**: `components/VideoChatExperience.tsx`
+  - Uses the same `/api/video-watch/*` backend routes as the analysis/query workflow.
+
+- **Settings (`/settings/*`)**:
+  - UI pages live under `app/settings/*`
+  - Threat Log viewer uses persisted records from `app/lib/threat-log-store.ts` (and supports CSV export + status updates).
 
 ## Models
 
@@ -101,7 +129,7 @@ If your RF-DETR ONNX export includes a mask tensor (commonly `masks`), the app r
 
 To switch the model, the client sends `model` in the request body; the server selects the right ONNX session per request.
 
-For `/chat`, model keys are configured on the server via environment variables (for example `LMSTUDIO_BASE_URL`, `VIDEO_WATCH_FRAME_MODEL_KEY`, `VIDEO_WATCH_SUMMARY_MODEL_KEY`).
+For **Analysis/Query** (and legacy `/chat`), model keys are configured on the server via environment variables (for example `LMSTUDIO_BASE_URL`, `VIDEO_WATCH_FRAME_MODEL_KEY`, `VIDEO_WATCH_SUMMARY_MODEL_KEY`).
 
 ## Performance notes
 
@@ -115,7 +143,7 @@ Actual performance depends on your GPU, drivers, and model size.
 - **WebGPU provider not available**: you’ll fall back to CPU. Check your OS/driver support and ONNX Runtime WebGPU availability for your platform.
 - **Camera permissions**: allow camera access in your browser.
 - **Inference errors**: check server logs for the requestId-prefixed messages.
-- **Video chat can’t connect to the LLM**: verify `LMSTUDIO_BASE_URL` (defaults to `ws://127.0.0.1:1234`) and that the expected model is loaded in your LLM backend.
+- **Analysis/Query can’t connect to the LLM**: verify `LMSTUDIO_BASE_URL` (defaults to `ws://127.0.0.1:1234`) and that the expected model is loaded in your LLM backend.
 
 ## Scripts
 
