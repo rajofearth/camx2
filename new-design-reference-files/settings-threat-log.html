@@ -1,0 +1,725 @@
+<!doctype html>
+
+<html class="dark" lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+        <title>CamX2: Settings - Threat Log</title>
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link
+            href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+            rel="stylesheet"
+        />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+            rel="stylesheet"
+        />
+        <script id="tailwind-config">
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {
+                            "inverse-primary": "#5d5e5f",
+                            "outline-variant": "#474747",
+                            "primary-container": "#d4d4d4",
+                            "on-error": "#690005",
+                            "on-secondary-fixed-variant": "#3b3b3b",
+                            "on-primary-fixed": "#ffffff",
+                            "primary-fixed-dim": "#464747",
+                            "on-tertiary-fixed": "#ffffff",
+                            tertiary: "#ffdad6",
+                            "tertiary-fixed": "#ac322e",
+                            "surface-container": "#201f1f",
+                            "surface-variant": "#353534",
+                            "on-primary": "#1a1c1c",
+                            "on-tertiary-container": "#000000",
+                            "on-background": "#e5e2e1",
+                            "on-error-container": "#ffdad6",
+                            "surface-bright": "#3a3939",
+                            "inverse-on-surface": "#313030",
+                            "surface-container-highest": "#353534",
+                            "secondary-fixed-dim": "#acabab",
+                            outline: "#919191",
+                            "on-secondary-container": "#e4e2e2",
+                            "secondary-fixed": "#c7c6c6",
+                            "on-surface-variant": "#c6c6c6",
+                            "tertiary-container": "#ef635b",
+                            "inverse-surface": "#e5e2e1",
+                            "secondary-container": "#464747",
+                            "error-container": "#93000a",
+                            "on-secondary-fixed": "#1b1c1c",
+                            background: "#131313",
+                            "tertiary-fixed-dim": "#8a1a1a",
+                            "surface-container-low": "#1c1b1b",
+                            "on-primary-fixed-variant": "#e3e2e2",
+                            "on-tertiary-fixed-variant": "#ffdad6",
+                            error: "#ffb4ab",
+                            primary: "#ffffff",
+                            "surface-container-high": "#2a2a2a",
+                            surface: "#131313",
+                            "surface-tint": "#c6c6c6",
+                            "on-tertiary": "#410003",
+                            "on-surface": "#e5e2e1",
+                            secondary: "#c7c6c6",
+                            "on-primary-container": "#000000",
+                            "surface-container-lowest": "#0e0e0e",
+                            "surface-dim": "#131313",
+                            "on-secondary": "#1b1c1c",
+                            "primary-fixed": "#5d5e5f",
+                        },
+                        borderRadius: {
+                            DEFAULT: "0.125rem",
+                            lg: "0.25rem",
+                            xl: "0.5rem",
+                            full: "0.75rem",
+                        },
+                        fontFamily: {
+                            sans: ["IBM Plex Sans", "sans-serif"],
+                            mono: ["IBM Plex Mono", "monospace"],
+                        },
+                    },
+                },
+            };
+        </script>
+        <style>
+            body {
+                background-color: #080808;
+                color: #e5e2e1;
+                font-family: "IBM Plex Sans", sans-serif;
+            }
+            .font-mono {
+                font-family: "IBM Plex Mono", monospace;
+            }
+            .material-symbols-outlined {
+                font-family: "Material Symbols Outlined";
+                font-weight: normal;
+                font-style: normal;
+                font-size: 20px;
+                line-height: 1;
+                letter-spacing: normal;
+                text-transform: none;
+                display: inline-block;
+                white-space: nowrap;
+                word-wrap: normal;
+                direction: ltr;
+                font-feature-settings: "liga";
+                -webkit-font-smoothing: antialiased;
+            }
+            .material-symbols-outlined[data-weight="fill"] {
+                font-variation-settings: "FILL" 1;
+            }
+
+            /* Custom scrollbar for dense data tables */
+            ::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+            ::-webkit-scrollbar-track {
+                background: #080808;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: #1c1c1c;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                background: #2e2e2e;
+            }
+        </style>
+    </head>
+    <body
+        class="antialiased min-h-screen flex flex-col overflow-hidden selection:bg-secondary selection:text-on-secondary"
+    >
+        <!-- TopNavBar (Shared Component) -->
+        <nav
+            class="bg-neutral-900 dark:bg-[#0F0F0F] text-neutral-400 dark:text-[#C0C0C0] docked full-width top-0 h-12 flex justify-between items-center w-full px-4 border-b border-neutral-800 dark:border-[#1C1C1C] flex-shrink-0 z-50"
+        >
+            <div class="flex items-center h-full">
+                <span
+                    class="text-sm font-mono tracking-tighter uppercase text-neutral-400 dark:text-[#C0C0C0] mr-8 font-bold"
+                    >CAMX2</span
+                >
+                <div class="hidden md:flex h-full">
+                    <a
+                        class="text-neutral-500 dark:text-[#5C5C5C] hover:text-neutral-300 dark:hover:text-[#E2E2E2] h-full flex items-center px-4 hover:bg-neutral-800 dark:hover:bg-[#161616] linear duration-75 text-xs font-mono uppercase tracking-widest"
+                        href="#"
+                        >LIVE MONITOR</a
+                    >
+                    <a
+                        class="text-neutral-500 dark:text-[#5C5C5C] hover:text-neutral-300 dark:hover:text-[#E2E2E2] h-full flex items-center px-4 hover:bg-neutral-800 dark:hover:bg-[#161616] linear duration-75 text-xs font-mono uppercase tracking-widest"
+                        href="#"
+                        >ANALYSIS &amp; QUERY</a
+                    >
+                    <a
+                        class="text-white dark:text-[#C0C0C0] border-b border-white dark:border-[#C0C0C0] h-full flex items-center px-4 hover:bg-neutral-800 dark:hover:bg-[#161616] linear duration-75 text-xs font-mono uppercase tracking-widest"
+                        href="#"
+                        >SETTINGS</a
+                    >
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 h-full">
+                <button
+                    class="h-8 w-8 flex items-center justify-center rounded hover:bg-neutral-800 dark:hover:bg-[#161616] linear duration-75 text-neutral-500 dark:text-[#5C5C5C] hover:text-neutral-300 dark:hover:text-[#E2E2E2]"
+                >
+                    <span class="material-symbols-outlined text-[18px]"
+                        >notifications</span
+                    >
+                </button>
+                <button
+                    class="h-8 w-8 flex items-center justify-center rounded hover:bg-neutral-800 dark:hover:bg-[#161616] linear duration-75 text-neutral-500 dark:text-[#5C5C5C] hover:text-neutral-300 dark:hover:text-[#E2E2E2]"
+                >
+                    <span class="material-symbols-outlined text-[18px]"
+                        >sensors</span
+                    >
+                </button>
+                <div
+                    class="h-6 w-6 ml-2 bg-[#1C1C1C] overflow-hidden flex items-center justify-center border border-[#1C1C1C]"
+                >
+                    <span
+                        class="material-symbols-outlined text-[16px] text-[#5C5C5C]"
+                        >person</span
+                    >
+                </div>
+            </div>
+        </nav>
+        <!-- Main Layout -->
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Left Navigation (Settings Context) -->
+            <aside
+                class="w-64 bg-[#0F0F0F] border-r border-[#1C1C1C] flex-shrink-0 flex flex-col z-40 overflow-y-auto"
+            >
+                <div class="p-4">
+                    <h2
+                        class="text-xs font-mono text-[#5C5C5C] uppercase tracking-widest mb-4"
+                    >
+                        System Settings
+                    </h2>
+                    <nav class="space-y-1">
+                        <a
+                            class="flex items-center px-3 py-2 text-sm text-[#E2E2E2] hover:bg-[#161616] transition-colors group"
+                            href="#"
+                        >
+                            <span
+                                class="material-symbols-outlined mr-3 text-[18px] text-[#5C5C5C] group-hover:text-[#E2E2E2]"
+                                >tune</span
+                            >
+                            General
+                        </a>
+                        <a
+                            class="flex items-center px-3 py-2 text-sm text-[#E2E2E2] hover:bg-[#161616] transition-colors group"
+                            href="#"
+                        >
+                            <span
+                                class="material-symbols-outlined mr-3 text-[18px] text-[#5C5C5C] group-hover:text-[#E2E2E2]"
+                                >videocam</span
+                            >
+                            Camera Nodes
+                        </a>
+                        <a
+                            class="flex items-center px-3 py-2 text-sm text-[#E2E2E2] hover:bg-[#161616] transition-colors group"
+                            href="#"
+                        >
+                            <span
+                                class="material-symbols-outlined mr-3 text-[18px] text-[#5C5C5C] group-hover:text-[#E2E2E2]"
+                                >memory</span
+                            >
+                            VLM Inference
+                        </a>
+                    </nav>
+                </div>
+                <div class="px-4 py-2 mt-2 border-t border-[#1C1C1C]">
+                    <h2
+                        class="text-xs font-mono text-[#5C5C5C] uppercase tracking-widest mb-4 mt-4"
+                    >
+                        Security &amp; Logs
+                    </h2>
+                    <nav class="space-y-1">
+                        <a
+                            class="flex items-center px-3 py-2 text-sm text-[#E2E2E2] hover:bg-[#161616] transition-colors group"
+                            href="#"
+                        >
+                            <span
+                                class="material-symbols-outlined mr-3 text-[18px] text-[#5C5C5C] group-hover:text-[#E2E2E2]"
+                                >shield_person</span
+                            >
+                            Access Control
+                        </a>
+                        <a
+                            class="flex items-center px-3 py-2 text-sm bg-[#161616] text-[#C0C0C0] border-l-2 border-[#C0C0C0] group"
+                            href="#"
+                        >
+                            <span
+                                class="material-symbols-outlined mr-3 text-[18px] text-[#C0C0C0]"
+                                >history_edu</span
+                            >
+                            Threat Log
+                        </a>
+                        <a
+                            class="flex items-center px-3 py-2 text-sm text-[#E2E2E2] hover:bg-[#161616] transition-colors group"
+                            href="#"
+                        >
+                            <span
+                                class="material-symbols-outlined mr-3 text-[18px] text-[#5C5C5C] group-hover:text-[#E2E2E2]"
+                                >receipt_long</span
+                            >
+                            Audit Trail
+                        </a>
+                    </nav>
+                </div>
+            </aside>
+            <!-- Content Area -->
+            <main
+                class="flex-1 flex flex-col bg-[#080808] relative overflow-hidden"
+            >
+                <!-- Header & Filters -->
+                <header
+                    class="bg-[#0F0F0F] border-b border-[#1C1C1C] p-4 flex-shrink-0 z-30"
+                >
+                    <div class="flex justify-between items-end mb-4">
+                        <div>
+                            <h1
+                                class="text-2xl font-medium text-[#E2E2E2] leading-none mb-1"
+                            >
+                                Threat Log
+                            </h1>
+                            <p class="text-xs font-mono text-[#5C5C5C]">
+                                SYS.LOG.0924 // 14,203 RECORDS FOUND
+                            </p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button
+                                class="bg-transparent border border-[#1C1C1C] text-[#E2E2E2] px-4 py-1.5 text-xs font-mono flex items-center hover:bg-[#161616] transition-colors rounded-sm"
+                            >
+                                <span
+                                    class="material-symbols-outlined mr-2 text-[16px]"
+                                    >download</span
+                                >
+                                EXPORT CSV
+                            </button>
+                            <button
+                                class="bg-[#C0C0C0] text-[#080808] px-4 py-1.5 text-xs font-mono font-semibold flex items-center hover:bg-white transition-colors rounded-sm"
+                            >
+                                <span
+                                    class="material-symbols-outlined mr-2 text-[16px]"
+                                    >done_all</span
+                                >
+                                MARK ACKNOWLEDGED
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Filter Bar -->
+                    <div
+                        class="flex items-center space-x-2 bg-[#161616] border border-[#1C1C1C] p-2 rounded-sm overflow-x-auto"
+                    >
+                        <!-- Search -->
+                        <div
+                            class="flex items-center px-2 py-1 bg-[#080808] border border-[#1C1C1C] focus-within:border-[#C0C0C0] transition-colors w-64 flex-shrink-0"
+                        >
+                            <span
+                                class="material-symbols-outlined text-[16px] text-[#5C5C5C] mr-2"
+                                >search</span
+                            >
+                            <input
+                                class="bg-transparent border-none text-xs font-mono text-[#E2E2E2] placeholder-[#5C5C5C] focus:ring-0 w-full p-0 h-6"
+                                placeholder="Search VLM notes, ID..."
+                                type="text"
+                            />
+                        </div>
+                        <!-- Divider -->
+                        <div class="w-px h-6 bg-[#1C1C1C] mx-2"></div>
+                        <!-- Dropdown: Camera -->
+                        <button
+                            class="flex items-center justify-between px-3 py-1 bg-[#080808] border border-[#1C1C1C] text-xs font-mono text-[#E2E2E2] hover:border-[#2E2E2E] min-w-[120px]"
+                        >
+                            <span>CAM: ALL</span>
+                            <span
+                                class="material-symbols-outlined text-[16px] text-[#5C5C5C] ml-2"
+                                >arrow_drop_down</span
+                            >
+                        </button>
+                        <!-- Dropdown: Date Range -->
+                        <button
+                            class="flex items-center justify-between px-3 py-1 bg-[#080808] border border-[#1C1C1C] text-xs font-mono text-[#E2E2E2] hover:border-[#2E2E2E] min-w-[160px]"
+                        >
+                            <span>LAST 7 DAYS</span>
+                            <span
+                                class="material-symbols-outlined text-[16px] text-[#5C5C5C] ml-2"
+                                >arrow_drop_down</span
+                            >
+                        </button>
+                        <!-- Dropdown: Severity -->
+                        <button
+                            class="flex items-center justify-between px-3 py-1 bg-[#080808] border border-[#1C1C1C] text-xs font-mono text-[#E2E2E2] hover:border-[#2E2E2E] min-w-[140px]"
+                        >
+                            <span>SEV: CRITICAL</span>
+                            <span
+                                class="material-symbols-outlined text-[16px] text-[#5C5C5C] ml-2"
+                                >arrow_drop_down</span
+                            >
+                        </button>
+                        <!-- Dropdown: Class -->
+                        <button
+                            class="flex items-center justify-between px-3 py-1 bg-[#080808] border border-[#1C1C1C] text-xs font-mono text-[#E2E2E2] hover:border-[#2E2E2E] min-w-[140px]"
+                        >
+                            <span>CLASS: ALL</span>
+                            <span
+                                class="material-symbols-outlined text-[16px] text-[#5C5C5C] ml-2"
+                                >arrow_drop_down</span
+                            >
+                        </button>
+                        <div class="flex-1"></div>
+                        <button
+                            class="text-xs font-mono text-[#5C5C5C] hover:text-[#E2E2E2] flex items-center px-2"
+                        >
+                            <span
+                                class="material-symbols-outlined text-[16px] mr-1"
+                                >filter_list_off</span
+                            >
+                            CLEAR
+                        </button>
+                    </div>
+                </header>
+                <!-- Data Table Container -->
+                <div class="flex-1 overflow-auto bg-[#080808]">
+                    <table class="w-full text-left border-collapse">
+                        <thead
+                            class="sticky top-0 bg-[#0F0F0F] z-20 border-b border-[#1C1C1C] shadow-[0_1px_0_#1C1C1C]"
+                        >
+                            <tr>
+                                <th class="p-3 w-10">
+                                    <input
+                                        class="bg-[#080808] border-[#1C1C1C] rounded-sm text-[#C0C0C0] focus:ring-0 focus:ring-offset-0 h-4 w-4"
+                                        type="checkbox"
+                                    />
+                                </th>
+                                <th
+                                    class="p-3 text-[10px] font-mono text-[#5C5C5C] font-normal uppercase tracking-wider w-40"
+                                >
+                                    TIMESTAMP
+                                </th>
+                                <th
+                                    class="p-3 text-[10px] font-mono text-[#5C5C5C] font-normal uppercase tracking-wider w-32"
+                                >
+                                    CAMERA
+                                </th>
+                                <th
+                                    class="p-3 text-[10px] font-mono text-[#5C5C5C] font-normal uppercase tracking-wider w-32"
+                                >
+                                    CLASS
+                                </th>
+                                <th
+                                    class="p-3 text-[10px] font-mono text-[#5C5C5C] font-normal uppercase tracking-wider w-32"
+                                >
+                                    CONFIDENCE
+                                </th>
+                                <th
+                                    class="p-3 text-[10px] font-mono text-[#5C5C5C] font-normal uppercase tracking-wider"
+                                >
+                                    VLM PREVIEW
+                                </th>
+                                <th
+                                    class="p-3 text-[10px] font-mono text-[#5C5C5C] font-normal uppercase tracking-wider w-24"
+                                >
+                                    STATUS
+                                </th>
+                                <th class="p-3 w-10"></th>
+                            </tr>
+                        </thead>
+                        <tbody
+                            class="font-mono text-xs divide-y divide-[#1C1C1C]"
+                        >
+                            <!-- Row 1: Expanded -->
+                            <tr
+                                class="bg-[#161616] border-l-2 border-[#8B1A1A] group transition-colors"
+                            >
+                                <td class="p-3 align-top">
+                                    <input
+                                        class="bg-[#080808] border-[#1C1C1C] rounded-sm text-[#C0C0C0] focus:ring-0 focus:ring-offset-0 h-4 w-4 mt-0.5"
+                                        type="checkbox"
+                                    />
+                                </td>
+                                <td class="p-3 align-top text-[#E2E2E2]">
+                                    2023-10-27 14:32:01
+                                </td>
+                                <td class="p-3 align-top text-[#C0C0C0]">
+                                    NODE_04_EXT
+                                </td>
+                                <td class="p-3 align-top">
+                                    <span
+                                        class="px-2 py-0.5 bg-transparent border border-[#8B1A1A] text-white text-[10px]"
+                                        >UNAUTHORIZED_VEHICLE</span
+                                    >
+                                </td>
+                                <td class="p-3 align-top">
+                                    <div class="flex items-center">
+                                        <span class="text-[#C0C0C0] mr-2 w-8"
+                                            >98%</span
+                                        >
+                                        <div class="h-0.5 w-16 bg-[#2A2A2A]">
+                                            <div
+                                                class="h-full bg-[#C0C0C0] w-[98%]"
+                                            ></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td
+                                    class="p-3 align-top text-[#E2E2E2] truncate max-w-xs"
+                                >
+                                    Multiple unknown vehicles detected in
+                                    restricted sector B...
+                                </td>
+                                <td class="p-3 align-top">
+                                    <span
+                                        class="px-2 py-0.5 bg-[#161616] border border-[#2E2E2E] text-[#E2E2E2] text-[10px]"
+                                        >ACTIVE</span
+                                    >
+                                </td>
+                                <td class="p-3 align-top text-right">
+                                    <button
+                                        class="text-[#5C5C5C] hover:text-[#E2E2E2]"
+                                    >
+                                        <span
+                                            class="material-symbols-outlined text-[18px]"
+                                            >expand_less</span
+                                        >
+                                    </button>
+                                </td>
+                            </tr>
+                            <!-- Row 1: Expanded Content -->
+                            <tr
+                                class="bg-[#161616] border-l-2 border-[#8B1A1A] border-b border-[#1C1C1C]"
+                            >
+                                <td class="p-0" colspan="8">
+                                    <div
+                                        class="p-4 pl-12 pr-4 bg-[#0F0F0F] border-t border-[#1C1C1C] flex gap-4"
+                                    >
+                                        <!-- Image Capture -->
+                                        <div
+                                            class="w-64 h-36 bg-[#080808] border border-[#1C1C1C] relative flex-shrink-0 group cursor-pointer"
+                                        >
+                                            <img
+                                                alt="VLM Capture"
+                                                class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                                                data-alt="Security camera view of two dark SUVs parked illegally near a chain link fence at dusk, gritty industrial setting, cold lighting"
+                                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBkXDXk3c-w0aTnJTrWOtu09fwAbBnuq4fogfxM20_Ry0SfkuMZnR4znBif0ds_1z95s1OGxmjgllZE4hHMxNThVAj2vCKLDWLB6CM1gCaasPvTKw74yhHiISHL6aDuYjjYMb7ab9mFATmKJx32l8qE88K7lvdrnnQTp_zmXn7l_ZIZZgX_gzyBC2OljIBGPLBOS1Xa4la6GRHuGk_KRGtm_B4ManPy-Rm6nmWb0rSGJyNDnJe98jIdWycrE_eZUYwsHNcoakNo5Os2"
+                                            />
+                                            <!-- Bounding Box overlay -->
+                                            <div
+                                                class="absolute border border-[#8B1A1A] bg-[#8B1A1A]/10 top-[20%] left-[30%] w-[40%] h-[30%] z-10"
+                                            >
+                                                <span
+                                                    class="absolute -top-4 left-[-1px] bg-[#8B1A1A] text-white text-[8px] font-mono px-1"
+                                                    >VEHICLE_98%</span
+                                                >
+                                            </div>
+                                            <div
+                                                class="absolute bottom-2 left-2 right-2 flex justify-between items-center z-20"
+                                            >
+                                                <span
+                                                    class="text-[9px] font-mono text-white bg-black/60 px-1"
+                                                    >FRAME: 849201</span
+                                                >
+                                                <span
+                                                    class="material-symbols-outlined text-[14px] text-white bg-black/60 p-0.5"
+                                                    >fullscreen</span
+                                                >
+                                            </div>
+                                        </div>
+                                        <!-- VLM Full Analysis -->
+                                        <div
+                                            class="flex-1 border border-[#1C1C1C] bg-[#080808] p-3 flex flex-col"
+                                        >
+                                            <div
+                                                class="flex justify-between items-center mb-2 pb-2 border-b border-[#1C1C1C]"
+                                            >
+                                                <span
+                                                    class="text-[10px] font-mono text-[#5C5C5C]"
+                                                    >VLM ANALYSIS STREAM //
+                                                    GPT-4V-VISION-SYS</span
+                                                >
+                                                <button
+                                                    class="text-[10px] text-[#C0C0C0] hover:underline"
+                                                >
+                                                    COPY RAW
+                                                </button>
+                                            </div>
+                                            <div
+                                                class="text-[11px] text-[#E2E2E2] leading-relaxed font-sans overflow-y-auto max-h-24 pr-2"
+                                            >
+                                                Analysis indicates high
+                                                probability (98%) of two
+                                                unauthorized vehicles,
+                                                identifiable as dark-colored
+                                                SUVs, parked within restricted
+                                                proximity zone B. License plates
+                                                are obscured by angle and
+                                                lighting. No human subjects
+                                                visible in the immediate
+                                                vicinity. Vehicle profiles do
+                                                not match registered contractor
+                                                databases for this sector.
+                                                Recommend immediate dispatch of
+                                                security personnel for
+                                                verification.
+                                            </div>
+                                            <div
+                                                class="mt-auto pt-2 flex gap-2"
+                                            >
+                                                <span
+                                                    class="px-1.5 py-0.5 bg-[#161616] text-[#5C5C5C] text-[9px] border border-[#2E2E2E]"
+                                                    >TAG: SECTOR_B</span
+                                                >
+                                                <span
+                                                    class="px-1.5 py-0.5 bg-[#161616] text-[#5C5C5C] text-[9px] border border-[#2E2E2E]"
+                                                    >TAG: LPR_FAIL</span
+                                                >
+                                            </div>
+                                        </div>
+                                        <!-- Quick Actions -->
+                                        <div class="w-32 flex flex-col gap-2">
+                                            <button
+                                                class="w-full py-1.5 bg-[#1C1C1C] hover:bg-[#2E2E2E] text-[#E2E2E2] text-[10px] border border-[#2E2E2E] transition-colors text-left pl-2"
+                                            >
+                                                ACKNOWLEDGE
+                                            </button>
+                                            <button
+                                                class="w-full py-1.5 bg-transparent hover:bg-[#161616] text-[#C0C0C0] text-[10px] border border-[#C0C0C0] transition-colors text-left pl-2"
+                                            >
+                                                ESCALATE ALERT
+                                            </button>
+                                            <button
+                                                class="w-full py-1.5 bg-transparent hover:bg-[#161616] text-[#5C5C5C] text-[10px] border border-[#1C1C1C] transition-colors text-left pl-2 mt-auto"
+                                            >
+                                                FALSE POSITIVE
+                                            </button>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Row 2 -->
+                            <tr
+                                class="hover:bg-[#161616] border-l-2 border-transparent transition-colors"
+                            >
+                                <td class="p-3">
+                                    <input
+                                        class="bg-[#080808] border-[#1C1C1C] rounded-sm text-[#C0C0C0] focus:ring-0 focus:ring-offset-0 h-4 w-4"
+                                        type="checkbox"
+                                    />
+                                </td>
+                                <td class="p-3 text-[#5C5C5C]">
+                                    2023-10-27 13:15:42
+                                </td>
+                                <td class="p-3 text-[#E2E2E2]">NODE_12_INT</td>
+                                <td class="p-3">
+                                    <span
+                                        class="px-2 py-0.5 bg-transparent border border-[#d4a017] text-[#d4a017] text-[10px]"
+                                        >LOITERING_SUSPECTED</span
+                                    >
+                                </td>
+                                <td class="p-3">
+                                    <div class="flex items-center">
+                                        <span class="text-[#E2E2E2] mr-2 w-8"
+                                            >72%</span
+                                        >
+                                        <div class="h-0.5 w-16 bg-[#2A2A2A]">
+                                            <div
+                                                class="h-full bg-[#5C5C5C] w-[72%]"
+                                            ></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td
+                                    class="p-3 text-[#5C5C5C] truncate max-w-xs font-sans text-xs"
+                                >
+                                    Subject lingering near server room access
+                                    door for &gt; 5 mins...
+                                </td>
+                                <td class="p-3">
+                                    <span
+                                        class="px-2 py-0.5 bg-transparent border border-[#1C1C1C] text-[#5C5C5C] text-[10px]"
+                                        >REVIEWED</span
+                                    >
+                                </td>
+                                <td class="p-3 text-right">
+                                    <button
+                                        class="text-[#2A2A2A] hover:text-[#E2E2E2]"
+                                    >
+                                        <span
+                                            class="material-symbols-outlined text-[18px]"
+                                            >expand_more</span
+                                        >
+                                    </button>
+                                </td>
+                            </tr>
+                            <!-- Row 3 -->
+                            <tr
+                                class="hover:bg-[#161616] border-l-2 border-[#8B1A1A] transition-colors"
+                            >
+                                <td class="p-3">
+                                    <input
+                                        class="bg-[#080808] border-[#1C1C1C] rounded-sm text-[#C0C0C0] focus:ring-0 focus:ring-offset-0 h-4 w-4"
+                                        type="checkbox"
+                                    />
+                                </td>
+                                <td class="p-3 text-[#E2E2E2]">
+                                    2023-10-27 11:04:19
+                                </td>
+                                <td class="p-3 text-[#C0C0C0]">NODE_01_MAIN</td>
+                                <td class="p-3">
+                                    <span
+                                        class="px-2 py-0.5 bg-transparent border border-[#8B1A1A] text-white text-[10px]"
+                                        >TAILGATING_DETECTED</span
+                                    >
+                                </td>
+                                <td class="p-3">
+                                    <div class="flex items-center">
+                                        <span class="text-[#C0C0C0] mr-2 w-8"
+                                            >99%</span
+                                        >
+                                        <div class="h-0.5 w-16 bg-[#2A2A2A]">
+                                            <div
+                                                class="h-full bg-[#C0C0C0] w-[99%]"
+                                            ></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td
+                                    class="p-3 text-[#E2E2E2] truncate max-w-xs font-sans text-xs"
+                                >
+                                    Two individuals entered on single badge
+                                    swipe at Main Turnstile.
+                                </td>
+                                <td class="p-3">
+                                    <span
+                                        class="px-2 py-0.5 bg-[#161616] border border-[#2E2E2E] text-[#E2E2E2] text-[10px]"
+                                        >ACTIVE</span
+                                    >
+                                </td>
+                                <td class="p-3 text-right">
+                                    <button
+                                        class="text-[#5C5C5C] hover:text-[#E2E2E2]"
+                                    >
+                                        <span
+                                            class="material-symbols-outlined text-[18px]"
+                                            >expand_more</span
+                                        >
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Footer Status Bar -->
+                <footer
+                    class="h-6 bg-[#080808] border-t border-[#1C1C1C] flex items-center justify-between px-4 flex-shrink-0"
+                >
+                    <span class="text-[9px] font-mono text-[#5C5C5C]"
+                        >SYS: ONLINE // DB: SYNCED</span
+                    >
+                    <span class="text-[9px] font-mono text-[#5C5C5C]"
+                        >SHOWING 1-50 OF 14,203</span
+                    >
+                </footer>
+            </main>
+        </div>
+    </body>
+</html>

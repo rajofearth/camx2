@@ -1,0 +1,787 @@
+<!doctype html>
+
+<html class="dark" lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+        <title>CamX2 - Camera Management</title>
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link href="https://fonts.googleapis.com" rel="preconnect" />
+        <link
+            crossorigin=""
+            href="https://fonts.gstatic.com"
+            rel="preconnect"
+        />
+        <link
+            href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap"
+            rel="stylesheet"
+        />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+            rel="stylesheet"
+        />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+            rel="stylesheet"
+        />
+        <script id="tailwind-config">
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {
+                            "inverse-primary": "#5d5e5f",
+                            "outline-variant": "#474747",
+                            "primary-container": "#d4d4d4",
+                            "on-error": "#690005",
+                            "on-secondary-fixed-variant": "#3b3b3b",
+                            "on-primary-fixed": "#ffffff",
+                            "primary-fixed-dim": "#464747",
+                            "on-tertiary-fixed": "#ffffff",
+                            tertiary: "#ffdad6",
+                            "tertiary-fixed": "#ac322e",
+                            "surface-container": "#201f1f",
+                            "surface-variant": "#353534",
+                            "on-primary": "#1a1c1c",
+                            "on-tertiary-container": "#000000",
+                            "on-background": "#e5e2e1",
+                            "on-error-container": "#ffdad6",
+                            "surface-bright": "#3a3939",
+                            "inverse-on-surface": "#313030",
+                            "surface-container-highest": "#353534",
+                            "secondary-fixed-dim": "#acabab",
+                            outline: "#919191",
+                            "on-secondary-container": "#e4e2e2",
+                            "secondary-fixed": "#c7c6c6",
+                            "on-surface-variant": "#c6c6c6",
+                            "tertiary-container": "#ef635b",
+                            "inverse-surface": "#e5e2e1",
+                            "secondary-container": "#464747",
+                            "error-container": "#93000a",
+                            "on-secondary-fixed": "#1b1c1c",
+                            background: "#131313",
+                            "tertiary-fixed-dim": "#8a1a1a",
+                            "surface-container-low": "#1c1b1b",
+                            "on-primary-fixed-variant": "#e3e2e2",
+                            "on-tertiary-fixed-variant": "#ffdad6",
+                            error: "#ffb4ab",
+                            primary: "#ffffff",
+                            "surface-container-high": "#2a2a2a",
+                            surface: "#131313",
+                            "surface-tint": "#c6c6c6",
+                            "on-tertiary": "#410003",
+                            "on-surface": "#e5e2e1",
+                            secondary: "#c7c6c6",
+                            "on-primary-container": "#000000",
+                            "surface-container-lowest": "#0e0e0e",
+                            "surface-dim": "#131313",
+                            "on-secondary": "#1b1c1c",
+                            "primary-fixed": "#5d5e5f",
+                        },
+                        borderRadius: {
+                            DEFAULT: "0.125rem",
+                            lg: "0.25rem",
+                            xl: "0.5rem",
+                            full: "0.75rem",
+                        },
+                        spacing: {},
+                        fontFamily: {
+                            headline: ["IBM Plex Sans", "sans-serif"],
+                            body: ["IBM Plex Sans", "sans-serif"],
+                            label: ["IBM Plex Sans", "sans-serif"],
+                            mono: ["IBM Plex Mono", "monospace"],
+                        },
+                    },
+                },
+            };
+        </script>
+        <style>
+            body {
+                font-family: "IBM Plex Sans", sans-serif;
+                background-color: #080808;
+                color: #e5e2e1;
+            }
+            .font-mono {
+                font-family: "IBM Plex Mono", monospace;
+            }
+            .material-symbols-outlined {
+                font-variation-settings:
+                    "FILL" 0,
+                    "wght" 300,
+                    "GRAD" 0,
+                    "opsz" 24;
+            }
+
+            /* Custom scrollbar for dense tables */
+            ::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+            ::-webkit-scrollbar-track {
+                background: #080808;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: #2e2e2e;
+                border-radius: 0;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                background: #474747;
+            }
+        </style>
+    </head>
+    <body class="min-h-screen flex flex-col antialiased">
+        <!-- TopNavBar (Shared Component) -->
+        <nav
+            class="bg-neutral-900 dark:bg-[#0F0F0F] docked full-width top-0 h-12 border-b border-neutral-800 dark:border-[#1C1C1C] flex justify-between items-center w-full px-4 z-50 shrink-0"
+        >
+            <div class="flex items-center h-full gap-8">
+                <div
+                    class="text-sm font-mono tracking-tighter uppercase text-neutral-400 dark:text-[#C0C0C0]"
+                >
+                    CAMX2
+                </div>
+                <div class="hidden md:flex items-center h-full gap-2">
+                    <a
+                        class="text-neutral-500 dark:text-[#5C5C5C] hover:text-neutral-300 dark:hover:text-[#E2E2E2] hover:bg-neutral-800 dark:hover:bg-[#161616] linear duration-75 h-full flex items-center px-4 font-mono text-xs font-medium"
+                        href="#"
+                        >LIVE MONITOR</a
+                    >
+                    <a
+                        class="text-neutral-500 dark:text-[#5C5C5C] hover:text-neutral-300 dark:hover:text-[#E2E2E2] hover:bg-neutral-800 dark:hover:bg-[#161616] linear duration-75 h-full flex items-center px-4 font-mono text-xs font-medium"
+                        href="#"
+                        >ANALYSIS &amp; QUERY</a
+                    >
+                    <a
+                        class="text-white dark:text-[#C0C0C0] border-b border-white dark:border-[#C0C0C0] h-full flex items-center px-4 font-mono text-xs font-medium bg-neutral-800 dark:bg-[#161616]"
+                        href="#"
+                        >SETTINGS</a
+                    >
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <button
+                    class="text-neutral-400 dark:text-[#C0C0C0] hover:text-white transition-colors duration-75"
+                >
+                    <span
+                        class="material-symbols-outlined text-lg"
+                        data-icon="notifications"
+                        >notifications</span
+                    >
+                </button>
+                <button
+                    class="text-neutral-400 dark:text-[#C0C0C0] hover:text-white transition-colors duration-75"
+                >
+                    <span
+                        class="material-symbols-outlined text-lg"
+                        data-icon="sensors"
+                        >sensors</span
+                    >
+                </button>
+                <div
+                    class="w-6 h-6 rounded-sm bg-[#1C1C1C] overflow-hidden border border-[#2E2E2E]"
+                >
+                    <img
+                        alt="User Avatar"
+                        class="w-full h-full object-cover"
+                        data-alt="professional headshot of man on dark background with dramatic side lighting"
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNMduAOrVnKOOzLvoxeICj7UgSik4UDTPvaFmMc-xQ2W6qXjca4f1QB7ivyfKtEx86aYVyzcENXPW5xJE7f59h9kshhRMWT5wLb24F04xwidREpuy2m2Q1D_FH30ztgn7GltU5Kkf88mUh-S24x5Yw2D5b6W5jNuNHvMDSgVeN528fYTC2EO69LQXmvWUgB6iDetA_s9DNwjtPidN0ZfkYDf7I7RFZ01C0jj1xUSMngM7wVVfRacLZ51yKC8XwLKmxaqP4Evf5cQWn"
+                    />
+                </div>
+            </div>
+        </nav>
+        <div class="flex flex-1 overflow-hidden h-[calc(100vh-3rem)]">
+            <!-- Left Navigation -->
+            <aside
+                class="w-64 bg-[#0F0F0F] border-r border-[#1C1C1C] flex flex-col shrink-0 overflow-y-auto"
+            >
+                <div class="p-4 border-b border-[#1C1C1C]">
+                    <h2
+                        class="text-xs font-mono text-[#5C5C5C] uppercase tracking-wider"
+                    >
+                        System Settings
+                    </h2>
+                </div>
+                <nav class="flex-1 py-2">
+                    <ul class="space-y-[1px]">
+                        <li>
+                            <a
+                                class="flex items-center px-4 py-2 text-sm text-[#E5E2E1] hover:bg-[#161616] transition-colors duration-75"
+                                href="#"
+                            >
+                                <span
+                                    class="material-symbols-outlined mr-3 text-base text-[#5C5C5C]"
+                                    >dns</span
+                                >
+                                Deployment Profile
+                            </a>
+                        </li>
+                        <li>
+                            <a
+                                class="flex items-center px-4 py-2 text-sm text-[#080808] bg-[#C0C0C0] font-medium transition-colors duration-75"
+                                href="#"
+                            >
+                                <span
+                                    class="material-symbols-outlined mr-3 text-base text-[#080808]"
+                                    style="
+                                        font-variation-settings: &quot;FILL&quot;
+                                            1;
+                                    "
+                                    >videocam</span
+                                >
+                                Camera Management
+                            </a>
+                        </li>
+                        <li>
+                            <a
+                                class="flex items-center px-4 py-2 text-sm text-[#E5E2E1] hover:bg-[#161616] transition-colors duration-75"
+                                href="#"
+                            >
+                                <span
+                                    class="material-symbols-outlined mr-3 text-base text-[#5C5C5C]"
+                                    >warning</span
+                                >
+                                Alert Configuration
+                            </a>
+                        </li>
+                        <li>
+                            <a
+                                class="flex items-center px-4 py-2 text-sm text-[#E5E2E1] hover:bg-[#161616] transition-colors duration-75"
+                                href="#"
+                            >
+                                <span
+                                    class="material-symbols-outlined mr-3 text-base text-[#5C5C5C]"
+                                    >face_retouching_natural</span
+                                >
+                                Face Enrollment
+                            </a>
+                        </li>
+                        <li>
+                            <a
+                                class="flex items-center px-4 py-2 text-sm text-[#E5E2E1] hover:bg-[#161616] transition-colors duration-75"
+                                href="#"
+                            >
+                                <span
+                                    class="material-symbols-outlined mr-3 text-base text-[#5C5C5C]"
+                                    >model_training</span
+                                >
+                                Model Configuration
+                            </a>
+                        </li>
+                        <li>
+                            <a
+                                class="flex items-center px-4 py-2 text-sm text-[#E5E2E1] hover:bg-[#161616] transition-colors duration-75"
+                                href="#"
+                            >
+                                <span
+                                    class="material-symbols-outlined mr-3 text-base text-[#5C5C5C]"
+                                    >gpp_bad</span
+                                >
+                                Threat Log
+                            </a>
+                        </li>
+                        <li>
+                            <a
+                                class="flex items-center px-4 py-2 text-sm text-[#E5E2E1] hover:bg-[#161616] transition-colors duration-75"
+                                href="#"
+                            >
+                                <span
+                                    class="material-symbols-outlined mr-3 text-base text-[#5C5C5C]"
+                                    >group</span
+                                >
+                                User Management
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </aside>
+            <!-- Main Content Area -->
+            <main class="flex-1 bg-[#080808] flex flex-col overflow-hidden">
+                <!-- Header -->
+                <header
+                    class="flex justify-between items-end px-6 py-5 border-b border-[#1C1C1C] shrink-0"
+                >
+                    <div>
+                        <h1 class="text-2xl font-medium tracking-tight mb-1">
+                            Camera Management
+                        </h1>
+                        <p class="text-xs font-mono text-[#5C5C5C]">
+                            TOTAL SENSORS:
+                            <span class="text-[#C0C0C0]">24</span> | ACTIVE:
+                            <span class="text-[#C0C0C0]">22</span> | OFFLINE:
+                            <span class="text-[#8B1A1A]">2</span>
+                        </p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button
+                            class="bg-transparent border border-[#1C1C1C] text-[#E2E2E2] px-4 py-1.5 text-sm font-medium hover:bg-[#161616] hover:border-[#2E2E2E] transition-all duration-75 rounded-sm flex items-center"
+                        >
+                            <span class="material-symbols-outlined mr-2 text-sm"
+                                >refresh</span
+                            >
+                            SYNC STATUS
+                        </button>
+                        <button
+                            class="bg-[#C0C0C0] text-[#080808] px-4 py-1.5 text-sm font-semibold hover:bg-[#E2E2E2] transition-colors duration-75 rounded-sm flex items-center"
+                        >
+                            <span
+                                class="material-symbols-outlined mr-2 text-sm"
+                                style="
+                                    font-variation-settings: &quot;FILL&quot; 1;
+                                "
+                                >add</span
+                            >
+                            ADD NEW CAMERA
+                        </button>
+                    </div>
+                </header>
+                <!-- Table Container -->
+                <div class="flex-1 p-6 overflow-hidden flex flex-col">
+                    <div
+                        class="bg-[#0F0F0F] border border-[#1C1C1C] rounded-sm flex-1 flex flex-col overflow-hidden"
+                    >
+                        <!-- Table Actions Bar -->
+                        <div
+                            class="flex justify-between items-center px-4 py-2 border-b border-[#1C1C1C] bg-[#131313]"
+                        >
+                            <div class="flex items-center gap-2">
+                                <div class="relative">
+                                    <span
+                                        class="material-symbols-outlined absolute left-2 top-1.5 text-[#5C5C5C] text-sm"
+                                        >search</span
+                                    >
+                                    <input
+                                        class="bg-[#080808] border border-[#1C1C1C] text-[#E2E2E2] text-xs font-mono pl-8 pr-3 py-1.5 focus:outline-none focus:border-[#C0C0C0] focus:ring-0 w-64 rounded-sm transition-colors"
+                                        placeholder="Search by ID or Location..."
+                                        type="text"
+                                    />
+                                </div>
+                                <select
+                                    class="bg-[#080808] border border-[#1C1C1C] text-[#E2E2E2] text-xs font-mono px-3 py-1.5 focus:outline-none focus:border-[#C0C0C0] focus:ring-0 rounded-sm"
+                                >
+                                    <option>Zone: All</option>
+                                    <option>Zone: North Perimeter</option>
+                                    <option>Zone: Main Entry</option>
+                                    <option>Zone: Server Room</option>
+                                </select>
+                                <select
+                                    class="bg-[#080808] border border-[#1C1C1C] text-[#E2E2E2] text-xs font-mono px-3 py-1.5 focus:outline-none focus:border-[#C0C0C0] focus:ring-0 rounded-sm"
+                                >
+                                    <option>Status: All</option>
+                                    <option>Status: Active</option>
+                                    <option>Status: Offline</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- Table Wrapper for Scroll -->
+                        <div class="flex-1 overflow-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead
+                                    class="sticky top-0 bg-[#0F0F0F] z-10 shadow-[0_1px_0_#1C1C1C]"
+                                >
+                                    <tr>
+                                        <th
+                                            class="px-4 py-2 text-xs font-mono font-normal text-[#5C5C5C] uppercase w-32"
+                                        >
+                                            Camera ID
+                                        </th>
+                                        <th
+                                            class="px-4 py-2 text-xs font-mono font-normal text-[#5C5C5C] uppercase w-48"
+                                        >
+                                            Name
+                                        </th>
+                                        <th
+                                            class="px-4 py-2 text-xs font-mono font-normal text-[#5C5C5C] uppercase w-48"
+                                        >
+                                            Location
+                                        </th>
+                                        <th
+                                            class="px-4 py-2 text-xs font-mono font-normal text-[#5C5C5C] uppercase w-32"
+                                        >
+                                            Zone
+                                        </th>
+                                        <th
+                                            class="px-4 py-2 text-xs font-mono font-normal text-[#5C5C5C] uppercase hidden lg:table-cell"
+                                        >
+                                            Source URL
+                                        </th>
+                                        <th
+                                            class="px-4 py-2 text-xs font-mono font-normal text-[#5C5C5C] uppercase w-24"
+                                        >
+                                            Status
+                                        </th>
+                                        <th
+                                            class="px-4 py-2 text-xs font-mono font-normal text-[#5C5C5C] uppercase w-24 text-right"
+                                        >
+                                            Actions
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-[#1C1C1C]">
+                                    <tr
+                                        class="hover:bg-[#161616] transition-colors duration-75 group"
+                                    >
+                                        <td
+                                            class="px-4 py-2 font-mono text-xs text-[#E5E2E1]"
+                                        >
+                                            CAM-N-001
+                                        </td>
+                                        <td
+                                            class="px-4 py-2 text-sm text-[#E5E2E1]"
+                                        >
+                                            North Gate Entry
+                                        </td>
+                                        <td
+                                            class="px-4 py-2 text-sm text-[#A0A0A0]"
+                                        >
+                                            Gate 1 Exterior
+                                        </td>
+                                        <td class="px-4 py-2">
+                                            <span
+                                                class="px-1.5 py-0.5 bg-[#161616] border border-[#2E2E2E] text-[10px] font-mono text-[#5C5C5C] rounded-sm uppercase"
+                                                >Perimeter</span
+                                            >
+                                        </td>
+                                        <td
+                                            class="px-4 py-2 font-mono text-[10px] text-[#5C5C5C] truncate max-w-[200px] hidden lg:table-cell"
+                                        >
+                                            rtsp://10.0.1.101:554/stream1
+                                        </td>
+                                        <td class="px-4 py-2">
+                                            <span
+                                                class="inline-flex items-center gap-1.5 text-xs text-[#E5E2E1]"
+                                                ><span
+                                                    class="w-1.5 h-1.5 rounded-full bg-[#1A3A28] border border-[#2A5A38]"
+                                                ></span>
+                                                ACTIVE</span
+                                            >
+                                        </td>
+                                        <td class="px-4 py-2 text-right">
+                                            <button
+                                                class="text-[#5C5C5C] hover:text-[#C0C0C0] transition-colors"
+                                            >
+                                                <span
+                                                    class="material-symbols-outlined text-sm"
+                                                    >edit</span
+                                                >
+                                            </button>
+                                            <button
+                                                class="text-[#5C5C5C] hover:text-[#C0C0C0] transition-colors ml-2"
+                                            >
+                                                <span
+                                                    class="material-symbols-outlined text-sm"
+                                                    >settings</span
+                                                >
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr
+                                        class="hover:bg-[#161616] transition-colors duration-75 group bg-[#161616] border-l-2 border-l-[#C0C0C0]"
+                                    >
+                                        <td
+                                            class="px-4 py-2 font-mono text-xs text-[#C0C0C0] font-medium"
+                                        >
+                                            CAM-N-002
+                                        </td>
+                                        <td
+                                            class="px-4 py-2 text-sm text-[#E5E2E1]"
+                                        >
+                                            North Gate Exit
+                                        </td>
+                                        <td
+                                            class="px-4 py-2 text-sm text-[#A0A0A0]"
+                                        >
+                                            Gate 1 Interior
+                                        </td>
+                                        <td class="px-4 py-2">
+                                            <span
+                                                class="px-1.5 py-0.5 bg-[#161616] border border-[#2E2E2E] text-[10px] font-mono text-[#5C5C5C] rounded-sm uppercase"
+                                                >Perimeter</span
+                                            >
+                                        </td>
+                                        <td
+                                            class="px-4 py-2 font-mono text-[10px] text-[#5C5C5C] truncate max-w-[200px] hidden lg:table-cell"
+                                        >
+                                            rtsp://10.0.1.102:554/stream1
+                                        </td>
+                                        <td class="px-4 py-2">
+                                            <span
+                                                class="inline-flex items-center gap-1.5 text-xs text-[#E5E2E1]"
+                                                ><span
+                                                    class="w-1.5 h-1.5 rounded-full bg-[#1A3A28] border border-[#2A5A38]"
+                                                ></span>
+                                                ACTIVE</span
+                                            >
+                                        </td>
+                                        <td class="px-4 py-2 text-right">
+                                            <button
+                                                class="text-[#C0C0C0] transition-colors"
+                                            >
+                                                <span
+                                                    class="material-symbols-outlined text-sm"
+                                                    >edit</span
+                                                >
+                                            </button>
+                                            <button
+                                                class="text-[#5C5C5C] hover:text-[#C0C0C0] transition-colors ml-2"
+                                            >
+                                                <span
+                                                    class="material-symbols-outlined text-sm"
+                                                    >settings</span
+                                                >
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr
+                                        class="hover:bg-[#161616] transition-colors duration-75 group"
+                                    >
+                                        <td
+                                            class="px-4 py-2 font-mono text-xs text-[#E5E2E1]"
+                                        >
+                                            CAM-S-014
+                                        </td>
+                                        <td
+                                            class="px-4 py-2 text-sm text-[#E5E2E1]"
+                                        >
+                                            Server Room Alpha
+                                        </td>
+                                        <td
+                                            class="px-4 py-2 text-sm text-[#A0A0A0]"
+                                        >
+                                            Bldg A, Fl 2, R201
+                                        </td>
+                                        <td class="px-4 py-2">
+                                            <span
+                                                class="px-1.5 py-0.5 bg-[#161616] border border-[#2E2E2E] text-[10px] font-mono text-[#5C5C5C] rounded-sm uppercase"
+                                                >Secure Core</span
+                                            >
+                                        </td>
+                                        <td
+                                            class="px-4 py-2 font-mono text-[10px] text-[#5C5C5C] truncate max-w-[200px] hidden lg:table-cell"
+                                        >
+                                            rtsp://10.0.5.214:554/stream1
+                                        </td>
+                                        <td class="px-4 py-2">
+                                            <span
+                                                class="inline-flex items-center gap-1.5 text-xs text-[#8B1A1A] font-medium"
+                                                ><span
+                                                    class="w-1.5 h-1.5 rounded-full bg-[#8B1A1A]"
+                                                ></span>
+                                                OFFLINE</span
+                                            >
+                                        </td>
+                                        <td class="px-4 py-2 text-right">
+                                            <button
+                                                class="text-[#5C5C5C] hover:text-[#C0C0C0] transition-colors"
+                                            >
+                                                <span
+                                                    class="material-symbols-outlined text-sm"
+                                                    >edit</span
+                                                >
+                                            </button>
+                                            <button
+                                                class="text-[#5C5C5C] hover:text-[#C0C0C0] transition-colors ml-2"
+                                            >
+                                                <span
+                                                    class="material-symbols-outlined text-sm"
+                                                    >settings</span
+                                                >
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr
+                                        class="hover:bg-[#161616] transition-colors duration-75 group"
+                                    >
+                                        <td
+                                            class="px-4 py-2 font-mono text-xs text-[#E5E2E1]"
+                                        >
+                                            CAM-L-042
+                                        </td>
+                                        <td
+                                            class="px-4 py-2 text-sm text-[#E5E2E1]"
+                                        >
+                                            Lobby Main Desk
+                                        </td>
+                                        <td
+                                            class="px-4 py-2 text-sm text-[#A0A0A0]"
+                                        >
+                                            Bldg A, Fl 1, Lobby
+                                        </td>
+                                        <td class="px-4 py-2">
+                                            <span
+                                                class="px-1.5 py-0.5 bg-[#161616] border border-[#2E2E2E] text-[10px] font-mono text-[#5C5C5C] rounded-sm uppercase"
+                                                >Public</span
+                                            >
+                                        </td>
+                                        <td
+                                            class="px-4 py-2 font-mono text-[10px] text-[#5C5C5C] truncate max-w-[200px] hidden lg:table-cell"
+                                        >
+                                            rtsp://10.0.2.042:554/stream1
+                                        </td>
+                                        <td class="px-4 py-2">
+                                            <span
+                                                class="inline-flex items-center gap-1.5 text-xs text-[#E5E2E1]"
+                                                ><span
+                                                    class="w-1.5 h-1.5 rounded-full bg-[#1A3A28] border border-[#2A5A38]"
+                                                ></span>
+                                                ACTIVE</span
+                                            >
+                                        </td>
+                                        <td class="px-4 py-2 text-right">
+                                            <button
+                                                class="text-[#5C5C5C] hover:text-[#C0C0C0] transition-colors"
+                                            >
+                                                <span
+                                                    class="material-symbols-outlined text-sm"
+                                                    >edit</span
+                                                >
+                                            </button>
+                                            <button
+                                                class="text-[#5C5C5C] hover:text-[#C0C0C0] transition-colors ml-2"
+                                            >
+                                                <span
+                                                    class="material-symbols-outlined text-sm"
+                                                    >settings</span
+                                                >
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr
+                                        class="hover:bg-[#161616] transition-colors duration-75 group"
+                                    >
+                                        <td
+                                            class="px-4 py-2 font-mono text-xs text-[#E5E2E1]"
+                                        >
+                                            CAM-P-088
+                                        </td>
+                                        <td
+                                            class="px-4 py-2 text-sm text-[#E5E2E1]"
+                                        >
+                                            Parking Deck Level 2
+                                        </td>
+                                        <td
+                                            class="px-4 py-2 text-sm text-[#A0A0A0]"
+                                        >
+                                            Structure B, L2 NE
+                                        </td>
+                                        <td class="px-4 py-2">
+                                            <span
+                                                class="px-1.5 py-0.5 bg-[#161616] border border-[#2E2E2E] text-[10px] font-mono text-[#5C5C5C] rounded-sm uppercase"
+                                                >Exterior</span
+                                            >
+                                        </td>
+                                        <td
+                                            class="px-4 py-2 font-mono text-[10px] text-[#5C5C5C] truncate max-w-[200px] hidden lg:table-cell"
+                                        >
+                                            rtsp://10.0.8.088:554/stream1
+                                        </td>
+                                        <td class="px-4 py-2">
+                                            <span
+                                                class="inline-flex items-center gap-1.5 text-xs text-[#E5E2E1]"
+                                                ><span
+                                                    class="w-1.5 h-1.5 rounded-full bg-[#1A3A28] border border-[#2A5A38]"
+                                                ></span>
+                                                ACTIVE</span
+                                            >
+                                        </td>
+                                        <td class="px-4 py-2 text-right">
+                                            <button
+                                                class="text-[#5C5C5C] hover:text-[#C0C0C0] transition-colors"
+                                            >
+                                                <span
+                                                    class="material-symbols-outlined text-sm"
+                                                    >edit</span
+                                                >
+                                            </button>
+                                            <button
+                                                class="text-[#5C5C5C] hover:text-[#C0C0C0] transition-colors ml-2"
+                                            >
+                                                <span
+                                                    class="material-symbols-outlined text-sm"
+                                                    >settings</span
+                                                >
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr
+                                        class="hover:bg-[#161616] transition-colors duration-75 group border-l-2 border-l-[#8B1A1A]"
+                                    >
+                                        <td
+                                            class="px-4 py-2 font-mono text-xs text-[#E5E2E1]"
+                                        >
+                                            CAM-S-015
+                                        </td>
+                                        <td
+                                            class="px-4 py-2 text-sm text-[#E5E2E1]"
+                                        >
+                                            Server Room Bravo
+                                        </td>
+                                        <td
+                                            class="px-4 py-2 text-sm text-[#A0A0A0]"
+                                        >
+                                            Bldg A, Fl 2, R202
+                                        </td>
+                                        <td class="px-4 py-2">
+                                            <span
+                                                class="px-1.5 py-0.5 bg-[#161616] border border-[#2E2E2E] text-[10px] font-mono text-[#5C5C5C] rounded-sm uppercase"
+                                                >Secure Core</span
+                                            >
+                                        </td>
+                                        <td
+                                            class="px-4 py-2 font-mono text-[10px] text-[#5C5C5C] truncate max-w-[200px] hidden lg:table-cell"
+                                        >
+                                            rtsp://10.0.5.215:554/stream1
+                                        </td>
+                                        <td class="px-4 py-2">
+                                            <span
+                                                class="inline-flex items-center gap-1.5 text-xs text-[#8B1A1A] font-medium"
+                                                ><span
+                                                    class="w-1.5 h-1.5 rounded-full bg-[#8B1A1A]"
+                                                ></span>
+                                                OFFLINE</span
+                                            >
+                                        </td>
+                                        <td class="px-4 py-2 text-right">
+                                            <button
+                                                class="text-[#5C5C5C] hover:text-[#C0C0C0] transition-colors"
+                                            >
+                                                <span
+                                                    class="material-symbols-outlined text-sm"
+                                                    >edit</span
+                                                >
+                                            </button>
+                                            <button
+                                                class="text-[#5C5C5C] hover:text-[#C0C0C0] transition-colors ml-2"
+                                            >
+                                                <span
+                                                    class="material-symbols-outlined text-sm"
+                                                    >settings</span
+                                                >
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Pagination Footer -->
+                        <div
+                            class="px-4 py-2 border-t border-[#1C1C1C] bg-[#131313] flex justify-between items-center text-xs font-mono text-[#5C5C5C]"
+                        >
+                            <div>Showing 1-6 of 24 cameras</div>
+                            <div class="flex gap-2">
+                                <button
+                                    class="px-2 py-1 hover:text-[#C0C0C0] disabled:opacity-50"
+                                    disabled=""
+                                >
+                                    &lt; PREV
+                                </button>
+                                <button class="px-2 py-1 hover:text-[#C0C0C0]">
+                                    NEXT &gt;
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </body>
+</html>

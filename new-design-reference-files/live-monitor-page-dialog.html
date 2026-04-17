@@ -1,0 +1,235 @@
+<!doctype html>
+<html class="dark" lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+        <title>CAMX2 - Live Monitor</title>
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link
+            href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap"
+            rel="stylesheet"
+        />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+            rel="stylesheet"
+        />
+        <script id="tailwind-config">
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {
+                            "op-base": "#080808",
+                            "op-surface": "#0F0F0F",
+                            "op-elevated": "#161616",
+                            "op-silver": "#C0C0C0",
+                            "op-border": "#1C1C1C",
+                            "op-active-border": "#2E2E2E",
+                            "op-critical": "#8B1A1A",
+                            "op-warning": "#D97706",
+                            "op-nominal": "#1A3A28",
+                            "op-text-sec": "#5C5C5C",
+                            "op-text-muted": "#2A2A2A",
+                            "on-surface": "#e5e2e1",
+                        },
+                        borderRadius: {
+                            DEFAULT: "0.125rem",
+                            sm: "0.125rem",
+                            lg: "0.25rem",
+                        },
+                        fontFamily: {
+                            sans: ["IBM Plex Sans", "sans-serif"],
+                            mono: ["IBM Plex Mono", "monospace"],
+                        },
+                    },
+                },
+            };
+        </script>
+        <style>
+            body {
+                background-color: #080808;
+                color: #e5e2e1;
+                font-family: "IBM Plex Sans", sans-serif;
+            }
+            .font-mono {
+                font-family: "IBM Plex Mono", monospace;
+            }
+            .backdrop-blur-heavy {
+                backdrop-filter: blur(20px);
+            }
+        </style>
+    </head>
+    <body
+        class="h-screen w-screen overflow-hidden relative flex items-center justify-center bg-op-base"
+    >
+        <!-- Blurred Background (only the primary feed) -->
+        <div class="absolute inset-0 z-0">
+            <img
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAa7PpxjpRkwstgO0p0lsRaj3tZp5nU87sgo4Z2VAQ70SfqAn1nsSMJ0jQtI86xi1asrvLo3lPUbOtEMpieRTztQu6yT9WwdDinP7wPOSB5sqIlt73DkE0ySRnY6ClfEhPRGEepVHdKpwAFK69wfGLgBgzLKTLL2_fdUwSv53Q77udQ9JWVoFdKleODnTMlzYEVX1o5xgbMKaab6gB1-eze2ji75hgOUEiCzvx9-TCBOD8lJcrpIPjecFmjXuZ-7dVv1lASn5l2mzkh"
+                alt="Camera Feed Background"
+                class="w-full h-full object-cover grayscale contrast-125 opacity-70"
+            />
+            <!-- Subtle vignette for depth -->
+            <div
+                class="absolute inset-0 bg-gradient-to-b from-transparent via-op-base/40 to-op-base"
+            ></div>
+        </div>
+
+        <!-- Clean Dialog / Modal -->
+        <div
+            class="relative z-10 w-full max-w-3xl bg-op-surface border border-op-critical rounded-sm shadow-2xl overflow-hidden"
+        >
+            <!-- Flashing critical bar -->
+            <div class="h-1 w-full bg-op-critical animate-pulse"></div>
+
+            <div class="p-6 flex flex-col gap-6">
+                <!-- Header -->
+                <div
+                    class="flex items-start justify-between border-b border-op-border pb-4"
+                >
+                    <div>
+                        <h2
+                            class="font-mono text-2xl font-bold text-op-critical flex items-center gap-3"
+                        >
+                            <span
+                                class="material-symbols-outlined text-3xl"
+                                style="
+                                    font-variation-settings: &quot;FILL&quot; 1;
+                                "
+                                >warning</span
+                            >
+                            CRITICAL THREAT DETECTED
+                        </h2>
+                        <p class="font-mono text-sm text-op-text-sec mt-1">
+                            ID: THT-9924-A · CAM-042 · 14:05:01Z
+                        </p>
+                    </div>
+                    <div
+                        class="bg-op-critical/10 border border-op-critical px-4 py-1.5 rounded-sm"
+                    >
+                        <span class="font-mono text-op-critical font-bold"
+                            >CONFIDENCE: 94%</span
+                        >
+                    </div>
+                </div>
+
+                <!-- Body -->
+                <div class="flex gap-6">
+                    <!-- Frame Capture -->
+                    <div
+                        class="flex-1 border border-op-border bg-op-base relative overflow-hidden"
+                    >
+                        <img
+                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuApGM4lwLjkZZv92w8ndCHbDzMyv97fGyXNjOUgqgj-GHgdEEgQlTPGfZML7EJijy8K5-U7fElxmYI8UGVAWxxKvgaH4EhgS0BuiLJjH2dguht1jT4w1J7jSUQ6rVWQt3SpdIm0fvFvs6rrQ-7DNLzUg7ZFtG4Gi0b2D6djtv1jy0YD_Dujsmqfzq4rsOwwEpLkSL5ZFhmL-fjcV-2v20B3XVTRhazCOkdeYmcYs-xmBLiCwEZ73Y8FooDY0BXML9g_ZMenmiRfKVLb"
+                            alt="Threat Frame"
+                            class="w-full h-auto grayscale contrast-150"
+                        />
+                        <!-- Target highlight -->
+                        <div
+                            class="absolute top-[20%] left-[30%] w-[20%] h-[50%] border-2 border-op-critical flex items-center justify-center pointer-events-none"
+                        >
+                            <div
+                                class="w-full h-[1px] bg-op-critical/60 absolute top-1/2"
+                            ></div>
+                            <div
+                                class="h-full w-[1px] bg-op-critical/60 absolute left-1/2"
+                            ></div>
+                        </div>
+                        <div
+                            class="absolute bottom-3 right-3 bg-op-base/90 px-3 py-0.5 border border-op-border text-[10px] font-mono text-op-silver"
+                        >
+                            FRAME_CAP_042
+                        </div>
+                    </div>
+
+                    <!-- Right Sidebar Info -->
+                    <div class="w-80 flex flex-col gap-4">
+                        <!-- Classification -->
+                        <div class="bg-op-elevated border border-op-border p-4">
+                            <p class="font-mono text-xs text-op-text-sec mb-2">
+                                CLASSIFICATION
+                            </p>
+                            <p
+                                class="font-mono text-lg font-medium text-op-silver"
+                            >
+                                UNAUTHORIZED_ACCESS
+                            </p>
+                            <div
+                                class="mt-4 h-1 bg-op-border rounded overflow-hidden"
+                            >
+                                <div
+                                    class="h-full bg-op-critical w-[94%]"
+                                ></div>
+                            </div>
+                        </div>
+
+                        <!-- VLM Analysis -->
+                        <div
+                            class="bg-op-elevated border border-op-border p-4 flex-1"
+                        >
+                            <p class="font-mono text-xs text-op-text-sec mb-3">
+                                VLM ANALYSIS
+                            </p>
+                            <div
+                                class="font-mono text-sm text-op-silver leading-relaxed space-y-2"
+                            >
+                                <p>
+                                    &gt; Subject observed bypassing primary
+                                    physical deterrent layer (fence).
+                                </p>
+                                <p>&gt; Movement vector: Inward bound.</p>
+                                <p>&gt; Est. time to facility entrance: 45s.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div
+                    class="flex gap-3 pt-4 border-t border-op-border justify-end"
+                >
+                    <button
+                        onclick="dismissModal()"
+                        class="px-8 py-3 border border-op-border hover:bg-op-elevated text-op-text-sec font-mono text-sm transition-colors"
+                    >
+                        DISMISS
+                    </button>
+                    <button
+                        onclick="flagThreat()"
+                        class="px-8 py-3 border border-op-border hover:bg-op-elevated text-op-silver font-mono text-sm transition-colors"
+                    >
+                        FLAG
+                    </button>
+                    <button
+                        onclick="acknowledgeThreat()"
+                        class="px-8 py-3 bg-op-elevated text-op-silver font-mono text-sm font-medium hover:bg-op-surface transition-colors"
+                    >
+                        ACKNOWLEDGE
+                    </button>
+                    <button
+                        onclick="dispatchResponse()"
+                        class="px-10 py-3 bg-op-critical hover:bg-red-900 text-op-base font-mono text-sm font-bold transition-colors"
+                    >
+                        DISPATCH
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function dismissModal() {
+                alert("Threat dismissed.");
+                // In a real app, this would close the modal
+            }
+            function flagThreat() {
+                alert("Threat flagged for review.");
+            }
+            function acknowledgeThreat() {
+                alert("Threat acknowledged.");
+            }
+            function dispatchResponse() {
+                alert("Dispatch team notified.");
+            }
+        </script>
+    </body>
+</html>

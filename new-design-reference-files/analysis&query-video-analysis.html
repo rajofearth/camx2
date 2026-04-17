@@ -1,0 +1,696 @@
+<!doctype html>
+
+<html class="dark" lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+        <title>CamX2 - Analysis &amp; Query</title>
+        <!-- Fonts: Emulating the requested IBM Plex with the provided config fonts -->
+        <link href="https://fonts.googleapis.com" rel="preconnect" />
+        <link
+            crossorigin=""
+            href="https://fonts.gstatic.com"
+            rel="preconnect"
+        />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@400;500;600&amp;display=swap"
+            rel="stylesheet"
+        />
+        <!-- Material Symbols -->
+        <link
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+            rel="stylesheet"
+        />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+            rel="stylesheet"
+        />
+        <!-- Tailwind CSS -->
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <!-- Tailwind Config -->
+        <script id="tailwind-config">
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {
+                            "inverse-primary": "#5d5e5f",
+                            "outline-variant": "#474747",
+                            "primary-container": "#d4d4d4",
+                            "on-error": "#690005",
+                            "on-secondary-fixed-variant": "#3b3b3b",
+                            "on-primary-fixed": "#ffffff",
+                            "primary-fixed-dim": "#464747",
+                            "on-tertiary-fixed": "#ffffff",
+                            tertiary: "#ffdad6",
+                            "tertiary-fixed": "#ac322e",
+                            "surface-container": "#201f1f",
+                            "surface-variant": "#353534",
+                            "on-primary": "#1a1c1c",
+                            "on-tertiary-container": "#000000",
+                            "on-background": "#e5e2e1",
+                            "on-error-container": "#ffdad6",
+                            "surface-bright": "#3a3939",
+                            "inverse-on-surface": "#313030",
+                            "surface-container-highest": "#353534",
+                            "secondary-fixed-dim": "#acabab",
+                            outline: "#919191",
+                            "on-secondary-container": "#e4e2e2",
+                            "secondary-fixed": "#c7c6c6",
+                            "on-surface-variant": "#c6c6c6",
+                            "tertiary-container": "#ef635b",
+                            "inverse-surface": "#e5e2e1",
+                            "secondary-container": "#464747",
+                            "error-container": "#93000a",
+                            "on-secondary-fixed": "#1b1c1c",
+                            background: "#131313",
+                            "tertiary-fixed-dim": "#8a1a1a",
+                            "surface-container-low": "#1c1b1b",
+                            "on-primary-fixed-variant": "#e3e2e2",
+                            "on-tertiary-fixed-variant": "#ffdad6",
+                            error: "#ffb4ab",
+                            primary: "#ffffff",
+                            "surface-container-high": "#2a2a2a",
+                            surface: "#131313",
+                            "surface-tint": "#c6c6c6",
+                            "on-tertiary": "#410003",
+                            "on-surface": "#e5e2e1",
+                            secondary: "#c7c6c6",
+                            "on-primary-container": "#000000",
+                            "surface-container-lowest": "#0e0e0e",
+                            "surface-dim": "#131313",
+                            "on-secondary": "#1b1c1c",
+                            "primary-fixed": "#5d5e5f",
+                        },
+                        borderRadius: {
+                            DEFAULT: "0.125rem",
+                            lg: "0.25rem",
+                            xl: "0.5rem",
+                            full: "0.75rem",
+                        },
+                        spacing: {},
+                        fontFamily: {
+                            headline: ["Inter", "sans-serif"],
+                            body: ["Inter", "sans-serif"],
+                            label: ["Space Grotesk", "monospace"],
+                        },
+                    },
+                },
+            };
+        </script>
+        <style>
+            /* Base overrides to enforce Brutalist Intellect aesthetic */
+            body {
+                background-color: theme("colors.background");
+                color: theme("colors.on-background");
+            }
+            /* Custom scrollbar for dense data panels */
+            ::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+            ::-webkit-scrollbar-track {
+                background: theme("colors.surface-container-lowest");
+            }
+            ::-webkit-scrollbar-thumb {
+                background: theme("colors.surface-variant");
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                background: theme("colors.outline-variant");
+            }
+            .material-symbols-outlined {
+                font-variation-settings:
+                    "FILL" 0,
+                    "wght" 200,
+                    "GRAD" 0,
+                    "opsz" 24;
+            }
+        </style>
+    </head>
+    <body
+        class="h-screen flex flex-col overflow-hidden font-body text-sm antialiased selection:bg-primary-container selection:text-on-primary-container"
+    >
+        <!-- TopNavBar (Rendered from JSON parameters mapping to config) -->
+        <nav
+            class="bg-surface-container-lowest border-b border-surface-container-high h-12 flex justify-between items-center w-full px-4 shrink-0 z-50"
+        >
+            <!-- Brand Logo -->
+            <div
+                class="text-sm font-label tracking-tighter uppercase text-secondary"
+            >
+                CAMX2
+            </div>
+            <!-- Navigation Links -->
+            <div
+                class="flex h-full font-headline font-medium text-xs tracking-wide"
+            >
+                <a
+                    class="text-on-surface-variant hover:text-on-background h-full flex items-center px-4 transition-colors duration-75"
+                    href="#"
+                    >LIVE MONITOR</a
+                >
+                <!-- Active State Navigation -->
+                <a
+                    class="text-primary border-b-2 border-primary h-full flex items-center px-4 bg-surface-container-low transition-colors duration-75"
+                    href="#"
+                    >ANALYSIS &amp; QUERY</a
+                >
+                <a
+                    class="text-on-surface-variant hover:text-on-background h-full flex items-center px-4 transition-colors duration-75"
+                    href="#"
+                    >SETTINGS</a
+                >
+            </div>
+            <!-- Trailing Icons -->
+            <div class="flex items-center gap-4 text-secondary">
+                <button
+                    class="hover:text-primary transition-colors flex items-center justify-center"
+                >
+                    <span class="material-symbols-outlined text-[20px]"
+                        >notifications</span
+                    >
+                </button>
+                <button
+                    class="hover:text-primary transition-colors flex items-center justify-center"
+                >
+                    <span class="material-symbols-outlined text-[20px]"
+                        >sensors</span
+                    >
+                </button>
+                <div
+                    class="w-6 h-6 border border-surface-variant rounded-DEFAULT overflow-hidden ml-2"
+                >
+                    <img
+                        alt="User Avatar"
+                        class="w-full h-full object-cover grayscale opacity-80"
+                        data-alt="black and white passport style photo of a male face, neutral expression"
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKNO8jsKhGbJNUlfhZzo4__jn9NmmosTEbjKB-QVztDZo9PZOmkStU8GWvTEfEiD-yHRRlD8fpEMv-f1GD4I0VVKyQ7g5Gtizm69qMCLm1w8higPqmgQDYEPEo4iTStoXky4foPvTuEYRatcAufaHIcEoh-KM1QYbiytreM2hPgvbEQFRK8iHzwkOKiOg5eFY3uNSqx4OVdqLCzEFGtZv_BEFTlLGBwwoTuu061ntfIcrUR6g4sIuwf5RAlWMac54mXP8JZPvGPtUC"
+                    />
+                </div>
+            </div>
+        </nav>
+        <!-- Sub-tabs -->
+        <div
+            class="flex px-4 pt-3 pb-0 border-b border-surface-container-high bg-surface-container-lowest gap-6 text-xs font-headline font-semibold tracking-wider uppercase shrink-0"
+        >
+            <button class="text-primary border-b-2 border-primary pb-2">
+                VIDEO ANALYSIS
+            </button>
+            <button
+                class="text-on-surface-variant hover:text-primary pb-2 transition-colors"
+            >
+                AI QUERY
+            </button>
+        </div>
+        <!-- Main Content Canvas (Rigid Grid Layout) -->
+        <main class="flex-1 flex overflow-hidden p-2 gap-2">
+            <!-- Left Panel: Upload & Queue -->
+            <aside class="w-72 flex flex-col gap-2 shrink-0">
+                <!-- Upload Zone -->
+                <div
+                    class="bg-surface-container border border-surface-container-high rounded-DEFAULT p-4 flex flex-col gap-3"
+                >
+                    <div
+                        class="font-label text-xs text-primary uppercase tracking-wider mb-1"
+                    >
+                        Source Payload
+                    </div>
+                    <div
+                        class="border border-dashed border-outline-variant hover:border-primary transition-colors bg-surface-container-lowest p-6 flex flex-col items-center justify-center text-center gap-2 cursor-pointer h-32 rounded-DEFAULT"
+                    >
+                        <span
+                            class="material-symbols-outlined text-outline-variant text-[28px]"
+                            >upload_file</span
+                        >
+                        <span
+                            class="text-xs font-headline text-on-surface-variant"
+                            >Drag &amp; drop video payload<br />or
+                            <span
+                                class="text-primary underline decoration-outline-variant underline-offset-2"
+                                >browse directory</span
+                            ></span
+                        >
+                    </div>
+                    <div
+                        class="flex justify-between items-center text-[10px] font-label text-outline-variant"
+                    >
+                        <span>MAX: 2GB (MP4, MKV)</span>
+                        <span>H.264/H.265</span>
+                    </div>
+                </div>
+                <!-- Queue Pipeline -->
+                <div
+                    class="flex-1 bg-surface-container border border-surface-container-high rounded-DEFAULT p-4 flex flex-col overflow-hidden"
+                >
+                    <div class="flex justify-between items-center mb-4">
+                        <span
+                            class="font-label text-xs text-primary uppercase tracking-wider"
+                            >Analysis Pipeline</span
+                        >
+                        <span
+                            class="px-2 py-0.5 bg-surface-container-lowest border border-surface-variant text-[10px] font-label text-on-surface-variant rounded-DEFAULT"
+                            >SEQ-094</span
+                        >
+                    </div>
+                    <div class="flex-1 overflow-y-auto pr-2">
+                        <ul class="flex flex-col font-label text-xs">
+                            <!-- Step 1: Complete -->
+                            <li class="flex flex-col">
+                                <div
+                                    class="flex items-center gap-3 text-secondary py-2"
+                                >
+                                    <span
+                                        class="material-symbols-outlined text-[16px]"
+                                        >check_circle</span
+                                    >
+                                    <span>Pre-process Payload</span>
+                                    <span
+                                        class="ml-auto text-[10px] text-outline-variant"
+                                        >100%</span
+                                    >
+                                </div>
+                                <div
+                                    class="h-4 border-l border-surface-variant ml-[7px]"
+                                ></div>
+                            </li>
+                            <!-- Step 2: Complete -->
+                            <li class="flex flex-col">
+                                <div
+                                    class="flex items-center gap-3 text-secondary py-2"
+                                >
+                                    <span
+                                        class="material-symbols-outlined text-[16px]"
+                                        >check_circle</span
+                                    >
+                                    <span>Frame Extraction</span>
+                                    <span
+                                        class="ml-auto text-[10px] text-outline-variant"
+                                        >12.4k</span
+                                    >
+                                </div>
+                                <div
+                                    class="h-4 border-l border-surface-variant ml-[7px]"
+                                ></div>
+                            </li>
+                            <!-- Step 3: Active (Silver Highlight) -->
+                            <li class="flex flex-col relative">
+                                <!-- Active indicator bar -->
+                                <div
+                                    class="absolute -left-4 top-0 bottom-0 w-1 bg-secondary"
+                                ></div>
+                                <div
+                                    class="flex items-center gap-3 text-primary bg-surface-container-low py-2 px-2 -mx-2 rounded-DEFAULT border border-surface-variant"
+                                >
+                                    <span
+                                        class="material-symbols-outlined text-[16px] animate-pulse"
+                                        >radar</span
+                                    >
+                                    <span class="font-medium"
+                                        >Object Detection (YOLOv8)</span
+                                    >
+                                    <span
+                                        class="ml-auto text-[10px] text-secondary"
+                                        >48%</span
+                                    >
+                                </div>
+                                <div
+                                    class="h-4 border-l border-outline-variant ml-[7px]"
+                                ></div>
+                            </li>
+                            <!-- Step 4: Pending -->
+                            <li class="flex flex-col">
+                                <div
+                                    class="flex items-center gap-3 text-outline-variant py-2"
+                                >
+                                    <span
+                                        class="material-symbols-outlined text-[16px]"
+                                        >face</span
+                                    >
+                                    <span>Face Recognition Track</span>
+                                    <span class="ml-auto text-[10px]">--</span>
+                                </div>
+                                <div
+                                    class="h-4 border-l border-surface-variant ml-[7px]"
+                                ></div>
+                            </li>
+                            <!-- Step 5: Pending -->
+                            <li class="flex flex-col">
+                                <div
+                                    class="flex items-center gap-3 text-outline-variant py-2"
+                                >
+                                    <span
+                                        class="material-symbols-outlined text-[16px]"
+                                        >memory</span
+                                    >
+                                    <span>VLM Context Analysis</span>
+                                    <span class="ml-auto text-[10px]">--</span>
+                                </div>
+                                <div
+                                    class="h-4 border-l border-surface-variant ml-[7px]"
+                                ></div>
+                            </li>
+                            <!-- Step 6: Pending -->
+                            <li class="flex flex-col">
+                                <div
+                                    class="flex items-center gap-3 text-outline-variant py-2"
+                                >
+                                    <span
+                                        class="material-symbols-outlined text-[16px]"
+                                        >summarize</span
+                                    >
+                                    <span>Post-process &amp; Report</span>
+                                    <span class="ml-auto text-[10px]">--</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </aside>
+            <!-- Right Panel: Results & Data -->
+            <section class="flex-1 flex flex-col gap-2 min-w-0">
+                <!-- Viewer & Scrubber -->
+                <div
+                    class="flex-[3] bg-surface-container border border-surface-container-high rounded-DEFAULT relative overflow-hidden flex flex-col"
+                >
+                    <!-- Viewer Top Bar -->
+                    <div
+                        class="absolute top-0 w-full h-8 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-center px-3 z-10 font-label text-[10px] text-primary drop-shadow-md"
+                    >
+                        <span class="tracking-widest"
+                            >CAM-04-NORTH_ENTRANCE</span
+                        >
+                        <span class="text-error flex items-center gap-1"
+                            ><div
+                                class="w-2 h-2 rounded-full bg-error animate-pulse"
+                            ></div>
+                            REC</span
+                        >
+                    </div>
+                    <!-- Main Frame Image -->
+                    <div
+                        class="flex-1 relative bg-black flex items-center justify-center overflow-hidden"
+                    >
+                        <img
+                            class="w-full h-full object-contain opacity-85 grayscale"
+                            data-alt="monochromatic security camera footage of a modern office lobby with several people walking, stark lighting, high contrast"
+                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuACwcaWWB7nILl9ETy8PNCXjAAiaSnzoj1Eg5ezTXdsJkxmnryNAH232YLIQApG7V755RX46OeoytmMAiXrTbL9g7j8VBlCBZeMJqWTN1sl9BHdneotIeQ8jJjQE3f0bsSwsVbSHtaCPzVbcC9ZU2UIUtFgweIG8eTJXI7bsHQZIMW85Gxiz9m6QCtGhO0RUkxWpOsGsb5wdwVS23DiS-qH_6Pu3ALs9imtUVNSckTMXmlUJNKwV2iwD1T5-3eCdNLdnLjKvkDsXKMA"
+                        />
+                        <!-- Detection Overlays (Simulated) -->
+                        <div
+                            class="absolute top-[30%] left-[45%] w-32 h-64 border border-secondary bg-secondary/10 pointer-events-none"
+                        >
+                            <div
+                                class="absolute -top-5 left-[-1px] bg-secondary text-on-secondary px-1 text-[9px] font-label font-bold uppercase"
+                            >
+                                PERSON 94%
+                            </div>
+                        </div>
+                        <div
+                            class="absolute top-[45%] left-[20%] w-24 h-48 border border-error bg-error/10 pointer-events-none"
+                        >
+                            <div
+                                class="absolute -top-5 left-[-1px] bg-error text-on-error px-1 text-[9px] font-label font-bold uppercase"
+                            >
+                                UNAUTHORIZED 88%
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Scrubber Console -->
+                    <div
+                        class="h-12 bg-surface-container-lowest border-t border-surface-container-high flex flex-col px-4 justify-center gap-1 shrink-0"
+                    >
+                        <!-- Timeline Bar -->
+                        <div
+                            class="relative h-2 bg-surface-variant w-full rounded-full overflow-hidden cursor-pointer"
+                        >
+                            <div
+                                class="absolute top-0 left-0 h-full bg-surface-bright w-full"
+                            ></div>
+                            <!-- Playhead Progress -->
+                            <div
+                                class="absolute top-0 left-0 h-full bg-secondary w-[48%]"
+                            ></div>
+                            <!-- Threat Markers -->
+                            <div
+                                class="absolute top-0 left-[20%] w-1 h-full bg-error"
+                            ></div>
+                            <div
+                                class="absolute top-0 left-[45%] w-1.5 h-full bg-error"
+                            ></div>
+                            <div
+                                class="absolute top-0 left-[70%] w-0.5 h-full bg-tertiary-container"
+                            ></div>
+                        </div>
+                        <!-- Controls & Timestamps -->
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <button
+                                    class="text-primary hover:text-secondary"
+                                >
+                                    <span
+                                        class="material-symbols-outlined text-[20px]"
+                                        >pause</span
+                                    >
+                                </button>
+                                <span
+                                    class="font-label text-[10px] text-primary"
+                                    >14:22:04.15</span
+                                >
+                                <span
+                                    class="font-label text-[10px] text-outline-variant"
+                                    >/ 14:30:00.00</span
+                                >
+                            </div>
+                            <div class="flex gap-2">
+                                <button
+                                    class="text-outline-variant hover:text-primary"
+                                >
+                                    <span
+                                        class="material-symbols-outlined text-[16px]"
+                                        >speed</span
+                                    >
+                                </button>
+                                <button
+                                    class="text-outline-variant hover:text-primary"
+                                >
+                                    <span
+                                        class="material-symbols-outlined text-[16px]"
+                                        >fullscreen</span
+                                    >
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Bottom Row: Face Track & Event Table -->
+                <div class="flex-[2] flex gap-2 overflow-hidden">
+                    <!-- Face Track Gallery Panel -->
+                    <div
+                        class="w-80 bg-surface-container border border-surface-container-high rounded-DEFAULT flex flex-col overflow-hidden shrink-0"
+                    >
+                        <div
+                            class="h-8 border-b border-surface-container-high bg-surface-container-lowest px-3 flex items-center justify-between shrink-0"
+                        >
+                            <span
+                                class="font-label text-[10px] text-primary uppercase tracking-widest"
+                                >Face Track Cluster</span
+                            >
+                            <span
+                                class="material-symbols-outlined text-[14px] text-outline-variant"
+                                >group</span
+                            >
+                        </div>
+                        <!-- Gallery Grid -->
+                        <div
+                            class="flex-1 p-2 grid grid-cols-3 gap-2 overflow-y-auto content-start"
+                        >
+                            <!-- Crop 1 -->
+                            <div
+                                class="aspect-square border border-surface-variant bg-surface-container-lowest relative group"
+                            >
+                                <img
+                                    class="w-full h-full object-cover grayscale opacity-70 group-hover:opacity-100 transition-opacity"
+                                    data-alt="tight low-resolution crop of a male face from security footage"
+                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2EbIi2PGLEsa7-PenwZx0QrOYKKl3fPOwnK_4hpS10DOPeCvYv5wKTGiEsI974jhX-zQrhmnQx0pVeaJzy9i6TtEz4veyNW9Y1ZKeTNd4hxYD_nU17Zf8Jru2VKOBA7LZkNoo8nRHp9aRh1DuNWpcAJIw3MfMl2KIicaLvIQ9nI5DRlsneBUJqhL4pVlx39aFIv-ppNaW-PiwmNLDrDfk9IxoSzmfIfrTRlcsyLLifYkZHJpa4ONt_mGA5l9vGTOfNIT3h2fGwXu6"
+                                />
+                                <div
+                                    class="absolute bottom-0 w-full bg-surface-container-lowest/90 text-center py-0.5 border-t border-surface-variant font-label text-[8px] text-primary"
+                                >
+                                    14:21:10
+                                </div>
+                            </div>
+                            <!-- Crop 2 -->
+                            <div
+                                class="aspect-square border border-error bg-surface-container-lowest relative group"
+                            >
+                                <img
+                                    class="w-full h-full object-cover grayscale opacity-90"
+                                    data-alt="tight low-resolution crop of a female face with sunglasses from security footage"
+                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXePqYYIgjZQePmvEvftHichGNH59VHIJKyYm_XHpO_5dQAmgDnM22f2KFenV30_csZGjl5vQD6C0khYeDqU9nicRLSKJ2enAT4JipDVwAtT7dCNaY3zFwyedFdPfKSPnYlnyD05G3NYuLs9vjFn2cwxlEORlOUPIBZsG-V_rPXBf88r2C0D9cR3geJ2JzQF12QtgU82qQZX-FJ6LK1A-NAsYgzFZL1rvZiMVPB9YSNHKoL-YYpe45XOeC6T2AXnz47lvZt7tkM_cG"
+                                />
+                                <div
+                                    class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full translate-x-1 -translate-y-1"
+                                ></div>
+                                <div
+                                    class="absolute bottom-0 w-full bg-error text-center py-0.5 font-label text-[8px] text-on-error font-bold"
+                                >
+                                    UID: UNKNOWN
+                                </div>
+                            </div>
+                            <!-- Crop 3 -->
+                            <div
+                                class="aspect-square border border-surface-variant bg-surface-container-lowest relative group"
+                            >
+                                <img
+                                    class="w-full h-full object-cover grayscale opacity-70 group-hover:opacity-100 transition-opacity"
+                                    data-alt="tight low-resolution crop of a male face looking away from security footage"
+                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDacsNYiUCoOV91-E2omQO7h-Mbl27hG-7XbcBLGJnmFADYpvPfdpnoY6iRCBFNBkdUE1fGEGqkFiEFMKLzbwkcGQW2UyAPYVm4vYw7pVREdTnrYUTY44EVjUdq5E_nLRkV0WoQ9fT2zRY6Y3SPQOSFCDyuZF82efZdrTInHFOjE2uNzPNghQeOTT89ZNtlzXAtWC0U4X9ugRWf5cZa2tkqPOGzAfKwbZBEBPBfWp5bVIdCewfAauI90xIfIMpdaSTytKPlvFiEzC2S"
+                                />
+                                <div
+                                    class="absolute bottom-0 w-full bg-surface-container-lowest/90 text-center py-0.5 border-t border-surface-variant font-label text-[8px] text-primary"
+                                >
+                                    14:22:04
+                                </div>
+                            </div>
+                            <!-- Crop 4 -->
+                            <div
+                                class="aspect-square border border-surface-variant bg-surface-container-lowest relative group flex items-center justify-center"
+                            >
+                                <span
+                                    class="font-label text-[10px] text-outline-variant"
+                                    >PROCESSING</span
+                                >
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Event Table -->
+                    <div
+                        class="flex-1 bg-surface-container border border-surface-container-high rounded-DEFAULT flex flex-col overflow-hidden"
+                    >
+                        <div
+                            class="h-10 border-b border-surface-container-high bg-surface-container-lowest px-4 flex items-center justify-between shrink-0"
+                        >
+                            <span
+                                class="font-label text-[10px] text-primary uppercase tracking-widest"
+                                >Analysis Event Log</span
+                            >
+                            <!-- Export Button: Silver Accent (Using primary for high contrast against dark) -->
+                            <button
+                                class="bg-primary text-on-primary px-3 py-1.5 text-[10px] font-headline font-bold uppercase tracking-wider rounded-DEFAULT hover:bg-primary-container transition-colors flex items-center gap-1"
+                            >
+                                <span
+                                    class="material-symbols-outlined text-[12px]"
+                                    >download</span
+                                >
+                                Export Report
+                            </button>
+                        </div>
+                        <!-- Table Header -->
+                        <div
+                            class="grid grid-cols-12 gap-2 px-4 py-2 border-b border-surface-variant bg-surface-container font-label text-[9px] text-outline-variant uppercase tracking-wider shrink-0"
+                        >
+                            <div class="col-span-2">TIME</div>
+                            <div class="col-span-2">CAMERA</div>
+                            <div class="col-span-2">CLASS</div>
+                            <div class="col-span-1 text-right">CONF</div>
+                            <div class="col-span-5 pl-4">VLM NOTE</div>
+                        </div>
+                        <!-- Table Body (Dense List) -->
+                        <div
+                            class="flex-1 overflow-y-auto font-label text-[10px]"
+                        >
+                            <!-- Row Normal -->
+                            <div
+                                class="grid grid-cols-12 gap-2 px-4 py-2 border-b border-surface-container-highest hover:bg-surface-container-high transition-colors items-center text-on-surface-variant"
+                            >
+                                <div class="col-span-2 text-primary">
+                                    14:21:10.05
+                                </div>
+                                <div class="col-span-2 truncate">NORTH_ENT</div>
+                                <div class="col-span-2">PERSON</div>
+                                <div
+                                    class="col-span-1 text-right text-secondary"
+                                >
+                                    0.94
+                                </div>
+                                <div
+                                    class="col-span-5 pl-4 truncate text-outline-variant"
+                                >
+                                    Individual carrying dark briefcase, steady
+                                    pace.
+                                </div>
+                            </div>
+                            <!-- Row Threat -->
+                            <div
+                                class="grid grid-cols-12 gap-2 px-4 py-2 border-b border-surface-container-highest bg-error/5 hover:bg-error/10 transition-colors items-center text-error"
+                            >
+                                <div class="col-span-2">14:21:45.22</div>
+                                <div
+                                    class="col-span-2 truncate text-on-surface-variant"
+                                >
+                                    NORTH_ENT
+                                </div>
+                                <div class="col-span-2 font-bold">
+                                    UNAUTHORIZED
+                                </div>
+                                <div class="col-span-1 text-right font-bold">
+                                    0.88
+                                </div>
+                                <div class="col-span-5 pl-4 truncate">
+                                    Subject loitering near restricted access
+                                    door B. Face partially obscured.
+                                </div>
+                            </div>
+                            <!-- Row Normal -->
+                            <div
+                                class="grid grid-cols-12 gap-2 px-4 py-2 border-b border-surface-container-highest hover:bg-surface-container-high transition-colors items-center text-on-surface-variant"
+                            >
+                                <div class="col-span-2 text-primary">
+                                    14:22:01.00
+                                </div>
+                                <div class="col-span-2 truncate">NORTH_ENT</div>
+                                <div class="col-span-2">VEHICLE</div>
+                                <div
+                                    class="col-span-1 text-right text-secondary"
+                                >
+                                    0.91
+                                </div>
+                                <div
+                                    class="col-span-5 pl-4 truncate text-outline-variant"
+                                >
+                                    White delivery van, license plate illegible
+                                    due to glare.
+                                </div>
+                            </div>
+                            <!-- Row Normal -->
+                            <div
+                                class="grid grid-cols-12 gap-2 px-4 py-2 border-b border-surface-container-highest bg-surface-container-low transition-colors items-center text-on-surface-variant relative"
+                            >
+                                <!-- Active indicator for current video time -->
+                                <div
+                                    class="absolute left-0 top-0 bottom-0 w-0.5 bg-primary"
+                                ></div>
+                                <div class="col-span-2 text-primary">
+                                    14:22:04.15
+                                </div>
+                                <div class="col-span-2 truncate">NORTH_ENT</div>
+                                <div class="col-span-2">PERSON</div>
+                                <div
+                                    class="col-span-1 text-right text-secondary"
+                                >
+                                    0.96
+                                </div>
+                                <div
+                                    class="col-span-5 pl-4 truncate text-outline-variant"
+                                >
+                                    Multiple individuals entering frame from
+                                    east corridor.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </body>
+</html>

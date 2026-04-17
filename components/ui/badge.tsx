@@ -5,26 +5,50 @@ import { Slot } from "radix-ui"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "group/badge inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-4xl border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-all focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3!",
+  // Base: sharp, flat, mono font, uppercase — Operational Goth aesthetic
+  "inline-flex w-fit shrink-0 items-center gap-1.5 rounded-sm border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider whitespace-nowrap transition-colors [&>svg]:pointer-events-none [&>svg]:size-3",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
-        secondary:
-          "bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80",
-        destructive:
-          "bg-destructive/10 text-destructive focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40 [a]:hover:bg-destructive/20",
+        // Default: silver fill — primary label
+        default:
+          "border-transparent bg-op-silver text-op-base",
+        // Neutral/muted — category tags, zone labels
+        muted:
+          "border-op-border-active bg-op-elevated text-op-text-sec",
+        // Bordered neutral — generic outlined
         outline:
-          "border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground",
-        ghost:
-          "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
-        link: "text-primary underline-offset-4 hover:underline",
+          "border-op-border bg-transparent text-foreground",
+        // Nominal / active — green status
+        nominal:
+          "border-transparent bg-op-nominal text-foreground",
+        // Nominal outline — active status with dot
+        "outline-nominal":
+          "border-op-nominal bg-transparent text-op-nominal",
+        // Warning — amber threat level
+        warning:
+          "border-transparent bg-op-warning/20 text-op-warning",
+        // Warning outline — loitering, suspected
+        "outline-warning":
+          "border-op-warning bg-transparent text-op-warning",
+        // Critical — red threat / offline
+        critical:
+          "border-transparent bg-op-critical text-foreground",
+        // Critical outline — unauthorized, breach
+        "outline-critical":
+          "border-op-critical bg-transparent text-foreground",
+        // Secondary (destructive-style, softer)
+        destructive:
+          "border-op-critical/50 bg-op-critical/10 text-foreground",
+        // Alias kept for backward-compat with data-table components
+        secondary:
+          "border-op-border-active bg-op-elevated text-op-text-sec",
       },
     },
     defaultVariants: {
       variant: "default",
     },
-  }
+  },
 )
 
 function Badge({

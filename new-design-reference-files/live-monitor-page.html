@@ -1,0 +1,516 @@
+<!doctype html>
+
+<html class="dark" lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+        <title>CamX2 - Live Monitor</title>
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link
+            href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;700&amp;family=IBM+Plex+Mono:wght@400;500;700&amp;display=swap"
+            rel="stylesheet"
+        />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+            rel="stylesheet"
+        />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+            rel="stylesheet"
+        />
+        <script src="https://unpkg.com/@phosphor-icons/web"></script>
+        <script id="tailwind-config">
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {
+                            primary: "#ffffff",
+                            background: "#080808", // Base void
+                            "tertiary-container": "#ef635b",
+                            secondary: "#c7c6c6",
+                            "surface-container-low": "#1c1b1b",
+                            "inverse-on-surface": "#313030",
+                            "on-tertiary-fixed": "#ffffff",
+                            "error-container": "#8B1A1A", // Critical
+                            "surface-container-lowest": "#0e0e0e",
+                            tertiary: "#ffdad6",
+                            "tertiary-fixed": "#ac322e",
+                            "surface-variant": "#353534",
+                            "surface-container": "#0F0F0F", // Surface
+                            "on-primary": "#1a1c1c",
+                            "inverse-primary": "#5d5e5f",
+                            "surface-dim": "#131313",
+                            "on-primary-fixed-variant": "#e3e2e2",
+                            error: "#ffb4ab",
+                            "primary-fixed-dim": "#464747",
+                            "on-tertiary-container": "#000000",
+                            "surface-container-high": "#161616", // Elevated
+                            "on-secondary-fixed-variant": "#3b3b3b",
+                            "on-secondary": "#1b1c1c",
+                            "outline-variant": "#474747",
+                            "on-background": "#e5e2e1",
+                            "on-tertiary": "#410003",
+                            "on-error": "#690005",
+                            "secondary-container": "#464747",
+                            "surface-tint": "#C0C0C0", // Silver
+                            "on-primary-container": "#000000",
+                            "secondary-fixed-dim": "#acabab",
+                            "primary-fixed": "#5d5e5f",
+                            "on-surface-variant": "#5C5C5C", // Secondary Text
+                            outline: "#1C1C1C", // Default Border
+                            "inverse-surface": "#e5e2e1",
+                            "on-error-container": "#ffdad6",
+                            "primary-container": "#d4d4d4",
+                            "tertiary-fixed-dim": "#8a1a1a",
+                            "on-surface": "#e5e2e1", // Default Text
+                            "surface-bright": "#3a3939",
+                            "on-primary-fixed": "#ffffff",
+                            "on-tertiary-fixed-variant": "#ffdad6",
+                            "surface-container-highest": "#353534",
+                            "secondary-fixed": "#c7c6c6",
+                            surface: "#131313",
+                            "on-secondary-fixed": "#1b1c1c",
+                            "on-secondary-container": "#e4e2e2",
+                        },
+                        borderRadius: {
+                            DEFAULT: "0.125rem", // 2px sm
+                            lg: "0.25rem", // 4px max
+                            xl: "0.25rem",
+                            full: "0.25rem",
+                        },
+                        spacing: {},
+                        fontFamily: {
+                            headline: ["'IBM Plex Sans'", "sans-serif"],
+                            body: ["'IBM Plex Sans'", "sans-serif"],
+                            label: ["'IBM Plex Mono'", "monospace"],
+                            mono: ["'IBM Plex Mono'", "monospace"],
+                        },
+                    },
+                },
+            };
+        </script>
+        <style>
+            body {
+                font-family: "IBM Plex Sans", sans-serif;
+                background-color: #080808;
+                color: #e5e2e1;
+            }
+            .font-mono-custom {
+                font-family: "IBM Plex Mono", monospace;
+            }
+            /* Custom scrollbar for goth aesthetic */
+            ::-webkit-scrollbar {
+                width: 4px;
+                height: 4px;
+            }
+            ::-webkit-scrollbar-track {
+                background: #080808;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: #1c1c1c;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                background: #2e2e2e;
+            }
+        </style>
+    </head>
+    <body
+        class="bg-background text-on-surface h-screen flex flex-col overflow-hidden"
+    >
+        <!-- TopNavBar -->
+        <nav
+            class="flex justify-between items-center w-full px-6 h-14 bg-[#0F0F0F] docked full-width top-0 border-b border-[#1C1C1C] flat no shadows z-50"
+        >
+            <div class="flex items-center gap-8">
+                <span
+                    class="font-['IBM_Plex_Mono'] font-bold text-[#C0C0C0] tracking-tighter text-lg"
+                    >CAMX2</span
+                >
+                <div class="hidden md:flex gap-6">
+                    <a
+                        class="font-['IBM_Plex_Sans'] uppercase tracking-widest text-xs text-[#C0C0C0] border-b-2 border-[#C0C0C0] pb-1 hover:text-[#E2E2E2] transition-colors duration-100 opacity-80 linear"
+                        href="#"
+                        >LIVE_MONITOR</a
+                    >
+                    <a
+                        class="font-['IBM_Plex_Sans'] uppercase tracking-widest text-xs text-[#5C5C5C] hover:text-[#E2E2E2] transition-colors duration-100"
+                        href="#"
+                        >ANALYSIS_QUERY</a
+                    >
+                    <a
+                        class="font-['IBM_Plex_Sans'] uppercase tracking-widest text-xs text-[#5C5C5C] hover:text-[#E2E2E2] transition-colors duration-100"
+                        href="#"
+                        >SETTINGS</a
+                    >
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <button
+                    class="text-[#5C5C5C] hover:text-[#E2E2E2] transition-colors"
+                >
+                    <span
+                        class="material-symbols-outlined"
+                        style="font-variation-settings: &quot;FILL&quot; 0"
+                        >notifications</span
+                    >
+                </button>
+                <button
+                    class="text-[#5C5C5C] hover:text-[#E2E2E2] transition-colors"
+                >
+                    <span
+                        class="material-symbols-outlined"
+                        style="font-variation-settings: &quot;FILL&quot; 0"
+                        >shield_with_heart</span
+                    >
+                </button>
+                <div
+                    class="w-8 h-8 rounded-DEFAULT bg-[#161616] border border-[#1C1C1C] overflow-hidden flex items-center justify-center"
+                >
+                    <img
+                        alt="OPERATOR_01"
+                        class="w-full h-full object-cover grayscale opacity-80"
+                        data-alt="Black and white portrait of a male security operator looking focused in a dark control room setting"
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuDja4XKdHlWV87rFHnqyiHV4RUGpYCessFJhsV974pMkqlsApi9xt_0zzTvTeL-gH5g8iUvffItczmbM6PAurEun9GBVWNTRXLsjY1M_aL0D6FG8WwTNZYHs-mB21iloNQYMPSmyPmwzGNe6lniv9dRSp-M2pbVj98j2JsoNeABKAtIVIXx_KR0KmXYRpUTOBkcupw63tbhw802YYaw1iCbGRt5Boxboa7qlufbb2MZrhmAcaMM_Yp7Gki7Qw-yVECQoF8glEjhxNUw"
+                    />
+                </div>
+            </div>
+        </nav>
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Main Content -->
+            <main class="flex-1 flex flex-col p-2 gap-2 overflow-hidden h-full">
+                <!-- Top Row: Feeds -->
+                <div class="flex flex-1 gap-2 min-h-0">
+                    <!-- Primary Feed (60%) -->
+                    <div
+                        class="w-[60%] flex flex-col bg-surface-container border border-outline rounded-DEFAULT overflow-hidden"
+                    >
+                        <div
+                            class="h-8 border-b border-outline flex items-center px-3 justify-between bg-surface-container shrink-0"
+                        >
+                            <div class="flex items-center gap-2">
+                                <i
+                                    class="ph-thin ph-video-camera text-on-surface-variant"
+                                ></i>
+                                <span
+                                    class="font-mono-custom text-[10px] text-surface-tint uppercase"
+                                    >CAM_01_MAIN_CORRIDOR</span
+                                >
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span
+                                    class="w-1.5 h-1.5 rounded-full bg-surface-tint animate-pulse"
+                                ></span>
+                                <span
+                                    class="font-mono-custom text-[10px] text-surface-tint"
+                                    >LIVE</span
+                                >
+                            </div>
+                        </div>
+                        <div class="flex-1 relative bg-black group">
+                            <img
+                                alt="CCTV view"
+                                class="w-full h-full object-cover opacity-80 mix-blend-luminosity"
+                                data-alt="High contrast black and white CCTV security camera view looking down a long sterile concrete corridor with harsh fluorescent lighting"
+                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCKHPBrxd_g3kxm-i4jcIAA04iwWxXh5-GczMQK4kYmpXpZ_hPRxEWyFwGufdPayLUVxYoeP3xgpa-18R910TgFoQcUTOHrofBZPhJ6TBHrA7iruyVDzJq7L47MSPdf7TrVra-13H7WMg5xTDkSctOAQG-UjlGjurSNnRX16yEtHB_y_bKvz8D3uvEPzfY8xOz_b4sQdfFlioh09__v9RgpDlGAstcdgU3vyM1fx59AGbtv5I2rhfzIL4XuEKTHAJN7U7nxbqXYYbwY"
+                            />
+                            <!-- RF-DETR Bounding Box -->
+                            <div
+                                class="absolute top-[30%] left-[45%] w-[15%] h-[40%] border border-surface-tint bg-surface-tint/10 pointer-events-none"
+                            >
+                                <div
+                                    class="absolute -top-5 left-0 bg-surface-container-high border border-surface-tint px-1 py-0.5"
+                                >
+                                    <span
+                                        class="font-mono-custom text-[9px] text-surface-tint"
+                                        >PERSON 98%</span
+                                    >
+                                </div>
+                            </div>
+                            <!-- VLM Status Indicator -->
+                            <div
+                                class="absolute bottom-3 right-3 bg-surface-container-high border border-outline px-2 py-1 flex items-center gap-2"
+                            >
+                                <i
+                                    class="ph-thin ph-brain text-on-surface-variant text-sm"
+                                ></i>
+                                <div class="flex flex-col">
+                                    <span
+                                        class="font-mono-custom text-[9px] text-on-surface-variant uppercase"
+                                        >VLM_ANALYSIS</span
+                                    >
+                                    <span
+                                        class="font-mono-custom text-[10px] text-surface-tint"
+                                        >NOMINAL</span
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Camera Grid (40%) -->
+                    <div
+                        class="w-[40%] grid grid-cols-2 grid-rows-2 gap-2 min-h-0"
+                    >
+                        <!-- Cam 2 -->
+                        <div
+                            class="bg-surface-container border border-outline rounded-DEFAULT flex flex-col overflow-hidden relative"
+                        >
+                            <div
+                                class="absolute top-0 left-0 w-full p-1.5 flex justify-between z-10 bg-gradient-to-b from-black/80 to-transparent"
+                            >
+                                <span
+                                    class="font-mono-custom text-[9px] text-surface-tint bg-black/50 px-1"
+                                    >NORTH GATE</span
+                                >
+                            </div>
+                            <img
+                                class="w-full h-full object-cover grayscale opacity-70"
+                                data-alt="Monochrome security camera view of an empty outdoor industrial gate entrance at night with harsh floodlights"
+                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBghIPZBa6rEOVqqwuKiBMnR_NaUSMq5K0xSoMRVlfu5AM_gp9Gm1hkM5rlMIKAOhWWSIjQYf9KSXwfZJXY7cbLEc0L-DgV-xcqdD8P0p5zuHdwYK9-3v0jS62JwwY6lOjt0q7Svl7LW-ZDXooTdxcCIgqmoF3_AJljLNycE4qN_R1IUX5BAj9IytLGUR9p_pkCnqMwxMA2EsndTezC57mtDNB3VWnELx84kK6Y7WZir7s5eBaeS4O_5LAo_tfp8QdvuVZQcvlIQDaW"
+                            />
+                        </div>
+                        <!-- Cam 3 -->
+                        <div
+                            class="bg-surface-container border border-outline rounded-DEFAULT flex flex-col overflow-hidden relative"
+                        >
+                            <div
+                                class="absolute top-0 left-0 w-full p-1.5 flex justify-between z-10 bg-gradient-to-b from-black/80 to-transparent"
+                            >
+                                <span
+                                    class="font-mono-custom text-[9px] text-surface-tint bg-black/50 px-1"
+                                    >LOBBY_A</span
+                                >
+                            </div>
+                            <img
+                                class="w-full h-full object-cover grayscale opacity-70"
+                                data-alt="Desaturated wide angle security camera view of an empty modern corporate lobby with glass walls and dark floors"
+                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAABNgsS1NSW024ccA8v1E1ris7L4VbRX1HhVPKJzsFjt2tb0P-SwDUP50k34uY1C_YgFVKcnydIMPgOd55H7OAoZz_FYQZ95Rept-ifQA0FASw-XJ9aDdWr49C4nkCPWLzI8AnyHC5wNfV-6oQfaxG2ikM835GXZByggfkO_f-gYr2BXYWnjqkznc6DK78Q7lVfQZ5_Mtef-gt_MG4HUTBJzJvNryCxPY6eZW6lH5l683LUKb4kbFSiJI6pvI0y3Dd59jPXFKn-Nsp"
+                            />
+                        </div>
+                        <!-- Cam 4 -->
+                        <div
+                            class="bg-surface-container border border-outline rounded-DEFAULT flex flex-col overflow-hidden relative"
+                        >
+                            <div
+                                class="absolute top-0 left-0 w-full p-1.5 flex justify-between z-10 bg-gradient-to-b from-black/80 to-transparent"
+                            >
+                                <span
+                                    class="font-mono-custom text-[9px] text-surface-tint bg-black/50 px-1"
+                                    >SERVER_RM</span
+                                >
+                            </div>
+                            <img
+                                class="w-full h-full object-cover grayscale opacity-70"
+                                data-alt="Dark moody server room aisle illuminated only by small LED indicator lights on the server racks"
+                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqsw3icJbCEBF96DMZd6ijcjCFZ3eNC00_hqmrBw0dNA0BymD8AANt5yPlYy-sHwVT2GEctYMH3mEGr9wvn7i3sFcc7Z7A_YsogyVuobpJnoV7Xv1N1OyXfQV41ITZVs7BfVvA6e5TIavHeLkOUaF1VSR0Ayz3VZZkZjIZ6clhjxINzJ3k1JWy1tuVHuocAmda1IyhqjOX_wUQZw5gjee9FmyShOsZQG0amvYEmYYYQL_IlGfeSAHuTjpLg2sUN_LCUFOgqACeR_zc"
+                            />
+                        </div>
+                        <!-- Cam 5 -->
+                        <div
+                            class="bg-surface-container border border-outline rounded-DEFAULT flex flex-col overflow-hidden relative"
+                        >
+                            <div
+                                class="absolute top-0 left-0 w-full p-1.5 flex justify-between z-10 bg-gradient-to-b from-black/80 to-transparent"
+                            >
+                                <span
+                                    class="font-mono-custom text-[9px] text-surface-tint bg-black/50 px-1"
+                                    >EXT_PERIMETER</span
+                                >
+                            </div>
+                            <img
+                                class="w-full h-full object-cover grayscale opacity-70"
+                                data-alt="Grainy night vision style security camera view of an exterior chain link fence perimeter"
+                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDr836uAagIYWDyOWSrlWQymZ5RCsp5L0trTk4dY_3adarxU08FXYACKFvRhWd_dVbf4wZhipKnN0BrMwkbcl9q9JgPbZO_nPfsxog3HNg2Nsjq7dPoUDHN4t7nf8R_KC5LhEBrwJM555JIGzli2BO74S6PcXFWcFW1zZAT0LkpX4XQCT2uhx6QCs0j4_CJdMB-9rNxDd-P54-hzZd44IXlGE21yTpLERxcxT0z5CvOyWCqiSiW2yVrTUSN3wPLO2uTGFJ2yE1aAsS9"
+                            />
+                        </div>
+                    </div>
+                </div>
+                <!-- Bottom Row: Panels -->
+                <div class="h-48 flex gap-2 shrink-0">
+                    <!-- Intel Panel (Left) -->
+                    <div
+                        class="flex-1 bg-surface-container border border-outline rounded-DEFAULT flex flex-col overflow-hidden"
+                    >
+                        <div
+                            class="h-8 border-b border-outline flex items-center px-3 justify-between bg-surface-container shrink-0"
+                        >
+                            <div class="flex items-center gap-2">
+                                <i
+                                    class="ph-thin ph-terminal-window text-on-surface-variant"
+                                ></i>
+                                <span
+                                    class="font-mono-custom text-[10px] text-on-surface-variant uppercase"
+                                    >INTEL_STREAM</span
+                                >
+                            </div>
+                            <span
+                                class="font-mono-custom text-[9px] text-on-surface-variant"
+                                >AUTO_SCROLL: ON</span
+                            >
+                        </div>
+                        <div
+                            class="flex-1 p-3 overflow-y-auto bg-surface-container-highest/20 flex flex-col gap-1.5"
+                        >
+                            <div
+                                class="font-mono-custom text-[10px] text-on-surface-variant flex gap-2"
+                            >
+                                <span class="text-on-surface-variant w-16"
+                                    >[14:09:45]</span
+                                >
+                                <span class="text-on-surface-variant w-12"
+                                    >SYS</span
+                                >
+                                <span class="text-surface-tint"
+                                    >· Routine diagnostic complete. All sensors
+                                    nominal.</span
+                                >
+                            </div>
+                            <div
+                                class="font-mono-custom text-[10px] text-on-surface-variant flex gap-2"
+                            >
+                                <span class="text-on-surface-variant w-16"
+                                    >[14:10:02]</span
+                                >
+                                <span class="text-on-surface-variant w-12"
+                                    >CAM-04</span
+                                >
+                                <span class="text-surface-tint"
+                                    >·
+                                    <span
+                                        class="bg-surface-container-high px-1 border border-outline"
+                                        >PERSON</span
+                                    >
+                                    — Subject entering restricted zone B.</span
+                                >
+                            </div>
+                            <div
+                                class="font-mono-custom text-[10px] text-on-surface-variant flex gap-2"
+                            >
+                                <span class="text-on-surface-variant w-16"
+                                    >[14:10:05]</span
+                                >
+                                <span class="text-on-surface-variant w-12"
+                                    >VLM</span
+                                >
+                                <span class="text-surface-tint"
+                                    >· Confidence 98%. Trajectory analysis
+                                    active.</span
+                                >
+                            </div>
+                            <div
+                                class="font-mono-custom text-[10px] text-on-surface-variant flex gap-2 opacity-70"
+                            >
+                                <span class="text-on-surface-variant w-16"
+                                    >[14:10:15]</span
+                                >
+                                <span class="text-on-surface-variant w-12"
+                                    >CAM-02</span
+                                >
+                                <span class="text-on-surface-variant"
+                                    >· Motion detected in Sector 7.
+                                    Evaluating...</span
+                                >
+                            </div>
+                            <div
+                                class="font-mono-custom text-[10px] text-on-surface-variant flex gap-2"
+                            >
+                                <span
+                                    class="text-on-surface-variant w-16 animate-pulse"
+                                    >_</span
+                                >
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Active Detections (Right) -->
+                    <div
+                        class="w-[30%] bg-surface-container border border-outline rounded-DEFAULT flex flex-col overflow-hidden"
+                    >
+                        <div
+                            class="h-8 border-b border-outline flex items-center px-3 justify-between bg-surface-container shrink-0"
+                        >
+                            <div class="flex items-center gap-2">
+                                <i
+                                    class="ph-thin ph-scan text-on-surface-variant"
+                                ></i>
+                                <span
+                                    class="font-mono-custom text-[10px] text-on-surface-variant uppercase"
+                                    >ACTIVE_DETECTIONS</span
+                                >
+                            </div>
+                        </div>
+                        <div class="flex-1 p-3 flex flex-col gap-2">
+                            <div
+                                class="flex items-center justify-between border-b border-outline/50 pb-2"
+                            >
+                                <div class="flex items-center gap-2">
+                                    <i
+                                        class="ph-thin ph-user text-surface-tint"
+                                    ></i>
+                                    <span
+                                        class="font-mono-custom text-[11px] text-surface-tint"
+                                        >PERSON</span
+                                    >
+                                </div>
+                                <span
+                                    class="font-mono-custom text-[14px] text-surface-tint"
+                                    >2</span
+                                >
+                            </div>
+                            <div
+                                class="flex items-center justify-between border-b border-outline/50 pb-2"
+                            >
+                                <div class="flex items-center gap-2">
+                                    <i
+                                        class="ph-thin ph-car text-on-surface-variant"
+                                    ></i>
+                                    <span
+                                        class="font-mono-custom text-[11px] text-on-surface-variant"
+                                        >VEHICLE</span
+                                    >
+                                </div>
+                                <span
+                                    class="font-mono-custom text-[14px] text-on-surface-variant"
+                                    >0</span
+                                >
+                            </div>
+                            <div class="flex items-center justify-between pb-2">
+                                <div class="flex items-center gap-2">
+                                    <i
+                                        class="ph-thin ph-warning-circle text-on-surface-variant"
+                                    ></i>
+                                    <span
+                                        class="font-mono-custom text-[11px] text-on-surface-variant"
+                                        >ANOMALY</span
+                                    >
+                                </div>
+                                <span
+                                    class="font-mono-custom text-[14px] text-on-surface-variant"
+                                    >0</span
+                                >
+                            </div>
+                            <div class="mt-auto">
+                                <div
+                                    class="flex justify-between items-end mb-1"
+                                >
+                                    <span
+                                        class="font-mono-custom text-[9px] text-on-surface-variant"
+                                        >SYSTEM_LOAD</span
+                                    >
+                                    <span
+                                        class="font-mono-custom text-[9px] text-surface-tint"
+                                        >42%</span
+                                    >
+                                </div>
+                                <div class="h-0.5 w-full bg-background">
+                                    <div
+                                        class="h-full bg-surface-tint w-[42%]"
+                                    ></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </body>
+</html>

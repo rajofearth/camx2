@@ -1,0 +1,780 @@
+<!doctype html>
+
+<html class="dark" lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+        <title>CAMX2 - Analysis &amp; Query</title>
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link href="https://fonts.googleapis.com" rel="preconnect" />
+        <link
+            crossorigin=""
+            href="https://fonts.gstatic.com"
+            rel="preconnect"
+        />
+        <link
+            href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@400;500&amp;display=swap"
+            rel="stylesheet"
+        />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+            rel="stylesheet"
+        />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+            rel="stylesheet"
+        />
+        <script id="tailwind-config">
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {
+                            "inverse-primary": "#5d5e5f",
+                            "outline-variant": "#474747",
+                            "primary-container": "#d4d4d4",
+                            "on-error": "#690005",
+                            "on-secondary-fixed-variant": "#3b3b3b",
+                            "on-primary-fixed": "#ffffff",
+                            "primary-fixed-dim": "#464747",
+                            "on-tertiary-fixed": "#ffffff",
+                            tertiary: "#ffdad6",
+                            "tertiary-fixed": "#ac322e",
+                            "surface-container": "#201f1f",
+                            "surface-variant": "#353534",
+                            "on-primary": "#1a1c1c",
+                            "on-tertiary-container": "#000000",
+                            "on-background": "#e5e2e1",
+                            "on-error-container": "#ffdad6",
+                            "surface-bright": "#3a3939",
+                            "inverse-on-surface": "#313030",
+                            "surface-container-highest": "#353534",
+                            "secondary-fixed-dim": "#acabab",
+                            outline: "#919191",
+                            "on-secondary-container": "#e4e2e2",
+                            "secondary-fixed": "#c7c6c6",
+                            "on-surface-variant": "#c6c6c6",
+                            "tertiary-container": "#ef635b",
+                            "inverse-surface": "#e5e2e1",
+                            "secondary-container": "#464747",
+                            "error-container": "#93000a",
+                            "on-secondary-fixed": "#1b1c1c",
+                            background: "#131313",
+                            "tertiary-fixed-dim": "#8a1a1a",
+                            "surface-container-low": "#1c1b1b",
+                            "on-primary-fixed-variant": "#e3e2e2",
+                            "on-tertiary-fixed-variant": "#ffdad6",
+                            error: "#ffb4ab",
+                            primary: "#ffffff",
+                            "surface-container-high": "#2a2a2a",
+                            surface: "#131313",
+                            "surface-tint": "#c6c6c6",
+                            "on-tertiary": "#410003",
+                            "on-surface": "#e5e2e1",
+                            secondary: "#c7c6c6",
+                            "on-primary-container": "#000000",
+                            "surface-container-lowest": "#0e0e0e",
+                            "surface-dim": "#131313",
+                            "on-secondary": "#1b1c1c",
+                            "primary-fixed": "#5d5e5f",
+
+                            // Operational Goth Palette
+                            "og-base": "#080808",
+                            "og-surface": "#0F0F0F",
+                            "og-elevated": "#161616",
+                            "og-silver": "#C0C0C0",
+                            "og-border": "#1C1C1C",
+                            "og-border-active": "#2E2E2E",
+                            "og-text-sec": "#5C5C5C",
+                            "og-text-mut": "#2A2A2A",
+                            "og-threat-crit": "#8B1A1A",
+                            "og-threat-warn": "#D48B1A",
+                            "og-nominal": "#1A3A28",
+                        },
+                        borderRadius: {
+                            DEFAULT: "0.125rem",
+                            lg: "0.25rem",
+                            xl: "0.5rem",
+                            full: "0.75rem",
+                        },
+                        fontFamily: {
+                            sans: ["IBM Plex Sans", "Inter", "sans-serif"],
+                            mono: ["IBM Plex Mono", "monospace"],
+                            headline: ["IBM Plex Sans", "Inter", "sans-serif"],
+                            body: ["IBM Plex Sans", "Inter", "sans-serif"],
+                            label: ["IBM Plex Mono", "monospace"],
+                        },
+                    },
+                },
+            };
+        </script>
+        <style>
+            body {
+                background-color: #080808; /* Base */
+                color: #e5e2e1;
+            }
+            /* Custom scrollbar for raw data feel */
+            ::-webkit-scrollbar {
+                width: 8px;
+                height: 8px;
+            }
+            ::-webkit-scrollbar-track {
+                background: #080808;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: #1c1c1c;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                background: #2e2e2e;
+            }
+        </style>
+    </head>
+    <body class="antialiased min-h-screen flex flex-col font-sans">
+        <!-- TopNavBar -->
+        <nav
+            class="bg-og-surface text-og-text-sec h-12 w-full top-0 flex justify-between items-center px-4 border-b border-og-border flex-shrink-0 z-50"
+        >
+            <div class="flex items-center space-x-6 h-full">
+                <div
+                    class="text-sm font-mono tracking-tighter uppercase text-og-silver"
+                >
+                    CAMX2
+                </div>
+                <div class="flex h-full">
+                    <a
+                        class="h-full flex items-center px-4 text-og-text-sec hover:text-og-silver hover:bg-og-elevated duration-75"
+                        href="#"
+                    >
+                        <span class="font-mono text-[0.75rem]"
+                            >LIVE MONITOR</span
+                        >
+                    </a>
+                    <a
+                        class="h-full flex items-center px-4 text-og-silver border-b border-og-silver bg-og-elevated duration-75"
+                        href="#"
+                    >
+                        <span class="font-mono text-[0.75rem]"
+                            >ANALYSIS &amp; QUERY</span
+                        >
+                    </a>
+                    <a
+                        class="h-full flex items-center px-4 text-og-text-sec hover:text-og-silver hover:bg-og-elevated duration-75"
+                        href="#"
+                    >
+                        <span class="font-mono text-[0.75rem]">SETTINGS</span>
+                    </a>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button
+                    class="text-og-text-sec hover:text-og-silver flex items-center justify-center p-1 rounded-sm hover:bg-og-elevated duration-75"
+                >
+                    <span
+                        class="material-symbols-outlined"
+                        style="font-variation-settings: &quot;wght&quot; 200"
+                        >sensors</span
+                    >
+                </button>
+                <button
+                    class="text-og-text-sec hover:text-og-silver flex items-center justify-center p-1 rounded-sm hover:bg-og-elevated duration-75 relative"
+                >
+                    <span
+                        class="material-symbols-outlined"
+                        style="font-variation-settings: &quot;wght&quot; 200"
+                        >notifications</span
+                    >
+                    <span
+                        class="absolute top-1 right-1 w-1.5 h-1.5 bg-og-threat-warn rounded-full"
+                    ></span>
+                </button>
+                <div
+                    class="h-6 w-6 bg-og-border rounded-sm overflow-hidden flex items-center justify-center border border-og-border-active"
+                >
+                    <span
+                        class="material-symbols-outlined text-[14px] text-og-text-sec"
+                        >person</span
+                    >
+                </div>
+            </div>
+        </nav>
+        <!-- Sub Navigation -->
+        <div
+            class="bg-og-base h-10 w-full flex items-center px-4 border-b border-og-border flex-shrink-0"
+        >
+            <div class="flex space-x-1 h-full">
+                <a
+                    class="h-full flex items-center px-3 text-og-text-sec hover:text-og-silver duration-75"
+                    href="#"
+                >
+                    <span class="font-mono text-[0.75rem]">VIDEO ANALYSIS</span>
+                </a>
+                <div class="h-full flex items-center">
+                    <span class="text-og-border mx-2">/</span>
+                </div>
+                <a
+                    class="h-full flex items-center px-3 text-og-silver border-b border-og-silver duration-75"
+                    href="#"
+                >
+                    <span class="font-mono text-[0.75rem]">AI QUERY</span>
+                </a>
+            </div>
+        </div>
+        <!-- Main Workspace Layout -->
+        <div class="flex-1 flex overflow-hidden">
+            <!-- Left Spacer / Optional Tools (Empty for true structural focus on center/right) -->
+            <div
+                class="hidden lg:block flex-1 bg-og-base border-r border-og-surface"
+            >
+                <!-- Left Panel: Session Management -->
+                <aside
+                    class="w-72 border-r border-[#1C1C1C] bg-[#0F0F0F] flex flex-col h-full shrink-0"
+                >
+                    <!-- Panel Header -->
+                    <div
+                        class="p-4 border-b border-[#1C1C1C] flex justify-between items-center bg-[#161616]"
+                    >
+                        <h2
+                            class="font-headline text-[1rem] font-medium text-[#E2E2E2]"
+                        >
+                            Active Recording
+                        </h2>
+                        <span
+                            class="px-2 py-0.5 bg-transparent border border-[#2E2E2E] text-[#C0C0C0] text-[10px] font-mono uppercase tracking-wider"
+                        >
+                            CAM_04
+                        </span>
+                    </div>
+
+                    <!-- New Query Button -->
+                    <div class="p-4 border-b border-[#1C1C1C]">
+                        <button
+                            class="w-full bg-[#161616] border border-[#1C1C1C] hover:border-[#2E2E2E] text-[#C0C0C0] py-2.5 px-4 text-xs font-medium uppercase tracking-wider flex items-center justify-center gap-2 transition-colors duration-75"
+                        >
+                            <span
+                                class="material-symbols-outlined text-[18px]"
+                                style="
+                                    font-variation-settings: &quot;wght&quot;
+                                        300;
+                                "
+                                >add</span
+                            >
+                            New Query
+                        </button>
+                    </div>
+
+                    <!-- Recent Sessions -->
+                    <div class="flex-1 overflow-y-auto px-3 py-4 space-y-3">
+                        <div
+                            class="text-[10px] text-[#5C5C5C] font-mono uppercase tracking-widest mb-3 px-1"
+                        >
+                            RECENT SESSIONS
+                        </div>
+
+                        <!-- Active Session -->
+                        <div
+                            class="bg-[#161616] border border-[#C0C0C0] p-3.5 rounded cursor-pointer hover:border-[#E2E2E2] transition-all duration-75"
+                        >
+                            <div class="flex justify-between items-start">
+                                <span
+                                    class="font-mono text-[13px] text-[#E2E2E2] leading-tight pr-2 line-clamp-2"
+                                >
+                                    Anomalies at Bay Entrance
+                                </span>
+                                <span
+                                    class="material-symbols-outlined text-[16px] text-[#C0C0C0] flex-shrink-0"
+                                    >more_vert</span
+                                >
+                            </div>
+                            <div
+                                class="flex justify-between items-center mt-3 text-[10px] font-mono text-[#5C5C5C]"
+                            >
+                                <span>14:22:05Z</span>
+                                <span class="flex items-center gap-1">
+                                    <span
+                                        class="w-1.5 h-1.5 bg-og-nominal rounded-full"
+                                    ></span>
+                                    4 MSGS
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Session 2 -->
+                        <div
+                            class="bg-transparent border border-[#1C1C1C] p-3.5 rounded cursor-pointer hover:bg-[#161616]/70 hover:border-[#2E2E2E] transition-all duration-75"
+                        >
+                            <div class="flex justify-between items-start">
+                                <span
+                                    class="font-mono text-[13px] text-[#E2E2E2] leading-tight pr-2 line-clamp-2"
+                                >
+                                    Vehicle Count Analysis
+                                </span>
+                                <span
+                                    class="material-symbols-outlined text-[16px] text-[#5C5C5C] flex-shrink-0"
+                                    >more_vert</span
+                                >
+                            </div>
+                            <div
+                                class="flex justify-between items-center mt-3 text-[10px] font-mono text-[#5C5C5C]"
+                            >
+                                <span>11:45:12Z</span>
+                                <span>12 MSGS</span>
+                            </div>
+                        </div>
+
+                        <!-- Session 3 -->
+                        <div
+                            class="bg-transparent border border-[#1C1C1C] p-3.5 rounded cursor-pointer hover:bg-[#161616]/70 hover:border-[#2E2E2E] transition-all duration-75"
+                        >
+                            <div class="flex justify-between items-start">
+                                <span
+                                    class="font-mono text-[13px] text-[#E2E2E2] leading-tight pr-2 line-clamp-2"
+                                >
+                                    Suspicious Behavior Log
+                                </span>
+                                <span
+                                    class="material-symbols-outlined text-[16px] text-[#5C5C5C] flex-shrink-0"
+                                    >more_vert</span
+                                >
+                            </div>
+                            <div
+                                class="flex justify-between items-center mt-3 text-[10px] font-mono text-[#5C5C5C]"
+                            >
+                                <span>09:12:00Z</span>
+                                <span>2 MSGS</span>
+                            </div>
+                        </div>
+
+                        <!-- Empty state hint (optional) -->
+                        <!--
+                        <div class="text-center py-8 text-[#5C5C5C] text-xs font-mono">
+                            No other sessions yet
+                        </div>
+                        -->
+                    </div>
+
+                    <!-- Optional Footer -->
+                    <div
+                        class="border-t border-[#1C1C1C] p-3 text-[10px] font-mono text-[#5C5C5C] text-center"
+                    >
+                        3 SESSIONS • 18 MSGS TOTAL
+                    </div>
+                </aside>
+            </div>
+            <!-- Center Column: Chat Interface -->
+            <main
+                class="w-full max-w-[720px] flex flex-col bg-og-surface border-x border-og-border flex-shrink-0"
+            >
+                <!-- Header/Status -->
+                <div
+                    class="h-10 border-b border-og-border flex items-center px-4 justify-between bg-og-elevated"
+                >
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2 h-2 rounded-full bg-og-nominal"></span>
+                        <span class="font-mono text-[0.75rem] text-og-text-sec"
+                            >SYS.READY</span
+                        >
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="font-mono text-[0.75rem] text-og-text-sec"
+                            >VLM_MODE: ON</span
+                        >
+                        <span class="font-mono text-[0.75rem] text-og-text-sec"
+                            >MODEL: SEC-L-V3</span
+                        >
+                    </div>
+                </div>
+                <!-- Chat History Area -->
+                <div class="flex-1 overflow-y-auto p-4 space-y-6 flex flex-col">
+                    <!-- Initial Empty State / Suggestion Chips -->
+                    <!-- <div class="flex-1 flex flex-col items-center justify-center text-center space-y-4">
+                    <span class="material-symbols-outlined text-[3rem] text-og-text-mut" style="font-variation-settings: 'wght' 100;">neurology</span>
+                    <div class="font-mono text-sm text-og-text-sec">SYSTEM WAITING FOR QUERY</div>
+                    <div class="flex flex-wrap justify-center gap-2 max-w-[500px] mt-4">
+                        <button class="bg-og-elevated border border-og-border hover:border-og-border-active text-og-silver px-3 py-1.5 font-mono text-[0.75rem] duration-75">
+                            Summarize all events from Bay Entrance
+                        </button>
+                        <button class="bg-og-elevated border border-og-border hover:border-og-border-active text-og-silver px-3 py-1.5 font-mono text-[0.75rem] duration-75">
+                            Locate red sedan entering Zone 4
+                        </button>
+                        <button class="bg-og-elevated border border-og-border hover:border-og-border-active text-og-silver px-3 py-1.5 font-mono text-[0.75rem] duration-75">
+                            Identify personnel in Server Room B
+                        </button>
+                    </div>
+                </div> -->
+                    <!-- User Message -->
+                    <div class="flex flex-col items-end w-full">
+                        <div
+                            class="text-[0.65rem] font-mono text-og-text-sec mb-1"
+                        >
+                            USER // 14:02:45Z
+                        </div>
+                        <div
+                            class="bg-og-elevated border border-og-border-active p-3 max-w-[80%] text-sm text-og-silver"
+                        >
+                            Summarize recent anomalies detected near the loading
+                            dock over the past 4 hours. Provide frame
+                            references.
+                        </div>
+                    </div>
+                    <!-- System Response -->
+                    <div class="flex flex-col items-start w-full">
+                        <div
+                            class="text-[0.65rem] font-mono text-og-silver mb-1 flex items-center space-x-2"
+                        >
+                            <span
+                                class="material-symbols-outlined text-[12px]"
+                                style="
+                                    font-variation-settings: &quot;wght&quot;
+                                        300;
+                                "
+                                >smart_toy</span
+                            >
+                            <span>VLM // 14:03:12Z</span>
+                        </div>
+                        <div
+                            class="bg-og-base border border-og-border p-4 w-full text-sm font-mono text-og-silver space-y-4"
+                        >
+                            <p>
+                                Analysis complete. 3 anomalous events detected
+                                in ZONE_LDK_01 between 10:00Z and 14:00Z.
+                            </p>
+                            <div class="space-y-2">
+                                <!-- Bullet 1 -->
+                                <div class="flex items-start space-x-2">
+                                    <span class="text-og-threat-warn mt-0.5"
+                                        >&gt;</span
+                                    >
+                                    <div>
+                                        <span class="text-og-silver"
+                                            >10:45:22Z</span
+                                        >
+                                        - Unrecognized vehicle idled in
+                                        restricted zone for 12 minutes.
+                                        <span class="text-og-text-sec"
+                                            >Confidence: 94%</span
+                                        >
+                                    </div>
+                                </div>
+                                <!-- Inline Reference Frame -->
+                                <div
+                                    class="ml-4 mt-2 p-2 border border-og-border bg-og-elevated flex items-center space-x-3 w-fit cursor-pointer hover:border-og-border-active"
+                                >
+                                    <div
+                                        class="w-16 h-10 bg-og-border relative overflow-hidden"
+                                    >
+                                        <img
+                                            alt="Security camera view of a loading dock with a parked white van"
+                                            class="object-cover w-full h-full opacity-70 mix-blend-luminosity"
+                                            data-alt="high contrast security camera footage of a loading dock showing a white van parked in a restricted area, industrial setting"
+                                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWxqG-RCSbLR0s454PMF7tMqYKuAH6wE20usortK58565QJICMkYbLKP1ymGUte-FdTV8ZaIndnKdl2uim8S4HxTeM7fKCD2IbTpk_XdveBO_E-WddJg77tOXxCPK__LYh57IwaZ8ueWi480Bu19XDUYm5JrYHhXpJi75MZLgkLeBVVw86Dob3RmWmsMEoYNFVxaSa1c-8HxLILmuWrFKy-kbaFblzKnbBwUJMkCSd6ePknD4GTWm5XwEBAtZSfIYFeNt9bDB-q1Kz"
+                                        />
+                                        <div
+                                            class="absolute inset-0 border border-og-threat-warn m-1"
+                                        ></div>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <span
+                                            class="text-[0.65rem] text-og-text-sec"
+                                            >FRAME REF</span
+                                        >
+                                        <span
+                                            class="text-[0.75rem] text-og-silver"
+                                            >LDK_CAM_04_A</span
+                                        >
+                                    </div>
+                                    <span
+                                        class="material-symbols-outlined text-og-text-sec text-[14px] ml-2"
+                                        >open_in_new</span
+                                    >
+                                </div>
+                                <!-- Bullet 2 -->
+                                <div class="flex items-start space-x-2 mt-4">
+                                    <span class="text-og-silver mt-0.5"
+                                        >&gt;</span
+                                    >
+                                    <div>
+                                        <span class="text-og-silver"
+                                            >12:15:05Z</span
+                                        >
+                                        - Personnel (2) entered dock without
+                                        visible ID badges.
+                                        <span class="text-og-text-sec"
+                                            >Confidence: 88%</span
+                                        >
+                                    </div>
+                                </div>
+                                <!-- Bullet 3 -->
+                                <div class="flex items-start space-x-2 mt-2">
+                                    <span class="text-og-threat-crit mt-0.5"
+                                        >&gt;</span
+                                    >
+                                    <div>
+                                        <span class="text-og-silver"
+                                            >13:50:11Z</span
+                                        >
+                                        - Perimeter door alarm triggered
+                                        briefly. Subject retreated upon visual
+                                        detection.
+                                        <span class="text-og-text-sec"
+                                            >Confidence: 98%</span
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Data Table Output -->
+                            <div class="mt-4 border border-og-border w-full">
+                                <div
+                                    class="grid grid-cols-4 border-b border-og-border bg-og-elevated text-[0.65rem] text-og-text-sec p-2"
+                                >
+                                    <div>TIMESTAMP</div>
+                                    <div>TYPE</div>
+                                    <div>ENTITY</div>
+                                    <div>STATUS</div>
+                                </div>
+                                <div
+                                    class="grid grid-cols-4 border-b border-og-border text-[0.75rem] p-2 hover:bg-og-elevated"
+                                >
+                                    <div>10:45:22Z</div>
+                                    <div>Loitering</div>
+                                    <div>Vehicle</div>
+                                    <div class="text-og-threat-warn">
+                                        LOGGED
+                                    </div>
+                                </div>
+                                <div
+                                    class="grid grid-cols-4 border-b border-og-border text-[0.75rem] p-2 hover:bg-og-elevated"
+                                >
+                                    <div>12:15:05Z</div>
+                                    <div>Protocol</div>
+                                    <div>Human (2)</div>
+                                    <div class="text-og-silver">FLAGGED</div>
+                                </div>
+                                <div
+                                    class="grid grid-cols-4 text-[0.75rem] p-2 hover:bg-og-elevated"
+                                >
+                                    <div>13:50:11Z</div>
+                                    <div>Breach</div>
+                                    <div>Human (1)</div>
+                                    <div class="text-og-threat-crit">
+                                        ESCALATED
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Confidence Gauge -->
+                            <div class="mt-4 flex items-center space-x-2">
+                                <span class="text-[0.65rem] text-og-text-sec"
+                                    >AGGREGATE CONFIDENCE</span
+                                >
+                                <div class="flex-1 h-[2px] bg-og-text-mut flex">
+                                    <div
+                                        class="w-[93%] h-full bg-og-silver"
+                                    ></div>
+                                </div>
+                                <span class="text-[0.65rem] text-og-silver"
+                                    >93%</span
+                                >
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Input Area -->
+                <div class="p-4 border-t border-og-border bg-og-surface">
+                    <div
+                        class="relative flex items-center border border-og-border bg-og-base focus-within:border-og-silver duration-75"
+                    >
+                        <div
+                            class="pl-3 pr-2 text-og-silver font-mono font-bold"
+                        >
+                            &gt;
+                        </div>
+                        <input
+                            class="w-full bg-transparent border-none text-sm text-og-silver placeholder-og-text-mut focus:ring-0 font-mono py-3"
+                            placeholder="Query the intelligence layer..."
+                            type="text"
+                        />
+                        <button
+                            class="pr-3 pl-2 text-og-text-sec hover:text-og-silver duration-75 flex items-center"
+                        >
+                            <span
+                                class="material-symbols-outlined"
+                                style="
+                                    font-variation-settings: &quot;wght&quot;
+                                        200;
+                                "
+                                >send</span
+                            >
+                        </button>
+                    </div>
+                    <div class="flex justify-between items-center mt-2 px-1">
+                        <div class="flex space-x-2">
+                            <button
+                                class="text-[0.65rem] font-mono text-og-text-sec hover:text-og-silver flex items-center space-x-1"
+                            >
+                                <span
+                                    class="material-symbols-outlined text-[12px]"
+                                    >attachment</span
+                                >
+                                <span>ADD REF</span>
+                            </button>
+                            <button
+                                class="text-[0.65rem] font-mono text-og-text-sec hover:text-og-silver flex items-center space-x-1"
+                            >
+                                <span
+                                    class="material-symbols-outlined text-[12px]"
+                                    >history</span
+                                >
+                                <span>HISTORY</span>
+                            </button>
+                        </div>
+                        <span class="text-[0.65rem] font-mono text-og-text-mut"
+                            >CMD+ENTER TO SEND</span
+                        >
+                    </div>
+                </div>
+            </main>
+            <!-- Right Context Panel (220px) -->
+            <aside
+                class="w-[220px] bg-og-surface border-l border-og-border flex flex-col flex-shrink-0"
+            >
+                <!-- Panel Header -->
+                <div
+                    class="h-10 border-b border-og-border flex items-center px-3 bg-og-elevated"
+                >
+                    <span
+                        class="font-mono text-[0.75rem] text-og-text-sec tracking-tight"
+                        >CONTEXT SOURCES</span
+                    >
+                </div>
+                <!-- Panel Content -->
+                <div class="flex-1 overflow-y-auto p-3 space-y-4">
+                    <!-- Data Source Summary -->
+                    <div>
+                        <div
+                            class="text-[0.65rem] font-mono text-og-text-sec mb-2"
+                        >
+                            ACTIVE INGESTION
+                        </div>
+                        <div class="text-sm font-mono text-og-silver">
+                            47 RECORDINGS
+                        </div>
+                        <div
+                            class="text-[0.65rem] font-mono text-og-text-sec mt-1"
+                        >
+                            TIME WINDOW: 4H 00M
+                        </div>
+                    </div>
+                    <!-- Sensors List -->
+                    <div>
+                        <div
+                            class="text-[0.65rem] font-mono text-og-text-sec mb-2 border-b border-og-border pb-1"
+                        >
+                            REFERENCED CAMS
+                        </div>
+                        <div class="space-y-1 mt-2">
+                            <div
+                                class="flex items-center justify-between group cursor-pointer"
+                            >
+                                <div class="flex items-center space-x-2">
+                                    <span
+                                        class="w-1 h-1 bg-og-nominal rounded-full"
+                                    ></span>
+                                    <span
+                                        class="font-mono text-[0.75rem] text-og-silver group-hover:text-white"
+                                        >LDK_CAM_01</span
+                                    >
+                                </div>
+                                <span
+                                    class="material-symbols-outlined text-[12px] text-og-text-mut group-hover:text-og-text-sec"
+                                    >visibility</span
+                                >
+                            </div>
+                            <div
+                                class="flex items-center justify-between group cursor-pointer"
+                            >
+                                <div class="flex items-center space-x-2">
+                                    <span
+                                        class="w-1 h-1 bg-og-nominal rounded-full"
+                                    ></span>
+                                    <span
+                                        class="font-mono text-[0.75rem] text-og-silver group-hover:text-white"
+                                        >LDK_CAM_02</span
+                                    >
+                                </div>
+                                <span
+                                    class="material-symbols-outlined text-[12px] text-og-text-mut group-hover:text-og-text-sec"
+                                    >visibility</span
+                                >
+                            </div>
+                            <div
+                                class="flex items-center justify-between group cursor-pointer"
+                            >
+                                <div class="flex items-center space-x-2">
+                                    <span
+                                        class="w-1 h-1 bg-og-threat-warn rounded-full"
+                                    ></span>
+                                    <span
+                                        class="font-mono text-[0.75rem] text-og-silver group-hover:text-white"
+                                        >LDK_CAM_04_A</span
+                                    >
+                                </div>
+                                <span
+                                    class="material-symbols-outlined text-[12px] text-og-text-mut group-hover:text-og-text-sec"
+                                    >visibility</span
+                                >
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Confidence/Parameters -->
+                    <div class="border border-og-border bg-og-base p-2">
+                        <div
+                            class="text-[0.65rem] font-mono text-og-text-sec mb-1"
+                        >
+                            VLM PARAMETERS
+                        </div>
+                        <div class="flex justify-between items-center mt-1">
+                            <span
+                                class="font-mono text-[0.65rem] text-og-text-sec"
+                                >TEMP</span
+                            >
+                            <span
+                                class="font-mono text-[0.75rem] text-og-silver"
+                                >0.2</span
+                            >
+                        </div>
+                        <div class="flex justify-between items-center mt-1">
+                            <span
+                                class="font-mono text-[0.65rem] text-og-text-sec"
+                                >TOP_K</span
+                            >
+                            <span
+                                class="font-mono text-[0.75rem] text-og-silver"
+                                >40</span
+                            >
+                        </div>
+                        <div
+                            class="flex justify-between items-center mt-1 pt-1 border-t border-og-border"
+                        >
+                            <span
+                                class="font-mono text-[0.65rem] text-og-text-sec"
+                                >TOKENS</span
+                            >
+                            <span
+                                class="font-mono text-[0.75rem] text-og-silver"
+                                >1,402</span
+                            >
+                        </div>
+                    </div>
+                    <!-- Action Button -->
+                    <button
+                        class="w-full bg-transparent border border-og-border text-og-silver font-mono text-[0.75rem] py-2 hover:border-og-silver hover:bg-og-elevated duration-75 flex items-center justify-center space-x-2"
+                    >
+                        <span class="material-symbols-outlined text-[14px]"
+                            >download</span
+                        >
+                        <span>EXPORT LOG</span>
+                    </button>
+                </div>
+            </aside>
+        </div>
+    </body>
+</html>
