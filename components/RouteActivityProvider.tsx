@@ -21,7 +21,9 @@ export function RouteActivityProvider({
 
   const value = useMemo<RouteActivityState>(() => {
     const normalizedPathname = pathname ?? "/";
-    const isChatRoute = normalizedPathname.startsWith("/chat");
+    const isChatRoute =
+      normalizedPathname.startsWith("/chat") ||
+      normalizedPathname.startsWith("/analysis");
 
     return {
       pathname: normalizedPathname,

@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 interface SubNavItem {
   href: string
   label: string
+  exact?: boolean
 }
 
 interface SubNavProps extends React.ComponentProps<"div"> {
@@ -38,7 +39,10 @@ function SubNav({ items, separator = true, className, ...props }: SubNavProps) {
     >
       <div className="flex h-full items-center gap-0">
         {items.map((item, i) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href)
+          const isActive =
+            item.exact === false
+              ? pathname.startsWith(item.href)
+              : pathname === item.href
 
           return (
             <React.Fragment key={item.href}>

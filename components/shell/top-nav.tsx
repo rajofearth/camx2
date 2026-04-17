@@ -20,8 +20,8 @@ interface TopNavProps extends React.ComponentProps<"nav"> {
 }
 
 const defaultNavItems: NavItem[] = [
-  { href: "/monitor", label: "LIVE_MONITOR" },
-  { href: "/analysis", label: "ANALYSIS_QUERY" },
+  { href: "/monitor", label: "LIVE MONITOR" },
+  { href: "/analysis", label: "ANALYSIS & QUERY", exact: false },
   { href: "/settings", label: "SETTINGS" },
 ]
 

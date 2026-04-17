@@ -8,8 +8,8 @@ import {
 } from "@/components/shell";
 
 const topNavItems = [
-  { href: "/monitor", label: "LIVE_MONITOR" },
-  { href: "/chat", label: "ANALYSIS_QUERY" },
+  { href: "/monitor", label: "LIVE MONITOR" },
+  { href: "/analysis", label: "ANALYSIS & QUERY", exact: false },
   { href: "/settings/camera-management", label: "SETTINGS", exact: false },
 ];
 
