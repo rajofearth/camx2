@@ -1,10 +1,10 @@
-import { LMStudioClient } from "@lmstudio/sdk";
 import { NextResponse } from "next/server";
 
+import { createLmStudioClientForRequest } from "@/app/lib/lmstudio-client-factory";
+import { parseLmStudioPostParams } from "@/app/lib/lmstudio-post-params";
 import {
   formatLmStudioError,
   isLmStudioConnectionError,
-  normalizeLmStudioWsUrl,
 } from "@/app/lib/lmstudio-url";
 
 export const runtime = "nodejs";
@@ -25,27 +25,16 @@ export async function POST(request: Request) {
     );
   }
 
-  const rawUrl = typeof body.baseUrl === "string" ? body.baseUrl : "";
-  const apiToken =
-    typeof body.apiToken === "string" && body.apiToken.trim().length > 0
-      ? body.apiToken.trim()
-      : undefined;
-
-  let baseUrl: string;
-  try {
-    baseUrl = normalizeLmStudioWsUrl(rawUrl);
-  } catch (error) {
+  const parsed = parseLmStudioPostParams(body);
+  if (!parsed.ok) {
     return NextResponse.json(
-      { ok: false as const, error: formatLmStudioError(error) },
+      { ok: false as const, error: parsed.error },
       { status: 400 },
     );
   }
 
-  const client = new LMStudioClient({
-    baseUrl,
-    apiToken,
-    verboseErrorMessages: false,
-  });
+  const { baseUrl, apiToken } = parsed.params;
+  const client = createLmStudioClientForRequest(baseUrl, apiToken);
 
   try {
     await client.llm.listLoaded();

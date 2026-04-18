@@ -3,40 +3,50 @@ import { cn } from "@/lib/utils";
 interface ModelCapabilityStripProps {
   readonly vision: boolean | null;
   readonly trainedForToolUse: boolean | null;
-  /** When true, hide the tool icon row entirely (e.g. frame row only shows vision + reasoning). */
+  /** When true, hide the tool icon (e.g. frame analysis row). */
   readonly hideTools?: boolean;
+  /**
+   * Full contrast when the model is loaded in LM Studio or we have catalog booleans
+   * (downloaded model info).
+   */
+  readonly emphasize?: boolean;
 }
 
 /**
- * Material icons aligned with the reference: vision, reasoning (always for LLMs), optional tools.
+ * Material icons: vision, reasoning (LLM), optional tools.
  */
 export function ModelCapabilityStrip({
   vision,
   trainedForToolUse,
   hideTools = false,
+  emphasize = true,
 }: ModelCapabilityStripProps) {
   return (
     <div className="mt-3 flex flex-wrap gap-2">
       <span
         className={cn(
           "material-symbols-outlined text-[18px]",
-          vision === true && "text-op-silver",
-          vision === false && "text-op-critical",
-          vision === null && "text-op-text-sec",
+          !emphasize && "text-op-text-sec",
+          emphasize && vision === true && "text-op-silver",
+          emphasize && vision === false && "text-op-critical",
+          emphasize && vision === null && "text-op-text-sec",
         )}
         title={
           vision === true
             ? "Vision (images)"
             : vision === false
               ? "No vision / text-only"
-              : "Vision: load model to detect"
+              : "Vision not specified in LM Studio metadata"
         }
       >
         visibility
       </span>
       <span
-        className="material-symbols-outlined text-[18px] text-op-silver"
-        title="Reasoning (LLM)"
+        className={cn(
+          "material-symbols-outlined text-[18px]",
+          emphasize ? "text-op-silver" : "text-op-text-sec",
+        )}
+        title="Text LLM (reasoning)"
       >
         psychology
       </span>
@@ -44,16 +54,19 @@ export function ModelCapabilityStrip({
         <span
           className={cn(
             "material-symbols-outlined text-[18px]",
-            trainedForToolUse === true && "text-op-silver",
-            trainedForToolUse === false && "text-op-text-sec",
-            trainedForToolUse === null && "text-op-text-sec",
+            !emphasize && "text-op-text-sec",
+            emphasize && trainedForToolUse === true && "text-op-silver",
+            emphasize &&
+              trainedForToolUse === false &&
+              "text-op-text-sec",
+            emphasize && trainedForToolUse === null && "text-op-text-sec",
           )}
           title={
             trainedForToolUse === true
               ? "Tool use supported"
               : trainedForToolUse === false
                 ? "Tool use not indicated"
-                : "Tool use: load model to detect"
+                : "Tool use not specified in LM Studio metadata"
           }
         >
           build

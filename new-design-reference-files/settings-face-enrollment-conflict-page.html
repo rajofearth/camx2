@@ -1,0 +1,589 @@
+<!doctype html>
+
+<html class="dark" lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+        <title>CamX2 | Conflict Resolution</title>
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link
+            href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap"
+            rel="stylesheet"
+        />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+            rel="stylesheet"
+        />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+            rel="stylesheet"
+        />
+        <script id="tailwind-config">
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {
+                            "primary-container": "#d4d4d4",
+                            "on-surface-variant": "#c6c6c6",
+                            "error-container": "#93000a",
+                            "surface-dim": "#131313",
+                            "surface-container": "#201f1f",
+                            "secondary-fixed-dim": "#acabab",
+                            "secondary-container": "#464747",
+                            "on-surface": "#e5e2e1",
+                            "surface-bright": "#3a3939",
+                            "inverse-surface": "#e5e2e1",
+                            "on-tertiary-container": "#000000",
+                            "on-tertiary": "#410003",
+                            "on-secondary": "#1b1c1c",
+                            "surface-container-high": "#2a2a2a",
+                            "on-error": "#690005",
+                            background: "#131313",
+                            "outline-variant": "#474747",
+                            "on-primary-fixed-variant": "#e3e2e2",
+                            "on-tertiary-fixed": "#ffffff",
+                            "on-error-container": "#ffdad6",
+                            "on-background": "#e5e2e1",
+                            "surface-container-highest": "#353534",
+                            "on-primary-container": "#000000",
+                            tertiary: "#ffdad6",
+                            "tertiary-fixed": "#ac322e",
+                            surface: "#131313",
+                            "surface-variant": "#353534",
+                            secondary: "#c7c6c6",
+                            "tertiary-fixed-dim": "#8a1a1a",
+                            "surface-container-lowest": "#0e0e0e",
+                            "on-secondary-fixed-variant": "#3b3b3b",
+                            error: "#ffb4ab",
+                            "on-primary": "#1a1c1c",
+                            "on-primary-fixed": "#ffffff",
+                            "inverse-on-surface": "#313030",
+                            "primary-fixed-dim": "#464747",
+                            outline: "#919191",
+                            "surface-container-low": "#1c1b1b",
+                            "primary-fixed": "#5d5e5f",
+                            primary: "#ffffff",
+                            "on-secondary-fixed": "#1b1c1c",
+                            "inverse-primary": "#5d5e5f",
+                            "surface-tint": "#c6c6c6",
+                            "secondary-fixed": "#c7c6c6",
+                            "on-secondary-container": "#e4e2e2",
+                            "tertiary-container": "#ef635b",
+                            "on-tertiary-fixed-variant": "#ffdad6",
+                        },
+                        borderRadius: {
+                            DEFAULT: "0.125rem",
+                            lg: "0.25rem",
+                            xl: "0.5rem",
+                            full: "0.75rem",
+                        },
+                        fontFamily: {
+                            headline: ["IBM Plex Sans"],
+                            body: ["IBM Plex Sans"],
+                            label: ["IBM Plex Mono"],
+                        },
+                    },
+                },
+            };
+        </script>
+        <style>
+            body {
+                background-color: #080808;
+                color: #c0c0c0;
+                font-family: "IBM Plex Sans", sans-serif;
+            }
+            .mono {
+                font-family: "IBM Plex Mono", monospace;
+            }
+            .material-symbols-outlined {
+                font-variation-settings:
+                    "FILL" 0,
+                    "wght" 200,
+                    "GRAD" 0,
+                    "opsz" 24;
+            }
+            .threat-critical {
+                border-color: #8b1a1a;
+            }
+            .confidence-gauge {
+                height: 2px;
+                background: #2a2a2a;
+                width: 100%;
+                position: relative;
+            }
+            .confidence-fill {
+                height: 100%;
+                background: #c0c0c0;
+                position: absolute;
+                left: 0;
+                top: 0;
+            }
+            ::-webkit-scrollbar {
+                width: 4px;
+            }
+            ::-webkit-scrollbar-track {
+                background: #080808;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: #1c1c1c;
+            }
+        </style>
+    </head>
+    <body class="flex overflow-hidden h-screen">
+        <!-- SideNavBar -->
+
+        <div class="flex-1 flex flex-col min-w-0">
+            <!-- TopNavBar -->
+            <!-- Main Content Canvas -->
+            <main class="flex-1 overflow-y-auto p-6 bg-[#080808]">
+                <div class="max-w-7xl mx-auto flex flex-col gap-6">
+                    <!-- Header Status -->
+                    <div
+                        class="flex justify-between items-end border-b border-[#1C1C1C] pb-4"
+                    >
+                        <div>
+                            <h1
+                                class="text-2xl font-medium tracking-tight text-[#E2E2E2]"
+                            >
+                                CONFLICT_RESOLUTION_REQUIRED
+                            </h1>
+                            <p
+                                class="mono text-[10px] text-[#5C5C5C] mt-1 uppercase"
+                            >
+                                ENTITY_ID: PX-9920-ALPHA // STATUS:
+                                PENDING_OVERRIDE
+                            </p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button
+                                class="px-4 py-2 bg-[#161616] border border-[#1C1C1C] text-[#E2E2E2] text-xs font-semibold uppercase hover:bg-[#2A2A2A] transition-colors"
+                            >
+                                Discard Batch
+                            </button>
+                            <button
+                                class="px-4 py-2 bg-[#C0C0C0] text-[#080808] text-xs font-bold uppercase hover:bg-white transition-colors"
+                            >
+                                Resolve All Conflicts
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Comparison Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <!-- LOCAL_DB_ACTIVE Side -->
+                        <div
+                            class="bg-[#0F0F0F] border border-[#1C1C1C] rounded-sm flex flex-col"
+                        >
+                            <div
+                                class="p-3 border-b border-[#1C1C1C] flex justify-between items-center bg-[#161616]"
+                            >
+                                <span
+                                    class="mono text-xs font-medium text-[#C0C0C0]"
+                                    >SOURCE: LOCAL_DB_ACTIVE</span
+                                >
+                                <span class="mono text-[10px] text-[#5C5C5C]"
+                                    >LAST_MODIFIED: 2023-10-12 14:22:01</span
+                                >
+                            </div>
+                            <div class="p-4 flex gap-4">
+                                <div
+                                    class="w-32 h-40 bg-[#080808] border border-[#1C1C1C] flex-shrink-0 relative overflow-hidden"
+                                >
+                                    <img
+                                        class="w-full h-full object-cover grayscale opacity-80"
+                                        data-alt="dramatic cinematic close-up of a man's face for security profile, cold lighting, dark background, forensic aesthetic"
+                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3jaF37n86MyzWotZlcJVxf9Mhbth-m3RnK-AoxNPTnvhc8Up5qiSEIzdG6tV-GLgKyTEMRF9XFRQWoLRHNdDKBitSEDOb8hLk051WRaJuHtVzfrNMNvStDt8eskAd8Zy-GVtFlYz1R5Oj3EEyLcIzA9Y3lcJVhfsIuDxEI935fSkud6Uf5ZsAE_rvqr6sUA2ODdPZqmVhW6aWxP24rokY6yeguk2eWjRBB2ld-nxFsG3X-fLAkewvNKkrpI1LAYm66X-ltUSrYqQ7"
+                                    />
+                                    <div
+                                        class="absolute bottom-0 left-0 w-full bg-[#161616]/80 p-1"
+                                    >
+                                        <div class="confidence-gauge">
+                                            <div
+                                                class="confidence-fill"
+                                                style="width: 94%"
+                                            ></div>
+                                        </div>
+                                        <span
+                                            class="mono text-[8px] text-[#C0C0C0]"
+                                            >MATCH: 94.2%</span
+                                        >
+                                    </div>
+                                </div>
+                                <div class="flex-1 space-y-4">
+                                    <div class="grid grid-cols-1 gap-3">
+                                        <div>
+                                            <label
+                                                class="mono text-[10px] text-[#5C5C5C] block uppercase"
+                                                >Full Name</label
+                                            >
+                                            <p
+                                                class="mono text-sm text-[#E2E2E2]"
+                                            >
+                                                ELIAS VANCE
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label
+                                                class="mono text-[10px] text-[#5C5C5C] block uppercase"
+                                                >Aliases</label
+                                            >
+                                            <p
+                                                class="mono text-sm text-[#E2E2E2]"
+                                            >
+                                                "GHOST", "EV-9"
+                                            </p>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label
+                                                    class="mono text-[10px] text-[#5C5C5C] block uppercase"
+                                                    >DOB</label
+                                                >
+                                                <p
+                                                    class="mono text-sm text-[#E2E2E2]"
+                                                >
+                                                    1984-05-19
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <label
+                                                    class="mono text-[10px] text-[#5C5C5C] block uppercase"
+                                                    >Gender</label
+                                                >
+                                                <p
+                                                    class="mono text-sm text-[#E2E2E2]"
+                                                >
+                                                    MALE
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="px-4 pb-4 space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label
+                                            class="mono text-[10px] text-[#5C5C5C] block uppercase border-b border-[#1C1C1C] mb-1"
+                                            >Height / Weight</label
+                                        >
+                                        <p class="mono text-sm text-[#E2E2E2]">
+                                            188cm / 92kg
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="mono text-[10px] text-[#5C5C5C] block uppercase border-b border-[#1C1C1C] mb-1"
+                                            >Watchlist Level</label
+                                        >
+                                        <div class="flex items-center gap-2">
+                                            <div
+                                                class="w-2 h-2 rounded-full bg-[#8B1A1A]"
+                                            ></div>
+                                            <p
+                                                class="mono text-sm text-[#8B1A1A] font-bold"
+                                            >
+                                                LEVEL_4_RESTRICTED
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label
+                                        class="mono text-[10px] text-[#5C5C5C] block uppercase border-b border-[#1C1C1C] mb-1"
+                                        >Distinguishing Features</label
+                                    >
+                                    <p
+                                        class="mono text-xs text-[#E2E2E2] leading-relaxed"
+                                    >
+                                        SCAR ON LEFT BROW, TRIBAL TATTOO ON
+                                        RIGHT FOREARM. SLIGHT LIMP IN GAIT
+                                        DETECTED BY ANALYTICS.
+                                    </p>
+                                </div>
+                                <div>
+                                    <label
+                                        class="mono text-[10px] text-[#5C5C5C] block uppercase border-b border-[#1C1C1C] mb-1"
+                                        >Crime Categories</label
+                                    >
+                                    <div class="flex flex-wrap gap-1 mt-1">
+                                        <span
+                                            class="border border-[#8B1A1A] px-2 py-0.5 mono text-[9px] text-white"
+                                            >ESPIONAGE</span
+                                        >
+                                        <span
+                                            class="border border-[#8B1A1A] px-2 py-0.5 mono text-[9px] text-white"
+                                            >DATA_THEFT</span
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                            <div
+                                class="mt-auto p-4 bg-[#161616]/50 border-t border-[#1C1C1C]"
+                            >
+                                <button
+                                    class="w-full py-3 bg-transparent border border-[#C0C0C0] text-[#C0C0C0] mono text-xs font-bold hover:bg-[#C0C0C0] hover:text-[#080808] transition-all"
+                                >
+                                    KEEP LOCAL RECORD
+                                </button>
+                            </div>
+                        </div>
+                        <!-- BATCH_IMPORT_STREAM Side -->
+                        <div
+                            class="bg-[#0F0F0F] border border-[#2E2E2E] rounded-sm flex flex-col relative"
+                        >
+                            <!-- Alert Indicator for Mismatch -->
+                            <div
+                                class="absolute -top-2 -right-2 bg-[#8B1A1A] text-white mono text-[8px] px-2 py-1 z-10"
+                            >
+                                CONFLICT_DETECTED
+                            </div>
+                            <div
+                                class="p-3 border-b border-[#2E2E2E] flex justify-between items-center bg-[#161616]"
+                            >
+                                <span
+                                    class="mono text-xs font-medium text-[#E2E2E2]"
+                                    >SOURCE: BATCH_IMPORT_STREAM</span
+                                >
+                                <span class="mono text-[10px] text-[#5C5C5C]"
+                                    >INGESTION_TIME: 2023-11-20 08:00:44</span
+                                >
+                            </div>
+                            <div class="p-4 flex gap-4">
+                                <div
+                                    class="w-32 h-40 bg-[#080808] border border-[#8B1A1A] flex-shrink-0 relative overflow-hidden"
+                                >
+                                    <img
+                                        class="w-full h-full object-cover grayscale"
+                                        data-alt="detailed criminal lineup portrait of a man, neutral expression, surgical lighting, harsh contrast, grayscale surveillance aesthetic"
+                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCsZUQodaArvA7B1slTw5WEJlS5zq74gkUZ4XDf7seqS9TRK3Mg4TooGGl1F6hs3JKcQdiQwCFp2lXZasi34WFQ_QsVmkX261mxzZ-9eLXK8CHe7-9--Ft5jPZVMeavKpWA_7h22IT-twkNUJwhWzz4eWV_98kwgtSyQEltjg9mSuiRdy_b2JKLvi5WJlq1oIeI3M8FlG-fjwZpOZAbxDHO86XL8OVfeKPc1TT--rhMvwG3q0VV33IS_YGnOFwwaglN2WVxP15tuiCy"
+                                    />
+                                    <div
+                                        class="absolute bottom-0 left-0 w-full bg-[#8B1A1A]/90 p-1"
+                                    >
+                                        <span
+                                            class="mono text-[8px] text-white font-bold uppercase"
+                                            >Update Available</span
+                                        >
+                                    </div>
+                                </div>
+                                <div class="flex-1 space-y-4">
+                                    <div class="grid grid-cols-1 gap-3">
+                                        <div class="relative group">
+                                            <label
+                                                class="mono text-[10px] text-[#5C5C5C] block uppercase"
+                                                >Full Name</label
+                                            >
+                                            <p
+                                                class="mono text-sm text-[#E2E2E2] bg-[#161616] px-1"
+                                            >
+                                                ELIAS J. VANCE
+                                            </p>
+                                            <button
+                                                class="absolute right-0 top-0 text-[10px] mono text-[#C0C0C0] underline opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                USE THIS
+                                            </button>
+                                        </div>
+                                        <div class="relative group">
+                                            <label
+                                                class="mono text-[10px] text-[#5C5C5C] block uppercase"
+                                                >Aliases</label
+                                            >
+                                            <p
+                                                class="mono text-sm text-[#E2E2E2] bg-[#161616] px-1"
+                                            >
+                                                "GHOST", "OPERATIVE_9", "V"
+                                            </p>
+                                            <button
+                                                class="absolute right-0 top-0 text-[10px] mono text-[#C0C0C0] underline opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                USE THIS
+                                            </button>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label
+                                                    class="mono text-[10px] text-[#5C5C5C] block uppercase"
+                                                    >DOB</label
+                                                >
+                                                <p
+                                                    class="mono text-sm text-[#E2E2E2]"
+                                                >
+                                                    1984-05-19
+                                                    <span class="text-[#2A2A2A]"
+                                                        >(MATCH)</span
+                                                    >
+                                                </p>
+                                            </div>
+                                            <div class="relative group">
+                                                <label
+                                                    class="mono text-[10px] text-[#5C5C5C] block uppercase"
+                                                    >Gender</label
+                                                >
+                                                <p
+                                                    class="mono text-sm text-[#E2E2E2] bg-[#161616] px-1"
+                                                >
+                                                    MALE
+                                                    <span class="text-[#2A2A2A]"
+                                                        >(MATCH)</span
+                                                    >
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="px-4 pb-4 space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="relative group">
+                                        <label
+                                            class="mono text-[10px] text-[#5C5C5C] block uppercase border-b border-[#1C1C1C] mb-1"
+                                            >Height / Weight</label
+                                        >
+                                        <p
+                                            class="mono text-sm text-[#E2E2E2] bg-[#161616] px-1"
+                                        >
+                                            189cm / 94kg
+                                            <span
+                                                class="text-[#8B1A1A] font-bold"
+                                                >(!)</span
+                                            >
+                                        </p>
+                                        <button
+                                            class="absolute right-0 top-0 text-[10px] mono text-[#C0C0C0] underline opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            USE THIS
+                                        </button>
+                                    </div>
+                                    <div class="relative group">
+                                        <label
+                                            class="mono text-[10px] text-[#5C5C5C] block uppercase border-b border-[#1C1C1C] mb-1"
+                                            >Watchlist Level</label
+                                        >
+                                        <div
+                                            class="flex items-center gap-2 bg-[#161616] px-1"
+                                        >
+                                            <div
+                                                class="w-2 h-2 rounded-full bg-[#8B1A1A]"
+                                            ></div>
+                                            <p
+                                                class="mono text-sm text-[#8B1A1A] font-bold"
+                                            >
+                                                LEVEL_5_CRITICAL
+                                            </p>
+                                        </div>
+                                        <button
+                                            class="absolute right-0 top-0 text-[10px] mono text-[#C0C0C0] underline opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            USE THIS
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="relative group">
+                                    <label
+                                        class="mono text-[10px] text-[#5C5C5C] block uppercase border-b border-[#1C1C1C] mb-1"
+                                        >Distinguishing Features</label
+                                    >
+                                    <p
+                                        class="mono text-xs text-[#E2E2E2] leading-relaxed bg-[#161616] px-1"
+                                    >
+                                        SCAR ON LEFT BROW, TRIBAL TATTOO ON
+                                        RIGHT FOREARM. CERAMIC IMPLANT DETECTED
+                                        IN LEFT ORBITAL BONE.
+                                    </p>
+                                    <button
+                                        class="absolute right-0 top-0 text-[10px] mono text-[#C0C0C0] underline opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        USE THIS
+                                    </button>
+                                </div>
+                                <div class="relative group">
+                                    <label
+                                        class="mono text-[10px] text-[#5C5C5C] block uppercase border-b border-[#1C1C1C] mb-1"
+                                        >Crime Categories</label
+                                    >
+                                    <div
+                                        class="flex flex-wrap gap-1 mt-1 bg-[#161616] p-1"
+                                    >
+                                        <span
+                                            class="border border-[#8B1A1A] px-2 py-0.5 mono text-[9px] text-white"
+                                            >ESPIONAGE</span
+                                        >
+                                        <span
+                                            class="border border-[#8B1A1A] px-2 py-0.5 mono text-[9px] text-white"
+                                            >DATA_THEFT</span
+                                        >
+                                        <span
+                                            class="border border-[#8B1A1A] px-2 py-0.5 mono text-[9px] text-white"
+                                            >ASSET_LIQUIDATION</span
+                                        >
+                                    </div>
+                                    <button
+                                        class="absolute right-0 top-0 text-[10px] mono text-[#C0C0C0] underline opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        USE THIS
+                                    </button>
+                                </div>
+                            </div>
+                            <div
+                                class="mt-auto p-4 bg-[#161616] border-t border-[#2E2E2E]"
+                            >
+                                <button
+                                    class="w-full py-3 bg-[#C0C0C0] text-[#080808] mono text-xs font-extrabold uppercase hover:bg-white transition-all"
+                                >
+                                    UPDATE FROM SOURCE
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Footer Audit Data -->
+                    <div
+                        class="bg-[#0F0F0F] border border-[#1C1C1C] p-3 flex justify-between items-center"
+                    >
+                        <div class="flex gap-6">
+                            <div>
+                                <span
+                                    class="mono text-[9px] text-[#5C5C5C] block"
+                                    >RESOLUTION_METHOD</span
+                                >
+                                <span class="mono text-[10px] text-[#C0C0C0]"
+                                    >MANUAL_OPERATOR_OVERRIDE</span
+                                >
+                            </div>
+                            <div>
+                                <span
+                                    class="mono text-[9px] text-[#5C5C5C] block"
+                                    >OPERATOR_ID</span
+                                >
+                                <span class="mono text-[10px] text-[#C0C0C0]"
+                                    >SEC_OP_442</span
+                                >
+                            </div>
+                            <div>
+                                <span
+                                    class="mono text-[9px] text-[#5C5C5C] block"
+                                    >TERMINAL</span
+                                >
+                                <span class="mono text-[10px] text-[#C0C0C0]"
+                                    >TX-NORTH-04</span
+                                >
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span
+                                class="material-symbols-outlined text-xs text-[#5C5C5C]"
+                                >verified_user</span
+                            >
+                            <span class="mono text-[10px] text-[#5C5C5C]"
+                                >SYSTEM_INTEGRITY_CHECK: PASS</span
+                            >
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+        <!-- Floating Action for Focused Task -->
+        <!-- Suppressed per UX guidelines for Resolution screen -->
+    </body>
+</html>

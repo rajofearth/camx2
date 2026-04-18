@@ -1,0 +1,395 @@
+<!doctype html>
+
+<html class="dark" lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+        <title>CAMX2_SYSTEM | MODEL CONFIGURATION</title>
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link
+            href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap"
+            rel="stylesheet"
+        />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+            rel="stylesheet"
+        />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+            rel="stylesheet"
+        />
+        <script id="tailwind-config">
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {
+                            "on-surface-variant": "#c6c6c6",
+                            "surface-bright": "#3a3939",
+                            "secondary-fixed": "#c7c6c6",
+                            secondary: "#c7c6c6",
+                            "on-primary-fixed-variant": "#e3e2e2",
+                            "on-primary-container": "#000000",
+                            "outline-variant": "#474747",
+                            primary: "#ffffff",
+                            error: "#ffb4ab",
+                            "inverse-primary": "#5d5e5f",
+                            "surface-container-low": "#1c1b1b",
+                            "on-tertiary-fixed-variant": "#ffdad6",
+                            "on-surface": "#e5e2e1",
+                            "inverse-on-surface": "#313030",
+                            "surface-variant": "#353534",
+                            "surface-container-high": "#2a2a2a",
+                            "on-primary": "#1a1c1c",
+                            "on-background": "#e5e2e1",
+                            "tertiary-fixed": "#ac322e",
+                            "surface-dim": "#131313",
+                            "secondary-container": "#464747",
+                            "on-error": "#690005",
+                            outline: "#919191",
+                            "on-tertiary-fixed": "#ffffff",
+                            tertiary: "#ffdad6",
+                            "on-secondary-fixed-variant": "#3b3b3b",
+                            "tertiary-fixed-dim": "#8a1a1a",
+                            "surface-container": "#201f1f",
+                            "tertiary-container": "#ef635b",
+                            "on-tertiary-container": "#000000",
+                            "on-secondary-fixed": "#1b1c1c",
+                            "surface-container-highest": "#353534",
+                            "secondary-fixed-dim": "#acabab",
+                            "on-tertiary": "#410003",
+                            "on-primary-fixed": "#ffffff",
+                            "on-secondary-container": "#e4e2e2",
+                            "surface-tint": "#c6c6c6",
+                            "on-secondary": "#1b1c1c",
+                            background: "#131313",
+                            "primary-container": "#d4d4d4",
+                            "primary-fixed": "#5d5e5f",
+                            surface: "#131313",
+                            "inverse-surface": "#e5e2e1",
+                            "surface-container-lowest": "#0e0e0e",
+                            "primary-fixed-dim": "#464747",
+                            "on-error-container": "#ffdad6",
+                            "error-container": "#93000a",
+                            base: "#080808",
+                            "surface-goth": "#0F0F0F",
+                            "elevated-goth": "#161616",
+                            "silver-accent": "#C0C0C0",
+                            "border-default": "#1C1C1C",
+                            "border-active": "#2E2E2E",
+                            "critical-alert": "#8B1A1A",
+                            "muted-goth": "#5C5C5C",
+                        },
+                        borderRadius: {
+                            DEFAULT: "0.125rem",
+                            lg: "0.25rem",
+                            xl: "0.5rem",
+                            full: "0.75rem",
+                        },
+                        fontFamily: {
+                            headline: ["IBM Plex Sans"],
+                            body: ["IBM Plex Sans"],
+                            label: ["IBM Plex Mono"],
+                            mono: ["IBM Plex Mono"],
+                        },
+                    },
+                },
+            };
+        </script>
+        <style>
+            body {
+                background-color: #080808;
+                color: #c0c0c0;
+                font-family: "IBM Plex Sans", sans-serif;
+            }
+            .material-symbols-outlined {
+                font-variation-settings:
+                    "FILL" 0,
+                    "wght" 300,
+                    "GRAD" 0,
+                    "opsz" 20;
+                font-size: 18px;
+            }
+            .mono-text {
+                font-family: "IBM Plex Mono", monospace;
+            }
+        </style>
+    </head>
+    <body class="bg-base overflow-hidden">
+        <!-- Main Content Canvas -->
+        <main class="ml-64 pt-14 h-screen bg-base relative overflow-y-auto">
+            <div class="p-8 max-w-6xl">
+                <!-- Header Section -->
+                <header class="mb-10 border-l-4 border-silver-accent pl-6 py-2">
+                    <h1
+                        class="text-3xl font-medium tracking-tight text-white uppercase font-headline"
+                    >
+                        Model Configuration
+                    </h1>
+                    <p
+                        class="text-muted-goth font-mono text-xs mt-1 uppercase tracking-wider"
+                    >
+                        Manage backend VLM and LLM endpoint parameters.
+                    </p>
+                </header>
+                <div class="grid grid-cols-1 gap-8">
+                    <!-- Section 1: ENDPOINT SETTINGS -->
+                    <section
+                        class="bg-surface-goth border border-border-default p-0 flex flex-col"
+                    >
+                        <div
+                            class="px-6 py-3 border-b border-border-default flex items-center justify-between"
+                        >
+                            <h3
+                                class="font-mono text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2"
+                            >
+                                <span
+                                    class="w-1.5 h-1.5 bg-silver-accent"
+                                ></span>
+                                ENDPOINT SETTINGS
+                            </h3>
+                            <span class="font-mono text-[9px] text-muted-goth"
+                                >CHANNEL_01_REDUNDANCY_ENABLED</span
+                            >
+                        </div>
+                        <div class="p-6 space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-2">
+                                    <label
+                                        class="block text-xs font-medium text-muted-goth uppercase"
+                                        >LM Studio WebSocket URL</label
+                                    >
+                                    <div class="flex gap-2">
+                                        <input
+                                            class="w-full bg-base border border-border-default text-white font-mono text-sm px-4 py-2 focus:border-silver-accent focus:ring-0 outline-none transition-all"
+                                            type="text"
+                                            value="ws://127.0.0.1:1234"
+                                        />
+                                        <button
+                                            class="px-4 py-2 bg-elevated-goth border border-border-default text-white text-[10px] font-bold uppercase hover:bg-border-active transition-colors whitespace-nowrap"
+                                        >
+                                            Check Connection
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="space-y-2">
+                                    <label
+                                        class="block text-xs font-medium text-muted-goth uppercase"
+                                        >API Key (Optional)</label
+                                    >
+                                    <input
+                                        class="w-full bg-base border border-border-default text-white font-mono text-sm px-4 py-2 focus:border-silver-accent focus:ring-0 outline-none transition-all"
+                                        placeholder="••••••••••••••••"
+                                        type="password"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- Section 2: MODEL ASSIGNMENT -->
+                    <section
+                        class="bg-surface-goth border border-border-default p-0 flex flex-col"
+                    >
+                        <div
+                            class="px-6 py-3 border-b border-border-default flex items-center justify-between"
+                        >
+                            <h3
+                                class="font-mono text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2"
+                            >
+                                <span
+                                    class="w-1.5 h-1.5 bg-silver-accent"
+                                ></span>
+                                MODEL ASSIGNMENT
+                            </h3>
+                            <span class="font-mono text-[9px] text-muted-goth"
+                                >VLM_ACTIVE_CONTEXT_V2</span
+                            >
+                        </div>
+                        <div class="divide-y divide-border-default">
+                            <!-- Model 1: Preferred Watch Model -->
+                            <div
+                                class="p-6 flex flex-col md:flex-row gap-6 items-start"
+                            >
+                                <div class="w-full md:w-1/3">
+                                    <span
+                                        class="block text-[11px] font-bold text-white uppercase mb-1"
+                                        >Preferred Watch Model</span
+                                    >
+                                    <span
+                                        class="block text-[10px] text-muted-goth uppercase"
+                                        >Primary surveillance logic and event
+                                        detection.</span
+                                    >
+                                    <div class="flex gap-2 mt-3">
+                                        <span
+                                            class="material-symbols-outlined text-muted-goth"
+                                            data-icon="visibility"
+                                            title="Vision"
+                                            >visibility</span
+                                        >
+                                        <span
+                                            class="material-symbols-outlined text-muted-goth"
+                                            data-icon="psychology"
+                                            title="Reasoning"
+                                            >psychology</span
+                                        >
+                                        <span
+                                            class="material-symbols-outlined text-muted-goth"
+                                            data-icon="build"
+                                            title="Tool Calling"
+                                            >build</span
+                                        >
+                                    </div>
+                                </div>
+                                <div class="w-full md:w-2/3">
+                                    <div class="relative">
+                                        <input
+                                            class="w-full bg-base border border-border-default text-silver-accent font-mono text-sm px-4 py-3 focus:border-silver-accent focus:ring-0 outline-none transition-all uppercase"
+                                            readonly=""
+                                            type="text"
+                                            value="lfm-2.5-ucf-1.6b"
+                                        />
+                                        <span
+                                            class="absolute right-4 top-3 text-muted-goth material-symbols-outlined"
+                                            >expand_more</span
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Model 2: Video Watch Frame Analysis Model -->
+                            <div
+                                class="p-6 flex flex-col md:flex-row gap-6 items-start"
+                            >
+                                <div class="w-full md:w-1/3">
+                                    <span
+                                        class="block text-[11px] font-bold text-white uppercase mb-1"
+                                        >Frame Analysis Model</span
+                                    >
+                                    <span
+                                        class="block text-[10px] text-muted-goth uppercase"
+                                        >Deep analytical pass for high-priority
+                                        frames.</span
+                                    >
+                                    <div class="flex gap-2 mt-3">
+                                        <span
+                                            class="material-symbols-outlined text-muted-goth"
+                                            data-icon="visibility"
+                                            title="Vision"
+                                            >visibility</span
+                                        >
+                                        <span
+                                            class="material-symbols-outlined text-muted-goth"
+                                            data-icon="psychology"
+                                            title="Reasoning"
+                                            >psychology</span
+                                        >
+                                    </div>
+                                </div>
+                                <div class="w-full md:w-2/3">
+                                    <div class="relative">
+                                        <input
+                                            class="w-full bg-base border border-border-default text-silver-accent font-mono text-sm px-4 py-3 focus:border-silver-accent focus:ring-0 outline-none transition-all uppercase"
+                                            readonly=""
+                                            type="text"
+                                            value="lfm-ucf-400m"
+                                        />
+                                        <span
+                                            class="absolute right-4 top-3 text-muted-goth material-symbols-outlined"
+                                            >expand_more</span
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Model 3: Video Watch Summary/Chat Model -->
+                            <div
+                                class="p-6 flex flex-col md:flex-row gap-6 items-start bg-[#0D0D0D]"
+                            >
+                                <div class="w-full md:w-1/3">
+                                    <span
+                                        class="block text-[11px] font-bold text-white uppercase mb-1"
+                                        >Summary/Chat Model</span
+                                    >
+                                    <span
+                                        class="block text-[10px] text-muted-goth uppercase"
+                                        >Natural language synthesis of
+                                        surveillance logs.</span
+                                    >
+                                    <div
+                                        class="mt-4 inline-flex items-center gap-2 border border-critical-alert px-2 py-1"
+                                    >
+                                        <span
+                                            class="material-symbols-outlined text-critical-alert text-[14px]"
+                                            style="
+                                                font-variation-settings: &quot;FILL&quot;
+                                                    1;
+                                            "
+                                            >error</span
+                                        >
+                                        <span
+                                            class="font-mono text-[9px] text-critical-alert font-bold"
+                                            >(!) NON-VISION</span
+                                        >
+                                    </div>
+                                </div>
+                                <div class="w-full md:w-2/3 space-y-3">
+                                    <div class="relative">
+                                        <input
+                                            class="w-full bg-base border border-critical-alert text-silver-accent font-mono text-sm px-4 py-3 focus:ring-0 outline-none transition-all uppercase"
+                                            readonly=""
+                                            type="text"
+                                            value="google/gemma-4-e4b"
+                                        />
+                                        <span
+                                            class="absolute right-4 top-3 text-muted-goth material-symbols-outlined"
+                                            >expand_more</span
+                                        >
+                                    </div>
+                                    <div
+                                        class="bg-critical-alert/5 border-l-2 border-critical-alert p-3"
+                                    >
+                                        <p
+                                            class="text-[10px] text-[#A2A2A2] uppercase leading-relaxed"
+                                        >
+                                            Selection of non-vision models for
+                                            vision tasks may result in inference
+                                            failure. Proceed at operator risk.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+                <!-- Footer Action Bar -->
+                <div
+                    class="mt-12 mb-20 flex justify-end items-center gap-4 border-t border-border-default pt-8"
+                >
+                    <button
+                        class="px-8 py-3 text-[#5C5C5C] font-['IBM_Plex_Sans'] text-xs font-bold uppercase hover:text-white transition-colors"
+                    >
+                        Discard Changes
+                    </button>
+                    <button
+                        class="px-10 py-3 bg-silver-accent text-base font-['IBM_Plex_Sans'] text-xs font-bold uppercase hover:bg-white transition-colors"
+                    >
+                        Apply Configuration
+                    </button>
+                </div>
+            </div>
+            <!-- Decorative UI Element -->
+            <div class="fixed bottom-6 right-6 pointer-events-none opacity-20">
+                <div
+                    class="font-mono text-[8px] text-right text-muted-goth leading-tight"
+                >
+                    SYS_CLOCK: 172.49.001.X<br />
+                    AUTH_SIG: ████████████<br />
+                    STABILITY: NOMINAL
+                </div>
+            </div>
+        </main>
+        <!-- Active State Overlay (Conceptual) -->
+        <div
+            class="fixed top-14 left-64 bottom-0 right-0 pointer-events-none border-[12px] border-white/5 z-0"
+        ></div>
+    </body>
+</html>

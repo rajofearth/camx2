@@ -1,23 +1,33 @@
 "use client";
 
+import * as React from "react";
+
 import { ModelCapabilityStrip } from "./model-capability-strip";
 import { ModelConfigSection } from "./model-config-section";
 import { useModelConfiguration } from "./model-configuration-context";
+import {
+  resolveSelectedModel,
+  shouldEmphasizeCapabilities,
+} from "./model-option-utils";
 import { ModelSelectField } from "./model-select-field";
-
-function pickModel(
-  models: readonly LlmModelOptionDto[],
-  key: string,
-): LlmModelOptionDto | null {
-  return models.find((m) => m.modelKey === key) ?? null;
-}
 
 export function ModelAssignment() {
   const { config, setConfig, models, modelsLoading } = useModelConfiguration();
 
-  const watch = pickModel(models, config.preferredWatchModelKey);
-  const frame = pickModel(models, config.frameAnalysisModelKey);
-  const summary = pickModel(models, config.summaryChatModelKey);
+  const watch = React.useMemo(
+    () => resolveSelectedModel(models, config.preferredWatchModelKey),
+    [models, config.preferredWatchModelKey],
+  );
+
+  const frame = React.useMemo(
+    () => resolveSelectedModel(models, config.frameAnalysisModelKey),
+    [models, config.frameAnalysisModelKey],
+  );
+
+  const summary = React.useMemo(
+    () => resolveSelectedModel(models, config.summaryChatModelKey),
+    [models, config.summaryChatModelKey],
+  );
 
   const summaryVision = summary?.vision ?? null;
 
@@ -33,6 +43,7 @@ export function ModelAssignment() {
               Primary surveillance logic and event detection.
             </span>
             <ModelCapabilityStrip
+              emphasize={shouldEmphasizeCapabilities(watch)}
               trainedForToolUse={watch?.trainedForToolUse ?? null}
               vision={watch?.vision ?? null}
             />
@@ -58,6 +69,7 @@ export function ModelAssignment() {
               Deep analytical pass for high-priority frames.
             </span>
             <ModelCapabilityStrip
+              emphasize={shouldEmphasizeCapabilities(frame)}
               hideTools
               trainedForToolUse={frame?.trainedForToolUse ?? null}
               vision={frame?.vision ?? null}
@@ -66,6 +78,7 @@ export function ModelAssignment() {
           <div className="w-full md:w-2/3">
             <ModelSelectField
               disabled={modelsLoading}
+              hideTools
               options={models}
               value={config.frameAnalysisModelKey}
               onChange={(modelKey) =>
@@ -84,6 +97,7 @@ export function ModelAssignment() {
               Natural language synthesis of surveillance logs.
             </span>
             <ModelCapabilityStrip
+              emphasize={shouldEmphasizeCapabilities(summary)}
               trainedForToolUse={summary?.trainedForToolUse ?? null}
               vision={summary?.vision ?? null}
             />

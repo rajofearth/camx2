@@ -1,11 +1,18 @@
-import { LMStudioClient } from "@lmstudio/sdk";
+import type { LMStudioClient } from "@lmstudio/sdk";
 import { NextResponse } from "next/server";
 
+import { createLmStudioClientForRequest } from "@/app/lib/lmstudio-client-factory";
+import {
+  createRestEntryLookup,
+  fetchLmStudioRestLlmCatalog,
+  mergeLlmDtoWithRest,
+  restEntryToDto,
+} from "@/app/lib/lmstudio-rest-catalog";
 import type { LlmModelOptionDto } from "@/app/lib/model-configuration-types";
+import { parseLmStudioPostParams } from "@/app/lib/lmstudio-post-params";
 import {
   formatLmStudioError,
   isLmStudioConnectionError,
-  normalizeLmStudioWsUrl,
 } from "@/app/lib/lmstudio-url";
 
 export const runtime = "nodejs";
@@ -19,14 +26,49 @@ interface ModelsBody {
   readonly apiToken?: unknown;
 }
 
-function readToolTraining(info: Record<string, unknown>): boolean | null {
-  if (typeof info.trainedForToolUse === "boolean") {
-    return info.trainedForToolUse;
-  }
-  if (typeof info.trained_for_tool_use === "boolean") {
-    return info.trained_for_tool_use;
+function readBooleanField(
+  obj: Record<string, unknown>,
+  keys: readonly string[],
+): boolean | null {
+  for (const key of keys) {
+    const value = obj[key];
+    if (typeof value === "boolean") return value;
   }
   return null;
+}
+
+function readToolTraining(
+  info: Record<string, unknown>,
+  handle: Record<string, unknown>,
+): boolean | null {
+  return (
+    readBooleanField(handle, ["trainedForToolUse"]) ??
+    readBooleanField(info, ["trainedForToolUse", "trained_for_tool_use"])
+  );
+}
+
+function readVision(
+  info: Record<string, unknown>,
+  handle: Record<string, unknown>,
+): boolean | null {
+  return (
+    readBooleanField(handle, ["vision"]) ??
+    readBooleanField(info, ["vision", "supportsVision"])
+  );
+}
+
+function downloadedModelIdentifier(entry: Record<string, unknown>): string {
+  if (
+    typeof entry.displayName === "string" &&
+    entry.displayName.trim().length > 0
+  ) {
+    return entry.displayName.trim();
+  }
+  if (typeof entry.name === "string" && entry.name.trim().length > 0) {
+    return entry.name.trim();
+  }
+  if (typeof entry.modelKey === "string") return entry.modelKey;
+  return "";
 }
 
 export async function POST(request: Request) {
@@ -40,50 +82,53 @@ export async function POST(request: Request) {
     );
   }
 
-  const rawUrl = typeof body.baseUrl === "string" ? body.baseUrl : "";
-  const apiToken =
-    typeof body.apiToken === "string" && body.apiToken.trim().length > 0
-      ? body.apiToken.trim()
-      : undefined;
-
-  let baseUrl: string;
-  try {
-    baseUrl = normalizeLmStudioWsUrl(rawUrl);
-  } catch (error) {
+  const parsed = parseLmStudioPostParams(body);
+  if (!parsed.ok) {
     return NextResponse.json(
-      { ok: false as const, error: formatLmStudioError(error), models: [] },
+      { ok: false as const, error: parsed.error, models: [] },
       { status: 400 },
     );
   }
 
-  const client = new LMStudioClient({
-    baseUrl,
-    apiToken,
-    verboseErrorMessages: false,
-  });
+  const { baseUrl, apiToken } = parsed.params;
+  const client = createLmStudioClientForRequest(baseUrl, apiToken);
 
   try {
-    const loadedHandles: LoadedLlmHandle[] = await client.llm.listLoaded();
+    const [loadedHandles, restEntries] = await Promise.all([
+      client.llm.listLoaded(),
+      fetchLmStudioRestLlmCatalog(baseUrl, apiToken).catch((error: unknown) => {
+        console.warn(
+          "[lmstudio/models] REST GET /api/v1/models failed; SDK metadata only.",
+          error,
+        );
+        return [];
+      }),
+    ]);
+
+    const lookupRest = createRestEntryLookup(restEntries);
     const byKey = new Map<string, LlmModelOptionDto>();
 
     for (const handle of loadedHandles) {
-      const info = (await handle.getModelInfo()) as unknown as Record<
-        string,
-        unknown
-      >;
+      const handleObj = handle as unknown as Record<string, unknown>;
+      const rawInfo = await handle.getModelInfo();
+      const info = (rawInfo ?? {}) as Record<string, unknown>;
 
       const modelKey =
         typeof info.modelKey === "string"
           ? info.modelKey
-          : typeof (handle as { modelKey?: string }).modelKey === "string"
-            ? (handle as { modelKey: string }).modelKey
+          : typeof handleObj.modelKey === "string"
+            ? handleObj.modelKey
             : "";
       if (!modelKey) continue;
 
       const identifier =
-        typeof info.identifier === "string" ? info.identifier : modelKey;
-      const vision =
-        typeof info.vision === "boolean" ? info.vision : null;
+        typeof info.identifier === "string"
+          ? info.identifier
+          : typeof handleObj.identifier === "string"
+            ? handleObj.identifier
+            : modelKey;
+
+      const vision = readVision(info, handleObj);
       const maxContextLength =
         typeof info.maxContextLength === "number"
           ? info.maxContextLength
@@ -94,32 +139,54 @@ export async function POST(request: Request) {
         identifier,
         isLoaded: true,
         vision,
-        trainedForToolUse: readToolTraining(info),
+        trainedForToolUse: readToolTraining(info, handleObj),
         maxContextLength,
       });
     }
 
     const downloaded = await client.system.listDownloadedModels("llm");
     for (const entry of downloaded) {
-      const modelKey = entry.modelKey;
-      if (byKey.has(modelKey)) continue;
+      const entryObj = entry as unknown as Record<string, unknown>;
+      const modelKey =
+        typeof entryObj.modelKey === "string" ? entryObj.modelKey : "";
+      if (!modelKey || byKey.has(modelKey)) continue;
 
       const maxContextLength =
-        typeof entry.maxContextLength === "number"
-          ? entry.maxContextLength
+        typeof entryObj.maxContextLength === "number"
+          ? entryObj.maxContextLength
           : null;
+
+      const identifier = downloadedModelIdentifier(entryObj) || modelKey;
+      const vision = readBooleanField(entryObj, ["vision"]);
+      const trainedForToolUse = readBooleanField(entryObj, [
+        "trainedForToolUse",
+        "trained_for_tool_use",
+      ]);
 
       byKey.set(modelKey, {
         modelKey,
-        identifier: modelKey,
+        identifier,
         isLoaded: false,
-        vision: null,
-        trainedForToolUse: null,
+        vision,
+        trainedForToolUse,
         maxContextLength,
       });
     }
 
-    const models = [...byKey.values()].sort((left, right) =>
+    const mergedByKey = new Map<string, LlmModelOptionDto>();
+    for (const [key, dto] of byKey) {
+      mergedByKey.set(key, mergeLlmDtoWithRest(dto, lookupRest(key)));
+    }
+
+    const sdkKeysLower = new Set(
+      [...byKey.keys()].map((k) => k.toLowerCase()),
+    );
+    for (const rest of restEntries) {
+      if (sdkKeysLower.has(rest.key.toLowerCase())) continue;
+      mergedByKey.set(rest.key, restEntryToDto(rest));
+    }
+
+    const models = [...mergedByKey.values()].sort((left, right) =>
       left.identifier.localeCompare(right.identifier),
     );
 

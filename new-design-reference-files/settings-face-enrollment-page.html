@@ -1,0 +1,780 @@
+<!doctype html>
+
+<html class="dark" lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+        <title>CamX2 | Face Enrollment Registry</title>
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link
+            href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+            rel="stylesheet"
+        />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+            rel="stylesheet"
+        />
+        <script id="tailwind-config">
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {
+                            "primary-container": "#d4d4d4",
+                            "on-surface-variant": "#c6c6c6",
+                            "error-container": "#93000a",
+                            "surface-dim": "#131313",
+                            "surface-container": "#201f1f",
+                            "secondary-fixed-dim": "#acabab",
+                            "secondary-container": "#464747",
+                            "on-surface": "#e5e2e1",
+                            "surface-bright": "#3a3939",
+                            "inverse-surface": "#e5e2e1",
+                            "on-tertiary-container": "#000000",
+                            "on-tertiary": "#410003",
+                            "on-secondary": "#1b1c1c",
+                            "surface-container-high": "#2a2a2a",
+                            "on-error": "#690005",
+                            background: "#131313",
+                            "outline-variant": "#474747",
+                            "on-primary-fixed-variant": "#e3e2e2",
+                            "on-tertiary-fixed": "#ffffff",
+                            "on-error-container": "#ffdad6",
+                            "on-background": "#e5e2e1",
+                            "surface-container-highest": "#353534",
+                            "on-primary-container": "#000000",
+                            tertiary: "#ffdad6",
+                            "tertiary-fixed": "#ac322e",
+                            surface: "#131313",
+                            "surface-variant": "#353534",
+                            secondary: "#c7c6c6",
+                            "tertiary-fixed-dim": "#8a1a1a",
+                            "surface-container-lowest": "#0e0e0e",
+                            "on-secondary-fixed-variant": "#3b3b3b",
+                            error: "#ffb4ab",
+                            "on-primary": "#1a1c1c",
+                            "on-primary-fixed": "#ffffff",
+                            "inverse-on-surface": "#313030",
+                            "primary-fixed-dim": "#464747",
+                            outline: "#919191",
+                            "surface-container-low": "#1c1b1b",
+                            "primary-fixed": "#5d5e5f",
+                            primary: "#ffffff",
+                            "on-secondary-fixed": "#1b1c1c",
+                            "inverse-primary": "#5d5e5f",
+                            "surface-tint": "#c6c6c6",
+                            "secondary-fixed": "#c7c6c6",
+                            "on-secondary-container": "#e4e2e2",
+                            "tertiary-container": "#ef635b",
+                            "on-tertiary-fixed-variant": "#ffdad6",
+                        },
+                        borderRadius: {
+                            DEFAULT: "0.125rem",
+                            lg: "0.25rem",
+                            xl: "0.5rem",
+                            full: "0.75rem",
+                        },
+                        fontFamily: {
+                            headline: ["IBM Plex Sans", "sans-serif"],
+                            body: ["IBM Plex Sans", "sans-serif"],
+                            label: ["IBM Plex Mono", "monospace"],
+                        },
+                    },
+                },
+            };
+        </script>
+        <style>
+            body {
+                background-color: #080808;
+                color: #e2e2e2;
+            }
+            .material-symbols-outlined {
+                font-variation-settings:
+                    "FILL" 0,
+                    "wght" 200,
+                    "GRAD" 0,
+                    "opsz" 24;
+                font-size: 18px;
+            }
+            .mono {
+                font-family: "IBM Plex Mono", monospace;
+            }
+            .brutalist-card {
+                border: 1px solid #1c1c1c;
+                background-color: #0f0f0f;
+            }
+            .confidence-gauge {
+                height: 2px;
+                background: #2a2a2a;
+                width: 100%;
+                position: relative;
+            }
+            .confidence-fill {
+                height: 2px;
+                background: #c0c0c0;
+                position: absolute;
+                left: 0;
+                top: 0;
+            }
+            ::-webkit-scrollbar {
+                width: 4px;
+            }
+            ::-webkit-scrollbar-track {
+                background: #080808;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: #1c1c1c;
+            }
+        </style>
+    </head>
+    <body class="antialiased overflow-hidden h-screen flex flex-col">
+        <!-- TopNavBar from Shared Components -->
+        <div class="flex flex-1 overflow-hidden">
+            <!-- SideNavBar from Shared Components -->
+            <!-- Main Content Area -->
+            <main class="flex-1 flex flex-col bg-[#080808] overflow-hidden">
+                <!-- Action Bar -->
+                <div
+                    class="h-14 border-b border-[#1C1C1C] flex items-center justify-between px-6 bg-[#0F0F0F]"
+                >
+                    <div class="flex items-center gap-4">
+                        <h1
+                            class="font-['IBM_Plex_Sans'] font-medium text-lg uppercase tracking-tight text-[#E2E2E2]"
+                        >
+                            Enrollment Registry
+                        </h1>
+                        <span
+                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#5C5C5C] bg-[#161616] px-2 py-0.5 border border-[#1C1C1C]"
+                            >TOTAL_ENTRIES: 12,842</span
+                        >
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button
+                            class="flex items-center gap-2 px-3 py-1.5 border border-[#1C1C1C] hover:bg-[#161616] text-[#5C5C5C] hover:text-[#E2E2E2] transition-colors font-['IBM_Plex_Sans'] text-[10px] uppercase font-bold tracking-widest"
+                        >
+                            <span class="material-symbols-outlined text-[16px]"
+                                >upload_file</span
+                            >
+                            IMPORT CSV
+                        </button>
+                        <button
+                            class="flex items-center gap-2 px-3 py-1.5 border border-[#1C1C1C] hover:bg-[#161616] text-[#5C5C5C] hover:text-[#E2E2E2] transition-colors font-['IBM_Plex_Sans'] text-[10px] uppercase font-bold tracking-widest"
+                        >
+                            <span class="material-symbols-outlined text-[16px]"
+                                >download</span
+                            >
+                            EXPORT CSV
+                        </button>
+                        <button
+                            class="flex items-center gap-2 px-4 py-1.5 bg-[#C0C0C0] text-[#080808] hover:bg-white transition-colors font-['IBM_Plex_Sans'] text-[10px] uppercase font-bold tracking-widest"
+                        >
+                            <span class="material-symbols-outlined text-[16px]"
+                                >person_add</span
+                            >
+                            ENROLL NEW SUBJECT
+                        </button>
+                    </div>
+                </div>
+                <!-- Scrollable Grid -->
+                <div class="flex-1 overflow-y-auto p-6">
+                    <div
+                        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4"
+                    >
+                        <!-- Subject Card 1: Critical -->
+                        <div
+                            class="brutalist-card border-l-4 border-l-[#8B1A1A] flex flex-col"
+                        >
+                            <div
+                                class="relative aspect-square bg-[#080808] overflow-hidden group"
+                            >
+                                <img
+                                    class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity grayscale contrast-125"
+                                    data-alt="dramatic frontal mugshot of a middle-aged man with sharp features and cold expression, clinical studio lighting, dark grey background"
+                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2tEAB_haOipFk_yieQT6-fS4JNrUTupUdaIhPLlf36rNPGyd54wMoI-ItII20f5DUKqAhb7q-juhhcWy3hIaFAAj9sgj8ECwqyluXZDlaRkbni2pDm4Koz_1E3xh4YLv4hEmVI08BLpVopdhnbnN48TKekKm0CLO9151-hfHEZLYsZGVbG5_I3t9m92Awp9z1g81FfEojCgdvUsx7MydbAaA2LQdwnWJBCyI8-6JBHL7keqYPPlu7bpeTHu88f9A6E9TF23kbRVPS"
+                                />
+                                <div
+                                    class="absolute top-2 left-2 bg-[#8B1A1A]/80 text-white font-['IBM_Plex_Mono'] text-[9px] px-1.5 py-0.5 font-bold uppercase"
+                                >
+                                    Critical
+                                </div>
+                                <div
+                                    class="absolute bottom-0 w-full bg-[#0F0F0F]/90 p-2 border-t border-[#1C1C1C]"
+                                >
+                                    <div class="flex justify-between items-end">
+                                        <span
+                                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#5C5C5C]"
+                                            >UID_8842-XJ</span
+                                        >
+                                        <span
+                                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#C0C0C0]"
+                                            >CONF: 99.4%</span
+                                        >
+                                    </div>
+                                    <div class="confidence-gauge mt-1">
+                                        <div
+                                            class="confidence-fill w-[99.4%]"
+                                        ></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-4 flex flex-col gap-3">
+                                <div>
+                                    <h4
+                                        class="font-['IBM_Plex_Sans'] text-sm font-bold text-[#E2E2E2] uppercase tracking-wide leading-tight"
+                                    >
+                                        Victor Volkov
+                                    </h4>
+                                    <p
+                                        class="font-['IBM_Plex_Mono'] text-[10px] text-[#5C5C5C] uppercase mt-0.5"
+                                    >
+                                        AKA: The Butcher, V-Ray
+                                    </p>
+                                </div>
+                                <div class="grid grid-cols-2 gap-y-2">
+                                    <div>
+                                        <p
+                                            class="font-['IBM_Plex_Mono'] text-[8px] text-[#5C5C5C] uppercase"
+                                        >
+                                            Height
+                                        </p>
+                                        <p
+                                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#C0C0C0]"
+                                        >
+                                            188 CM
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p
+                                            class="font-['IBM_Plex_Mono'] text-[8px] text-[#5C5C5C] uppercase"
+                                        >
+                                            Weight
+                                        </p>
+                                        <p
+                                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#C0C0C0]"
+                                        >
+                                            92 KG
+                                        </p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p
+                                        class="font-['IBM_Plex_Mono'] text-[8px] text-[#5C5C5C] uppercase mb-1"
+                                    >
+                                        Crime Categories
+                                    </p>
+                                    <div class="flex flex-wrap gap-1">
+                                        <span
+                                            class="text-[9px] px-1.5 py-0.5 bg-[#161616] text-[#E2E2E2] border border-[#1C1C1C] font-['IBM_Plex_Mono']"
+                                            >HOMICIDE</span
+                                        >
+                                        <span
+                                            class="text-[9px] px-1.5 py-0.5 bg-[#161616] text-[#E2E2E2] border border-[#1C1C1C] font-['IBM_Plex_Mono']"
+                                            >EXTORTION</span
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Subject Card 2: High -->
+                        <div
+                            class="brutalist-card border-l-4 border-l-[#A57C00] flex flex-col"
+                        >
+                            <div
+                                class="relative aspect-square bg-[#080808] overflow-hidden group"
+                            >
+                                <img
+                                    class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity grayscale contrast-125"
+                                    data-alt="stern female frontal portrait with neutral expression, clinical lighting for facial recognition, dark moody background, high contrast"
+                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjc8fD6HxxCzw4RoO6UDQB3SUVYY4YKjWCUYJb-O3XUcEUgkEMbBiQEZmQa8ceGV6Xyj3j1LJ5EN2MqBlbbJYx70XiuTA8EZCrmDKIR3UOK9Sv1XpzHqE7L3qVbHN10L2y2-o7eNiSuBJvJYCWGTIic-oNLfClsJP5t4ZyR1W9GDpymPzxYFECMFatjtMvBJ6I_BWLV9hzcvYnAJk2DwFtP6FEFB3yssZ507RMJsRriW2MJd3IlIeodFaNtk0EQo5WodsibRWfOYOF"
+                                />
+                                <div
+                                    class="absolute top-2 left-2 bg-[#A57C00]/80 text-white font-['IBM_Plex_Mono'] text-[9px] px-1.5 py-0.5 font-bold uppercase"
+                                >
+                                    High
+                                </div>
+                                <div
+                                    class="absolute bottom-0 w-full bg-[#0F0F0F]/90 p-2 border-t border-[#1C1C1C]"
+                                >
+                                    <div class="flex justify-between items-end">
+                                        <span
+                                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#5C5C5C]"
+                                            >UID_2109-LP</span
+                                        >
+                                        <span
+                                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#C0C0C0]"
+                                            >CONF: 88.2%</span
+                                        >
+                                    </div>
+                                    <div class="confidence-gauge mt-1">
+                                        <div
+                                            class="confidence-fill w-[88.2%]"
+                                        ></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-4 flex flex-col gap-3">
+                                <div>
+                                    <h4
+                                        class="font-['IBM_Plex_Sans'] text-sm font-bold text-[#E2E2E2] uppercase tracking-wide leading-tight"
+                                    >
+                                        Elena Moretti
+                                    </h4>
+                                    <p
+                                        class="font-['IBM_Plex_Mono'] text-[10px] text-[#5C5C5C] uppercase mt-0.5"
+                                    >
+                                        AKA: Nightingale
+                                    </p>
+                                </div>
+                                <div class="grid grid-cols-2 gap-y-2">
+                                    <div>
+                                        <p
+                                            class="font-['IBM_Plex_Mono'] text-[8px] text-[#5C5C5C] uppercase"
+                                        >
+                                            Height
+                                        </p>
+                                        <p
+                                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#C0C0C0]"
+                                        >
+                                            165 CM
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p
+                                            class="font-['IBM_Plex_Mono'] text-[8px] text-[#5C5C5C] uppercase"
+                                        >
+                                            Weight
+                                        </p>
+                                        <p
+                                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#C0C0C0]"
+                                        >
+                                            54 KG
+                                        </p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p
+                                        class="font-['IBM_Plex_Mono'] text-[8px] text-[#5C5C5C] uppercase mb-1"
+                                    >
+                                        Crime Categories
+                                    </p>
+                                    <div class="flex flex-wrap gap-1">
+                                        <span
+                                            class="text-[9px] px-1.5 py-0.5 bg-[#161616] text-[#E2E2E2] border border-[#1C1C1C] font-['IBM_Plex_Mono']"
+                                            >ESPIONAGE</span
+                                        >
+                                        <span
+                                            class="text-[9px] px-1.5 py-0.5 bg-[#161616] text-[#E2E2E2] border border-[#1C1C1C] font-['IBM_Plex_Mono']"
+                                            >FRAUD</span
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Subject Card 3: Medium -->
+                        <div
+                            class="brutalist-card border-l-4 border-l-[#1A3A28] flex flex-col"
+                        >
+                            <div
+                                class="relative aspect-square bg-[#080808] overflow-hidden group"
+                            >
+                                <img
+                                    class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity grayscale contrast-125"
+                                    data-alt="front profile portrait of a young man with a slight scar, sharp features, dramatic rim lighting on dark background"
+                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhZds2ZRStVy325o9IT1Mt2RhXYxMsBaWb1Rei9iz2Ae9ypUfjCxFNod4rVNTDHTwh8fFpEPD7zdVXj2xy8NKMVPoD2umhL7HkJ93F6s-9ddqdSJUf48eU2u2XUZj430iD_YvyhP6GhgBgVhVIjWl1JdN17EiCJlgINjU9UaL1fxVm1B1mWqwgXp3v4bRZX_KYQdYSKTrgxsTZZiQSyktwC0OMxs6_mTJ3ngH2VUgeBaz0TcP0YFEkA2_F0R5FXwKC7Vdk9CE45XMx"
+                                />
+                                <div
+                                    class="absolute top-2 left-2 bg-[#1A3A28]/80 text-white font-['IBM_Plex_Mono'] text-[9px] px-1.5 py-0.5 font-bold uppercase"
+                                >
+                                    Medium
+                                </div>
+                                <div
+                                    class="absolute bottom-0 w-full bg-[#0F0F0F]/90 p-2 border-t border-[#1C1C1C]"
+                                >
+                                    <div class="flex justify-between items-end">
+                                        <span
+                                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#5C5C5C]"
+                                            >UID_4451-KZ</span
+                                        >
+                                        <span
+                                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#C0C0C0]"
+                                            >CONF: 91.0%</span
+                                        >
+                                    </div>
+                                    <div class="confidence-gauge mt-1">
+                                        <div
+                                            class="confidence-fill w-[91%]"
+                                        ></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-4 flex flex-col gap-3">
+                                <div>
+                                    <h4
+                                        class="font-['IBM_Plex_Sans'] text-sm font-bold text-[#E2E2E2] uppercase tracking-wide leading-tight"
+                                    >
+                                        Chen Wei
+                                    </h4>
+                                    <p
+                                        class="font-['IBM_Plex_Mono'] text-[10px] text-[#5C5C5C] uppercase mt-0.5"
+                                    >
+                                        AKA: Sparks
+                                    </p>
+                                </div>
+                                <div class="grid grid-cols-2 gap-y-2">
+                                    <div>
+                                        <p
+                                            class="font-['IBM_Plex_Mono'] text-[8px] text-[#5C5C5C] uppercase"
+                                        >
+                                            Height
+                                        </p>
+                                        <p
+                                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#C0C0C0]"
+                                        >
+                                            178 CM
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p
+                                            class="font-['IBM_Plex_Mono'] text-[8px] text-[#5C5C5C] uppercase"
+                                        >
+                                            Weight
+                                        </p>
+                                        <p
+                                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#C0C0C0]"
+                                        >
+                                            70 KG
+                                        </p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p
+                                        class="font-['IBM_Plex_Mono'] text-[8px] text-[#5C5C5C] uppercase mb-1"
+                                    >
+                                        Crime Categories
+                                    </p>
+                                    <div class="flex flex-wrap gap-1">
+                                        <span
+                                            class="text-[9px] px-1.5 py-0.5 bg-[#161616] text-[#E2E2E2] border border-[#1C1C1C] font-['IBM_Plex_Mono']"
+                                            >CYBER_CRIME</span
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Subject Card 4: Low -->
+                        <div
+                            class="brutalist-card border-l-4 border-l-[#2E2E2E] flex flex-col"
+                        >
+                            <div
+                                class="relative aspect-square bg-[#080808] overflow-hidden group"
+                            >
+                                <img
+                                    class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity grayscale contrast-125"
+                                    data-alt="rugged older man with grey beard, frontal view for facial registry, harsh cinematic lighting, monochrome aesthetic"
+                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuCKD_AFLjKN5u73MjlJ6lFo0n8SwtrdxCAl9l5p0mPvBNyxap5a7gRLzUaUGjVLOWxhCmh21j2ky14DgVLUrHkGce8pFYXYOarHCDq1QykKO3lm9F_aR3M3JAM0zryVCe6YkpyejQh9y-I897BE3CKQhWWCnLH8f61lJC9_Ku-Z82-4nOtzL_5bN2pyXy1WplGyYl4PqmLY9SR0xGIjb0SA4gi5wPVPnSKmJgbL0vteJYZV8SZIHVS_a0nN3CljVvVYrePr3Z_pbGFX"
+                                />
+                                <div
+                                    class="absolute top-2 left-2 bg-[#2E2E2E]/80 text-white font-['IBM_Plex_Mono'] text-[9px] px-1.5 py-0.5 font-bold uppercase"
+                                >
+                                    Low
+                                </div>
+                                <div
+                                    class="absolute bottom-0 w-full bg-[#0F0F0F]/90 p-2 border-t border-[#1C1C1C]"
+                                >
+                                    <div class="flex justify-between items-end">
+                                        <span
+                                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#5C5C5C]"
+                                            >UID_0029-MM</span
+                                        >
+                                        <span
+                                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#C0C0C0]"
+                                            >CONF: 72.4%</span
+                                        >
+                                    </div>
+                                    <div class="confidence-gauge mt-1">
+                                        <div
+                                            class="confidence-fill w-[72.4%] bg-[#5C5C5C]"
+                                        ></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-4 flex flex-col gap-3">
+                                <div>
+                                    <h4
+                                        class="font-['IBM_Plex_Sans'] text-sm font-bold text-[#E2E2E2] uppercase tracking-wide leading-tight"
+                                    >
+                                        Arthur Vance
+                                    </h4>
+                                    <p
+                                        class="font-['IBM_Plex_Mono'] text-[10px] text-[#5C5C5C] uppercase mt-0.5"
+                                    >
+                                        AKA: Grey Fox
+                                    </p>
+                                </div>
+                                <div class="grid grid-cols-2 gap-y-2">
+                                    <div>
+                                        <p
+                                            class="font-['IBM_Plex_Mono'] text-[8px] text-[#5C5C5C] uppercase"
+                                        >
+                                            Height
+                                        </p>
+                                        <p
+                                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#C0C0C0]"
+                                        >
+                                            182 CM
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p
+                                            class="font-['IBM_Plex_Mono'] text-[8px] text-[#5C5C5C] uppercase"
+                                        >
+                                            Weight
+                                        </p>
+                                        <p
+                                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#C0C0C0]"
+                                        >
+                                            85 KG
+                                        </p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p
+                                        class="font-['IBM_Plex_Mono'] text-[8px] text-[#5C5C5C] uppercase mb-1"
+                                    >
+                                        Crime Categories
+                                    </p>
+                                    <div class="flex flex-wrap gap-1">
+                                        <span
+                                            class="text-[9px] px-1.5 py-0.5 bg-[#161616] text-[#E2E2E2] border border-[#1C1C1C] font-['IBM_Plex_Mono']"
+                                            >SURVEILLANCE</span
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Subject Card 5: Critical -->
+                        <div
+                            class="brutalist-card border-l-4 border-l-[#8B1A1A] flex flex-col"
+                        >
+                            <div
+                                class="relative aspect-square bg-[#080808] overflow-hidden group"
+                            >
+                                <img
+                                    class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity grayscale contrast-125"
+                                    data-alt="unemotional female frontal portrait, clinical lighting for identity verification, dark industrial background, sharp focus"
+                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAn04dcu5G_ynF2-2GyDh6zkKhnQ6DZNv6_EdgcHjgBJ9QxvnZrkuX8FEv8t7L77P700KL8M-5Dr6DKvyz21ypiH3_lQh7tHUNZbHZiZNzCqwNRzNQnUWalZDP80gzfdSB9KrI6Lc278zHiRy7i7MW0iIFmUzQzKqEnkJgob5DVqJvLybt1AIZhpIlWIRdEIO4bZzS4etrj7ksI2-S0X8aiXzmmR01aaBURC7-0nUl9B-1d3KjWnGzrrfywmrMLQLKBfZDX24fuJX-q"
+                                />
+                                <div
+                                    class="absolute top-2 left-2 bg-[#8B1A1A]/80 text-white font-['IBM_Plex_Mono'] text-[9px] px-1.5 py-0.5 font-bold uppercase"
+                                >
+                                    Critical
+                                </div>
+                                <div
+                                    class="absolute bottom-0 w-full bg-[#0F0F0F]/90 p-2 border-t border-[#1C1C1C]"
+                                >
+                                    <div class="flex justify-between items-end">
+                                        <span
+                                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#5C5C5C]"
+                                            >UID_3391-DF</span
+                                        >
+                                        <span
+                                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#C0C0C0]"
+                                            >CONF: 98.1%</span
+                                        >
+                                    </div>
+                                    <div class="confidence-gauge mt-1">
+                                        <div
+                                            class="confidence-fill w-[98.1%]"
+                                        ></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-4 flex flex-col gap-3">
+                                <div>
+                                    <h4
+                                        class="font-['IBM_Plex_Sans'] text-sm font-bold text-[#E2E2E2] uppercase tracking-wide leading-tight"
+                                    >
+                                        Zara Kova
+                                    </h4>
+                                    <p
+                                        class="font-['IBM_Plex_Mono'] text-[10px] text-[#5C5C5C] uppercase mt-0.5"
+                                    >
+                                        AKA: The Ghost
+                                    </p>
+                                </div>
+                                <div class="grid grid-cols-2 gap-y-2">
+                                    <div>
+                                        <p
+                                            class="font-['IBM_Plex_Mono'] text-[8px] text-[#5C5C5C] uppercase"
+                                        >
+                                            Height
+                                        </p>
+                                        <p
+                                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#C0C0C0]"
+                                        >
+                                            170 CM
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p
+                                            class="font-['IBM_Plex_Mono'] text-[8px] text-[#5C5C5C] uppercase"
+                                        >
+                                            Weight
+                                        </p>
+                                        <p
+                                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#C0C0C0]"
+                                        >
+                                            62 KG
+                                        </p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p
+                                        class="font-['IBM_Plex_Mono'] text-[8px] text-[#5C5C5C] uppercase mb-1"
+                                    >
+                                        Crime Categories
+                                    </p>
+                                    <div class="flex flex-wrap gap-1">
+                                        <span
+                                            class="text-[9px] px-1.5 py-0.5 bg-[#161616] text-[#E2E2E2] border border-[#1C1C1C] font-['IBM_Plex_Mono']"
+                                            >NARCOTICS</span
+                                        >
+                                        <span
+                                            class="text-[9px] px-1.5 py-0.5 bg-[#161616] text-[#E2E2E2] border border-[#1C1C1C] font-['IBM_Plex_Mono']"
+                                            >ASSAULT</span
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Placeholder Card -->
+                        <div
+                            class="brutalist-card border-dashed border-[#1C1C1C] flex items-center justify-center p-8 text-center group cursor-pointer hover:bg-[#0F0F0F] transition-colors"
+                        >
+                            <div class="flex flex-col items-center gap-4">
+                                <div
+                                    class="w-16 h-16 rounded-full border border-[#1C1C1C] flex items-center justify-center group-hover:border-[#C0C0C0] transition-colors"
+                                >
+                                    <span
+                                        class="material-symbols-outlined text-[32px] text-[#5C5C5C] group-hover:text-[#C0C0C0]"
+                                        >add</span
+                                    >
+                                </div>
+                                <div>
+                                    <p
+                                        class="font-['IBM_Plex_Sans'] text-xs font-bold uppercase tracking-widest text-[#5C5C5C] group-hover:text-[#E2E2E2]"
+                                    >
+                                        Enroll New Subject
+                                    </p>
+                                    <p
+                                        class="font-['IBM_Plex_Mono'] text-[9px] text-[#2A2A2A] mt-1"
+                                    >
+                                        DRAG &amp; DROP IMAGE OR CLICK
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Detail View / Selection Bar -->
+                <div
+                    class="h-20 border-t border-[#1C1C1C] bg-[#0F0F0F] flex items-center px-6 gap-6"
+                >
+                    <div
+                        class="flex items-center gap-4 border-r border-[#1C1C1C] pr-6"
+                    >
+                        <span
+                            class="font-['IBM_Plex_Mono'] text-[10px] text-[#5C5C5C] uppercase"
+                            >Selected:</span
+                        >
+                        <span
+                            class="font-['IBM_Plex_Mono'] text-xs text-[#C0C0C0] font-bold"
+                            >UID_8842-XJ</span
+                        >
+                    </div>
+                    <div
+                        class="flex-1 flex gap-8 items-center overflow-x-auto no-scrollbar"
+                    >
+                        <div class="flex flex-col">
+                            <span
+                                class="font-['IBM_Plex_Mono'] text-[8px] text-[#5C5C5C] uppercase"
+                                >Subject</span
+                            >
+                            <span
+                                class="font-['IBM_Plex_Mono'] text-[11px] text-[#E2E2E2]"
+                                >VICTOR VOLKOV</span
+                            >
+                        </div>
+                        <div class="flex flex-col">
+                            <span
+                                class="font-['IBM_Plex_Mono'] text-[8px] text-[#5C5C5C] uppercase"
+                                >Watchlist</span
+                            >
+                            <span
+                                class="font-['IBM_Plex_Mono'] text-[11px] text-[#8B1A1A] font-bold"
+                                >CRITICAL_LEVEL_V</span
+                            >
+                        </div>
+                        <div class="flex flex-col">
+                            <span
+                                class="font-['IBM_Plex_Mono'] text-[8px] text-[#5C5C5C] uppercase"
+                                >Aliases</span
+                            >
+                            <span
+                                class="font-['IBM_Plex_Mono'] text-[11px] text-[#C0C0C0]"
+                                >BUTCHER, V-RAY, THE AXE</span
+                            >
+                        </div>
+                        <div class="flex flex-col">
+                            <span
+                                class="font-['IBM_Plex_Mono'] text-[8px] text-[#5C5C5C] uppercase"
+                                >Last Seen</span
+                            >
+                            <span
+                                class="font-['IBM_Plex_Mono'] text-[11px] text-[#C0C0C0]"
+                                >ZONE_B4 / 14:22:11</span
+                            >
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button
+                            class="px-3 py-1.5 border border-[#1C1C1C] text-[#C0C0C0] font-['IBM_Plex_Sans'] text-[10px] font-bold uppercase tracking-widest hover:bg-[#161616]"
+                        >
+                            View Dossier
+                        </button>
+                        <button
+                            class="px-3 py-1.5 border border-[#1C1C1C] text-[#8B1A1A] font-['IBM_Plex_Sans'] text-[10px] font-bold uppercase tracking-widest hover:bg-[#8B1A1A]/10"
+                        >
+                            Issue Alert
+                        </button>
+                    </div>
+                </div>
+            </main>
+        </div>
+        <!-- Status Bar / Footer -->
+        <footer
+            class="h-6 bg-[#080808] border-t border-[#1C1C1C] px-4 flex items-center justify-between"
+        >
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-1">
+                    <div class="w-1.5 h-1.5 bg-[#1A3A28]"></div>
+                    <span
+                        class="font-['IBM_Plex_Mono'] text-[8px] text-[#5C5C5C] uppercase"
+                        >VLM ENGINE: NOMINAL</span
+                    >
+                </div>
+                <div class="flex items-center gap-1">
+                    <div class="w-1.5 h-1.5 bg-[#1A3A28]"></div>
+                    <span
+                        class="font-['IBM_Plex_Mono'] text-[8px] text-[#5C5C5C] uppercase"
+                        >DB CONNECTED: SECURE</span
+                    >
+                </div>
+            </div>
+            <div class="font-['IBM_Plex_Mono'] text-[8px] text-[#2A2A2A]">
+                CAMX2_OS_V4.2 // SYSTEM_TIME: 2024-05-22 14:48:02 // LATENCY:
+                12ms
+            </div>
+        </footer>
+    </body>
+</html>

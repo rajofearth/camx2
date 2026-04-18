@@ -45,6 +45,18 @@ export function normalizeLmStudioWsUrl(input: string): string {
   return urlString;
 }
 
+/** WebSocket base URL → `http(s)://host:port` origin for LM Studio REST (`/api/v1/...`). */
+export function wsUrlToHttpOrigin(wsUrl: string): string {
+  const trimmed = wsUrl.trim();
+  let httpLike = trimmed;
+  if (httpLike.startsWith("ws://")) {
+    httpLike = `http://${httpLike.slice("ws://".length)}`;
+  } else if (httpLike.startsWith("wss://")) {
+    httpLike = `https://${httpLike.slice("wss://".length)}`;
+  }
+  return new URL(httpLike).origin;
+}
+
 export function isLmStudioConnectionError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
   const lower = message.toLowerCase();
