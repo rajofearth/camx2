@@ -39,12 +39,18 @@ interface CameraSettingsRow extends CameraSettingsRecord {
   sourceDisplay: string;
 }
 
+interface CameraStorageState {
+  records: CameraSettingsRecord[];
+  removedDeviceKeys: string[];
+}
+
 interface UseCameraSettingsResult {
   rows: CameraSettingsRow[];
   isHydrated: boolean;
   createNetworkCamera: (draft: CameraDraft) => CameraSettingsRecord;
   updateCamera: (id: string, draft: CameraDraft) => CameraSettingsRecord | null;
   toggleEnabled: (id: string) => CameraSettingsRecord | null;
+  deleteCamera: (id: string) => CameraSettingsRecord | null;
 }
 
 function buildStorageRecord(value: unknown): CameraSettingsRecord | null {
@@ -87,28 +93,69 @@ function buildStorageRecord(value: unknown): CameraSettingsRecord | null {
   };
 }
 
-function readCameraSettings(): CameraSettingsRecord[] {
-  if (typeof window === "undefined") return [];
+function buildStorageState(value: unknown): CameraStorageState {
+  if (Array.isArray(value)) {
+    return {
+      records: value
+        .map((entry) => buildStorageRecord(entry))
+        .filter((entry): entry is CameraSettingsRecord => entry !== null),
+      removedDeviceKeys: [],
+    };
+  }
+
+  if (typeof value !== "object" || value === null) {
+    return {
+      records: [],
+      removedDeviceKeys: [],
+    };
+  }
+
+  const entry = value as Record<string, unknown>;
+  const records = Array.isArray(entry.records) ? entry.records : [];
+  const removedDeviceKeys = Array.isArray(entry.removedDeviceKeys)
+    ? entry.removedDeviceKeys.filter(
+        (removedKey): removedKey is string => typeof removedKey === "string",
+      )
+    : [];
+
+  return {
+    records: records
+      .map((record) => buildStorageRecord(record))
+      .filter((record): record is CameraSettingsRecord => record !== null),
+    removedDeviceKeys,
+  };
+}
+
+function readCameraStorage(): CameraStorageState {
+  if (typeof window === "undefined") {
+    return {
+      records: [],
+      removedDeviceKeys: [],
+    };
+  }
 
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
+    if (!raw) {
+      return {
+        records: [],
+        removedDeviceKeys: [],
+      };
+    }
 
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-
-    return parsed
-      .map((entry) => buildStorageRecord(entry))
-      .filter((entry): entry is CameraSettingsRecord => entry !== null);
+    return buildStorageState(JSON.parse(raw));
   } catch {
-    return [];
+    return {
+      records: [],
+      removedDeviceKeys: [],
+    };
   }
 }
 
-function writeCameraSettings(records: CameraSettingsRecord[]) {
+function writeCameraStorage(state: CameraStorageState) {
   if (typeof window === "undefined") return;
 
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   window.dispatchEvent(new CustomEvent(STORE_EVENT));
 }
 
@@ -157,24 +204,36 @@ function buildDefaultDeviceRecord(
 }
 
 function syncDeviceRecords(
-  current: CameraSettingsRecord[],
+  current: CameraStorageState,
   devices: readonly CameraDevice[],
-): CameraSettingsRecord[] {
+): CameraStorageState {
   let changed = false;
   const knownDeviceIds = new Set(
-    current
+    current.records
       .filter((record) => record.sourceType === "device")
       .map((record) => record.sourceKey),
   );
-  const next = [...current];
+  const removedDeviceKeys = new Set(current.removedDeviceKeys);
+  const nextRecords = [...current.records];
 
   devices.forEach((device, index) => {
-    if (knownDeviceIds.has(device.deviceId)) return;
+    if (
+      knownDeviceIds.has(device.deviceId) ||
+      removedDeviceKeys.has(device.deviceId)
+    ) {
+      return;
+    }
+
     changed = true;
-    next.push(buildDefaultDeviceRecord(device, index));
+    nextRecords.push(buildDefaultDeviceRecord(device, index));
   });
 
-  return changed ? next : current;
+  if (!changed) return current;
+
+  return {
+    records: nextRecords,
+    removedDeviceKeys: current.removedDeviceKeys,
+  };
 }
 
 function buildCameraRows(
@@ -196,7 +255,9 @@ function buildCameraRows(
           ? isDetected
             ? "active"
             : "offline"
-          : "offline";
+          : record.sourceUrl.trim().length > 0
+            ? "active"
+            : "offline";
 
       return {
         ...record,
@@ -225,24 +286,27 @@ function subscribe(callback: () => void) {
   };
 }
 
-function updateStoredRecords(
-  update: (current: CameraSettingsRecord[]) => CameraSettingsRecord[],
+function updateStoredState(
+  update: (current: CameraStorageState) => CameraStorageState,
 ) {
-  const current = readCameraSettings();
+  const current = readCameraStorage();
   const next = update(current);
-  writeCameraSettings(next);
+  writeCameraStorage(next);
   return next;
 }
 
 export function useCameraSettings(
   devices: readonly CameraDevice[],
 ): UseCameraSettingsResult {
-  const [records, setRecords] = React.useState<CameraSettingsRecord[]>([]);
+  const [storageState, setStorageState] = React.useState<CameraStorageState>({
+    records: [],
+    removedDeviceKeys: [],
+  });
   const [isHydrated, setIsHydrated] = React.useState(false);
 
   React.useEffect(() => {
     const syncFromStorage = () => {
-      setRecords(readCameraSettings());
+      setStorageState(readCameraStorage());
       setIsHydrated(true);
     };
 
@@ -253,15 +317,15 @@ export function useCameraSettings(
   React.useEffect(() => {
     if (!isHydrated) return;
 
-    const next = syncDeviceRecords(records, devices);
-    if (next === records) return;
+    const next = syncDeviceRecords(storageState, devices);
+    if (next === storageState) return;
 
-    writeCameraSettings(next);
-  }, [devices, isHydrated, records]);
+    writeCameraStorage(next);
+  }, [devices, isHydrated, storageState]);
 
   const rows = React.useMemo(
-    () => buildCameraRows(records, devices),
-    [devices, records],
+    () => buildCameraRows(storageState.records, devices),
+    [devices, storageState.records],
   );
 
   const createNetworkCamera = React.useCallback((draft: CameraDraft) => {
@@ -280,15 +344,18 @@ export function useCameraSettings(
       updatedAt: timestamp,
     };
 
-    updateStoredRecords((current) => [...current, record]);
+    updateStoredState((current) => ({
+      records: [...current.records, record],
+      removedDeviceKeys: current.removedDeviceKeys,
+    }));
     return record;
   }, []);
 
   const updateCamera = React.useCallback((id: string, draft: CameraDraft) => {
     let updated: CameraSettingsRecord | null = null;
 
-    updateStoredRecords((current) =>
-      current.map((record) => {
+    updateStoredState((current) => ({
+      records: current.records.map((record) => {
         if (record.id !== id) return record;
 
         updated = {
@@ -304,7 +371,8 @@ export function useCameraSettings(
 
         return updated;
       }),
-    );
+      removedDeviceKeys: current.removedDeviceKeys,
+    }));
 
     return updated;
   }, []);
@@ -312,8 +380,8 @@ export function useCameraSettings(
   const toggleEnabled = React.useCallback((id: string) => {
     let updated: CameraSettingsRecord | null = null;
 
-    updateStoredRecords((current) =>
-      current.map((record) => {
+    updateStoredState((current) => ({
+      records: current.records.map((record) => {
         if (record.id !== id) return record;
 
         updated = {
@@ -324,9 +392,35 @@ export function useCameraSettings(
 
         return updated;
       }),
-    );
+      removedDeviceKeys: current.removedDeviceKeys,
+    }));
 
     return updated;
+  }, []);
+
+  const deleteCamera = React.useCallback((id: string) => {
+    let deleted: CameraSettingsRecord | null = null;
+
+    updateStoredState((current) => {
+      const record = current.records.find((item) => item.id === id) ?? null;
+      deleted = record;
+
+      if (!record) return current;
+
+      const nextRemovedDeviceKeys =
+        record.sourceType === "device"
+          ? Array.from(
+              new Set([...current.removedDeviceKeys, record.sourceKey]),
+            )
+          : current.removedDeviceKeys;
+
+      return {
+        records: current.records.filter((item) => item.id !== id),
+        removedDeviceKeys: nextRemovedDeviceKeys,
+      };
+    });
+
+    return deleted;
   }, []);
 
   return {
@@ -335,6 +429,7 @@ export function useCameraSettings(
     createNetworkCamera,
     updateCamera,
     toggleEnabled,
+    deleteCamera,
   };
 }
 

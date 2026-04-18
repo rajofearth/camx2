@@ -25,9 +25,17 @@ export function OverlayCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const video = webcamRef.current?.video;
     const canvas = canvasRef.current;
-    if (!video || !canvas) return;
+    if (!canvas) return;
+
+    if (frameDimensions) {
+      canvas.width = frameDimensions.width;
+      canvas.height = frameDimensions.height;
+      return;
+    }
+
+    const video = webcamRef.current?.video;
+    if (!video) return;
 
     const syncSize = () => {
       syncCanvasSize(canvas, video);
@@ -41,11 +49,16 @@ export function OverlayCanvas({
       video.removeEventListener("loadedmetadata", syncSize);
       video.removeEventListener("resize", syncSize);
     };
-  }, [webcamRef]);
+  }, [frameDimensions, webcamRef]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    if (frameDimensions) {
+      canvas.width = frameDimensions.width;
+      canvas.height = frameDimensions.height;
+    }
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;

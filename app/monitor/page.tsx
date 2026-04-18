@@ -3,37 +3,34 @@
 /**
  * Live Monitor Page
  *
- * Displays the primary camera feed with detection overlays, a 2×2 mini camera
+ * Displays the primary camera feed with detection overlays, a clickable camera
  * grid, a real-time intel stream log, and an active-detections summary panel.
- *
- * ─── BACKEND INTEGRATION POINTS (wired by subagent) ────────────────────────
- *  [1] WEBCAM_SETUP       – sync webcamRef → cameraSourceRef (effect below)
- *  [2] DETECTION_OVERLAY  – render OverlayCanvas over the primary feed
- *  [3] INTEL_LOG          – push detection & watch events into logEntries
- *  [4] THREAT_MODAL       – open modal when watchResult.isHarm === true
- *  [5] DETECT_COUNTS      – aggregate detections[] by class label
- *  [6] VLM_STATUS         – derive vlmStatus from watchResult
- * ────────────────────────────────────────────────────────────────────────────
+ * The large left feed is always the currently promoted camera; clicking any
+ * right-side tile promotes it and demotes the previous primary feed back into
+ * the grid. Detection and watch only run against the primary feed.
  */
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Webcam from "react-webcam";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useCameraDevices } from "@/app/hooks/useCameraDevices";
 import { useWebcamDetect } from "@/app/hooks/useWebcamDetect";
 import { useWebcamWatch } from "@/app/hooks/useWebcamWatch";
 import type { CameraSourceRef } from "@/app/lib/camera-source";
+import {
+  type CameraSettingsRow,
+  useCameraSettings,
+} from "@/app/lib/camera-settings-store";
+import { buildCameraPlaybackDescriptor } from "@/app/lib/camera-stream";
 import { cocoClassName } from "@/app/lib/coco";
 import { appendThreatLogEntry } from "@/app/lib/threat-log-store";
 import type { Detection } from "@/app/lib/types";
 import type { WatchResult } from "@/app/lib/watch-types";
 import { OverlayCanvas } from "@/components/OverlayCanvas";
-
+import { CameraStreamSurface } from "@/components/camera/camera-stream-surface";
 import { ThreatModal } from "@/components/threat";
 import { ConfidenceBar } from "@/components/ui/confidence-bar";
 import { IntelLog, IntelLogEntry, IntelTag } from "@/components/ui/intel-log";
 import { MonoLabel } from "@/components/ui/mono-label";
-import { StatusDot } from "@/components/ui/status-dot";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -65,17 +62,7 @@ type VlmStatus = "NOMINAL" | "ANALYZING" | "THREAT" | "OFFLINE";
 // Constants
 // ---------------------------------------------------------------------------
 
-const PRIMARY_CAM_ID = "CAM_01_MAIN_CORRIDOR";
-const VIDEO_W = 640;
-const VIDEO_H = 480;
-
-/** Mini cameras shown in the 2×2 grid — no real source, purely display. */
-const MINI_CAMERAS: { id: string; label: string }[] = [
-  { id: "cam-ng", label: "NORTH_GATE" },
-  { id: "cam-la", label: "LOBBY_A" },
-  { id: "cam-sr", label: "SERVER_RM" },
-  { id: "cam-ep", label: "EXT_PERIMETER" },
-];
+const MINI_CAMERA_LIMIT = 4;
 
 /** Seed entries shown before real events arrive. */
 const SEED_LOG: LogEntry[] = [
@@ -91,7 +78,7 @@ const SEED_LOG: LogEntry[] = [
     source: "SYS",
     message: (
       <>
-        · System initialised. <IntelTag>{PRIMARY_CAM_ID}</IntelTag> feed active.
+        · System initialised. <IntelTag>CAMERAS</IntelTag> registry active.
       </>
     ),
   },
@@ -130,16 +117,6 @@ function aggregateDetections(dets: readonly Detection[]): Map<string, number> {
   return map;
 }
 
-/**
- * Map a detection class to a BoundingBox threat variant.
- * Extend this as needed for project-specific threat classes.
- */
-function _detectionVariant(
-  _classIdx: number,
-): "default" | "warning" | "critical" {
-  return "default"; // subagent can refine per-class mapping
-}
-
 /** Derive VLM status string from watch result. */
 function deriveVlmStatus(
   watchResult: WatchResult | null,
@@ -170,28 +147,14 @@ function isVerifiedThreat(
   return true;
 }
 
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
+function buildRelaySrc(camera: CameraSettingsRow | null): string | null {
+  if (!camera || camera.sourceType === "device") return null;
+  return buildCameraPlaybackDescriptor(camera.sourceUrl).src;
+}
 
-/** Mini camera cell in the 2×2 grid (no live source, shows placeholder). */
-function MiniCameraCell({ label }: { label: string }) {
-  return (
-    <div className="relative flex flex-col overflow-hidden rounded-sm border border-op-border bg-op-surface">
-      {/* Gradient label overlay */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-between bg-linear-to-b from-black/80 to-transparent p-1.5">
-        <span className="bg-black/50 px-1 font-mono text-[9px] text-op-silver">
-          {label}
-        </span>
-      </div>
-      {/* Placeholder feed area */}
-      <div className="flex flex-1 items-center justify-center bg-black">
-        <span className="material-symbols-outlined text-[20px] text-op-border">
-          videocam_off
-        </span>
-      </div>
-    </div>
-  );
+function isDirectVideoUrl(camera: CameraSettingsRow | null): boolean {
+  if (!camera || camera.sourceType === "device") return false;
+  return buildCameraPlaybackDescriptor(camera.sourceUrl).useVideoElement;
 }
 
 /** Detection count row inside the Active Detections panel. */
@@ -243,49 +206,57 @@ function DetectionRow({
 // ---------------------------------------------------------------------------
 
 export default function LiveMonitorPage() {
-  // ── Camera refs ──────────────────────────────────────────────────────────
-  const webcamRef = useRef<InstanceType<typeof Webcam> | null>(null);
-  /** [1] WEBCAM_SETUP: cameraSourceRef bridges Webcam instance → hooks */
   const cameraSourceRef = useRef<CameraSourceRef | null>(null);
 
-  // ── Camera active state ───────────────────────────────────────────────────
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isWatchActive] = useState(false);
 
-  // ── VLM watch toggle (disabled by default – resource-intensive) ──────────
-  const [isWatchActive, setIsWatchActive] = useState(false);
+  const { devices } = useCameraDevices();
+  const { rows } = useCameraSettings(devices);
+  const enabledCameras = useMemo(
+    () => rows.filter((row) => row.enabled),
+    [rows],
+  );
+  const [activeCameraKey, setActiveCameraKey] = useState<string | null>(null);
 
-  // ── Camera device selection ───────────────────────────────────────────────
-  const { devices, isLoading: isLoadingDevices } = useCameraDevices();
-  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
-
-  // Auto-select first available device
   useEffect(() => {
-    if (isLoadingDevices || devices.length === 0 || selectedDeviceId) return;
-    const first = devices[0];
-    if (first) setSelectedDeviceId(first.deviceId);
-  }, [devices, isLoadingDevices, selectedDeviceId]);
-
-  const handleDeviceChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      setSelectedDeviceId(e.target.value || null);
+    if (enabledCameras.length === 0) {
+      setActiveCameraKey(null);
       setIsCameraReady(false);
       setCameraError(null);
-    },
-    [],
-  );
+      return;
+    }
 
-  // ── Intel log ─────────────────────────────────────────────────────────────
+    const hasActiveCamera = enabledCameras.some(
+      (camera) => camera.id === activeCameraKey,
+    );
+
+    if (!hasActiveCamera) {
+      setActiveCameraKey(enabledCameras[0]?.id ?? null);
+    }
+  }, [activeCameraKey, enabledCameras]);
+
+  useEffect(() => {
+    setIsCameraReady(false);
+    setCameraError(null);
+    cameraSourceRef.current = null;
+  }, [activeCameraKey]);
+
+  const activeCamera =
+    enabledCameras.find((camera) => camera.id === activeCameraKey) ?? null;
+  const activeCameraId = activeCamera?.cameraId ?? "NO_CAMERA";
+  const activeRelaySrc = buildRelaySrc(activeCamera);
+  const activeIsDirectVideoUrl = isDirectVideoUrl(activeCamera);
+  const gridCameras = enabledCameras
+    .filter((camera) => camera.id !== activeCameraKey)
+    .slice(0, MINI_CAMERA_LIMIT);
+
   const [logEntries, setLogEntries] = useState<LogEntry[]>(SEED_LOG);
-
-  // ── Threat modal ──────────────────────────────────────────────────────────
   const [threatOpen, setThreatOpen] = useState(false);
   const [threatData, setThreatData] = useState<ThreatState | null>(null);
-
-  // ── System load (proxy: last detect latency as % of 1000ms budget) ───────
   const [systemLoad, setSystemLoad] = useState(0);
 
-  // ── Detection hook ────────────────────────────────────────────────────────
   const {
     detections,
     lastLatency: detectLatency,
@@ -294,7 +265,6 @@ export default function LiveMonitorPage() {
     frameDimensions,
   } = useWebcamDetect(cameraSourceRef, isCameraReady, { maxFps: 5 });
 
-  // ── Watch hook ────────────────────────────────────────────────────────────
   const {
     latest: watchResult,
     lastMeta,
@@ -302,12 +272,6 @@ export default function LiveMonitorPage() {
     isProcessing: isWatchProcessing,
     error: _watchError,
   } = useWebcamWatch(cameraSourceRef, isCameraReady && isWatchActive);
-
-  // ── [1] WEBCAM_SETUP: sync webcamRef → cameraSourceRef ───────────────────
-  // biome-ignore lint/correctness/useExhaustiveDependencies: camera source ref must stay in sync with camera ready state and device selection
-  useEffect(() => {
-    cameraSourceRef.current = webcamRef.current;
-  }, [isCameraReady, selectedDeviceId]);
 
   // ── [5] DETECT_COUNTS: aggregate by class ────────────────────────────────
   const detectionsByClass = useMemo(
@@ -354,7 +318,7 @@ export default function LiveMonitorPage() {
       {
         id: uid(),
         timestamp: nowTimestamp(),
-        source: PRIMARY_CAM_ID.slice(0, 6),
+        source: activeCameraId.slice(0, 6),
         message: (
           <>
             · <IntelTag>{label}</IntelTag> — detected at {conf}% confidence.
@@ -363,7 +327,7 @@ export default function LiveMonitorPage() {
         ),
       },
     ]);
-  }, [detections]);
+  }, [activeCameraId, detections]);
 
   // ── [3] INTEL_LOG: push VLM watch events ─────────────────────────────────
   useEffect(() => {
@@ -388,7 +352,7 @@ export default function LiveMonitorPage() {
     if (lastLoggedThreatRequestIdRef.current === lastRequestId) return;
     if (!isVerifiedThreat(watchResult, lastMeta?.verification)) return;
 
-    const screenshot = webcamRef.current?.getScreenshot() ?? null;
+    const screenshot = cameraSourceRef.current?.getScreenshot() ?? null;
     const verification = lastMeta?.verification ?? null;
     const description = watchResult?.description ?? "Verified threat detected.";
     const confidence =
@@ -399,7 +363,7 @@ export default function LiveMonitorPage() {
     appendThreatLogEntry({
       requestId: lastRequestId,
       timestamp: new Date().toISOString(),
-      cameraId: PRIMARY_CAM_ID,
+      cameraId: activeCameraId,
       classification: description,
       confidence,
       previewText: description,
@@ -437,18 +401,18 @@ export default function LiveMonitorPage() {
         ),
       },
     ]);
-  }, [detections, lastMeta, lastRequestId, watchResult]);
+  }, [activeCameraId, detections, lastMeta, lastRequestId, watchResult]);
 
   // ── [4] THREAT_MODAL: trigger on harm ────────────────────────────────────
   useEffect(() => {
     if (watchResult?.isHarm !== true || !watchResult.description) return;
     if (threatOpen) return; // don't stack modals
 
-    const screenshot = webcamRef.current?.getScreenshot() ?? undefined;
+    const screenshot = cameraSourceRef.current?.getScreenshot() ?? undefined;
 
     setThreatData({
       threatId: `THT-${uid().toUpperCase()}`,
-      cameraId: PRIMARY_CAM_ID,
+      cameraId: activeCameraId,
       timestamp: `${new Date().toISOString().replace("T", " ").slice(0, 19)}Z`,
       classification: watchResult.description,
       confidence:
@@ -460,10 +424,10 @@ export default function LiveMonitorPage() {
       vlmAnalysis: [watchResult.description],
     });
     setThreatOpen(true);
-  }, [watchResult, threatOpen, detections]);
+  }, [activeCameraId, watchResult, threatOpen, detections]);
 
   // ── Camera event handlers ─────────────────────────────────────────────────
-  const handleUserMedia = useCallback(() => {
+  const handlePrimaryReady = () => {
     setCameraError(null);
     setIsCameraReady(true);
     setLogEntries((prev) => [
@@ -472,31 +436,20 @@ export default function LiveMonitorPage() {
         id: uid(),
         timestamp: nowTimestamp(),
         source: "SYS",
-        message: `· Camera ${PRIMARY_CAM_ID} online.`,
+        message: `· Camera ${activeCameraId} online.`,
       },
     ]);
-  }, []);
+  };
 
-  const handleCameraError = useCallback(() => {
-    setCameraError("Camera access denied or unavailable.");
+  const handlePrimaryError = (message: string) => {
+    setCameraError(message);
     setIsCameraReady(false);
-  }, []);
+  };
 
-  const _toggleWatch = useCallback(() => {
-    setIsWatchActive((v) => {
-      const next = !v;
-      setLogEntries((prev) => [
-        ...prev,
-        {
-          id: uid(),
-          timestamp: nowTimestamp(),
-          source: "SYS",
-          message: next ? "· VLM_WATCH activated." : "· VLM_WATCH deactivated.",
-        },
-      ]);
-      return next;
-    });
-  }, []);
+  const handlePromoteCamera = (cameraId: string) => {
+    if (cameraId === activeCameraKey) return;
+    setActiveCameraKey(cameraId);
+  };
 
   // ── VLM status chip colour ─────────────────────────────────────────────────
   const vlmChipColor: Record<VlmStatus, string> = {
@@ -516,145 +469,101 @@ export default function LiveMonitorPage() {
         {/* ── TOP ROW: Feeds ── */}
         <div className="flex min-h-0 flex-1 gap-2">
           {/* Primary feed (60%) */}
-          <div className="flex w-[60%] flex-col overflow-hidden rounded-sm border border-op-border bg-op-surface">
-            {/* Feed header */}
-            <div className="flex h-8 shrink-0 items-center justify-between border-b border-op-border bg-op-surface px-3">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[16px] text-op-text-sec">
-                  videocam
-                </span>
-                <MonoLabel variant="silver">{PRIMARY_CAM_ID}</MonoLabel>
-              </div>
-              {/* Camera device selector */}
-              {devices.length > 0 && (
-                <select
-                  value={selectedDeviceId ?? ""}
-                  onChange={handleDeviceChange}
-                  disabled={isLoadingDevices}
-                  className="mx-2 flex-1 max-w-50 truncate border border-op-border bg-op-base px-1.5 py-0.5 font-mono text-[10px] text-op-silver outline-none"
-                >
-                  {isLoadingDevices ? (
-                    <option>Loading…</option>
-                  ) : (
-                    <>
-                      <option value="">SELECT_CAMERA</option>
-                      {devices.map((d) => (
-                        <option key={d.deviceId} value={d.deviceId}>
-                          {d.label}
-                        </option>
-                      ))}
-                    </>
+          <div className="flex w-[60%] min-h-0">
+            <CameraStreamSurface
+              key={activeCamera?.id ?? "no-camera"}
+              camera={activeCamera}
+              error={cameraError}
+              isPrimary
+              isReady={isCameraReady}
+              onError={handlePrimaryError}
+              onReady={handlePrimaryReady}
+              relaySrc={activeRelaySrc}
+              sourceRef={cameraSourceRef}
+              overlays={
+                <>
+                  {isCameraReady && frameDimensions && (
+                    <OverlayCanvas
+                      webcamRef={cameraSourceRef}
+                      detections={detections}
+                      frameDimensions={frameDimensions}
+                      detectionModel="rfdetr"
+                    />
                   )}
-                </select>
-              )}
-              <div className="flex items-center gap-1.5">
-                {isCameraReady && (
-                  <>
-                    <StatusDot variant="silver" pulse size="xs" />
-                    <MonoLabel variant="silver">LIVE</MonoLabel>
-                  </>
-                )}
-                {cameraError && (
-                  <MonoLabel variant="critical">NO_SIGNAL</MonoLabel>
-                )}
-              </div>
-            </div>
 
-            {/* Video area */}
-            <div className="group relative flex-1 bg-black">
-              {/* [2] DETECTION_OVERLAY: Webcam + OverlayCanvas */}
-              <Webcam
-                ref={webcamRef}
-                width={VIDEO_W}
-                height={VIDEO_H}
-                screenshotFormat="image/jpeg"
-                videoConstraints={
-                  selectedDeviceId
-                    ? {
-                        width: VIDEO_W,
-                        height: VIDEO_H,
-                        deviceId: { exact: selectedDeviceId },
-                      }
-                    : { width: VIDEO_W, height: VIDEO_H }
-                }
-                onUserMedia={handleUserMedia}
-                onUserMediaError={handleCameraError}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  display: "block",
-                  opacity: 0.85,
-                  filter: "grayscale(30%)",
-                }}
-              />
+                  {!isCameraReady && !cameraError && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+                      <div className="flex flex-col items-center gap-2">
+                        <span className="material-symbols-outlined animate-pulse text-[40px] text-op-border">
+                          videocam
+                        </span>
+                        <MonoLabel>
+                          {activeCamera ? "CONNECTING…" : "NO_ENABLED_CAMERAS"}
+                        </MonoLabel>
+                      </div>
+                    </div>
+                  )}
 
-              {/* [2] DETECTION_OVERLAY: canvas overlay for bounding boxes */}
-              {isCameraReady && frameDimensions && (
-                <OverlayCanvas
-                  webcamRef={cameraSourceRef}
-                  detections={detections}
-                  frameDimensions={frameDimensions}
-                  detectionModel="rfdetr"
-                />
-              )}
+                  {cameraError && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+                      <div className="flex flex-col items-center gap-2">
+                        <span className="material-symbols-outlined text-[40px] text-op-critical">
+                          videocam_off
+                        </span>
+                        <MonoLabel variant="critical">NO_SIGNAL</MonoLabel>
+                        <span className="font-mono text-[10px] text-op-text-sec">
+                          {cameraError}
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
-              {/* Camera offline / error state */}
-              {!isCameraReady && !cameraError && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black">
-                  <div className="flex flex-col items-center gap-2">
-                    <span className="material-symbols-outlined animate-pulse text-[40px] text-op-border">
-                      videocam
+                  <div className="absolute bottom-3 right-3 flex items-center gap-2 border border-op-border bg-op-elevated px-2 py-1">
+                    <span className="material-symbols-outlined text-[14px] text-op-text-sec">
+                      neurology
                     </span>
-                    <MonoLabel>CONNECTING…</MonoLabel>
+                    <div className="flex flex-col">
+                      <MonoLabel size="2xs">VLM_ANALYSIS</MonoLabel>
+                      <MonoLabel size="xs" className={vlmChipColor[vlmStatus]}>
+                        {vlmStatus}
+                      </MonoLabel>
+                    </div>
                   </div>
-                </div>
-              )}
-              {cameraError && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black">
-                  <div className="flex flex-col items-center gap-2">
-                    <span className="material-symbols-outlined text-[40px] text-op-critical">
-                      videocam_off
-                    </span>
-                    <MonoLabel variant="critical">NO_SIGNAL</MonoLabel>
-                    <span className="font-mono text-[10px] text-op-text-sec">
-                      {cameraError}
-                    </span>
-                  </div>
-                </div>
-              )}
 
-              {/* VLM status chip */}
-              <div className="absolute bottom-3 right-3 flex items-center gap-2 border border-op-border bg-op-elevated px-2 py-1">
-                <span className="material-symbols-outlined text-[14px] text-op-text-sec">
-                  neurology
-                </span>
-                <div className="flex flex-col">
-                  <MonoLabel size="2xs">VLM_ANALYSIS</MonoLabel>
-                  <MonoLabel size="xs" className={vlmChipColor[vlmStatus]}>
-                    {vlmStatus}
-                  </MonoLabel>
-                </div>
-              </div>
-
-              {/* Detect latency chip */}
-              {detectLatency !== null && (
-                <div className="absolute bottom-3 left-3 border border-op-border bg-op-elevated px-2 py-1">
-                  <MonoLabel size="xs">
-                    {isDetectProcessing
-                      ? "INFERRING…"
-                      : `${detectLatency.toFixed(0)}ms`}
-                  </MonoLabel>
-                </div>
-              )}
-            </div>
+                  {detectLatency !== null && (
+                    <div className="absolute bottom-3 left-3 border border-op-border bg-op-elevated px-2 py-1">
+                      <MonoLabel size="xs">
+                        {isDetectProcessing
+                          ? "INFERRING…"
+                          : `${detectLatency.toFixed(0)}ms`}
+                      </MonoLabel>
+                    </div>
+                  )}
+                </>
+              }
+            />
           </div>
 
-          {/* Camera grid (40%) — 2×2 mini feeds */}
+          {/* Camera grid (40%) — clickable active streams */}
           <div className="grid w-[40%] min-h-0 grid-cols-2 grid-rows-2 gap-2">
-            {MINI_CAMERAS.map((cam) => (
-              <MiniCameraCell key={cam.id} label={cam.label} />
+            {gridCameras.map((camera) => (
+              <CameraStreamSurface
+                key={camera.id}
+                camera={camera}
+                isSelected={false}
+                onSelect={handlePromoteCamera}
+                relaySrc={buildRelaySrc(camera)}
+              />
             ))}
+            {gridCameras.length < MINI_CAMERA_LIMIT &&
+              Array.from({
+                length: MINI_CAMERA_LIMIT - gridCameras.length,
+              }).map((_, index) => (
+                <CameraStreamSurface
+                  key={"empty-mini-" + String(index)}
+                  camera={null}
+                />
+              ))}
           </div>
         </div>
 

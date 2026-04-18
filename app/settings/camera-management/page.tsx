@@ -236,8 +236,14 @@ export default function CameraManagementPage() {
     isLoading: isLoadingDevices,
     refreshDevices,
   } = useCameraDevices();
-  const { rows, isHydrated, createNetworkCamera, toggleEnabled, updateCamera } =
-    useCameraSettings(devices);
+  const {
+    rows,
+    isHydrated,
+    createNetworkCamera,
+    toggleEnabled,
+    updateCamera,
+    deleteCamera,
+  } = useCameraSettings(devices);
 
   const [search, setSearch] = React.useState("");
   const [zoneFilter, setZoneFilter] = React.useState("ALL");
@@ -456,7 +462,7 @@ export default function CameraManagementPage() {
                     <td className="px-4 py-3">
                       <Badge variant="muted">{row.zone}</Badge>
                     </td>
-                    <td className="hidden max-w-[260px] truncate px-4 py-3 font-mono text-[10px] text-op-text-sec lg:table-cell">
+                    <td className="hidden max-w-65 truncate px-4 py-3 font-mono text-[10px] text-op-text-sec lg:table-cell">
                       {row.sourceDisplay}
                     </td>
                     <td className="px-4 py-3">
@@ -483,6 +489,15 @@ export default function CameraManagementPage() {
                       >
                         <span className="material-symbols-outlined text-sm">
                           {row.enabled ? "power_settings_new" : "settings"}
+                        </span>
+                      </button>
+                      <button
+                        className="ml-2 text-op-text-sec transition-colors hover:text-op-critical"
+                        onClick={() => deleteCamera(row.id)}
+                        type="button"
+                      >
+                        <span className="material-symbols-outlined text-sm">
+                          delete
                         </span>
                       </button>
                     </td>
