@@ -4,6 +4,7 @@ import type React from "react";
 import { useCallback, useState } from "react";
 import { SITE_NAME, SITE_TAGLINE } from "@/app/lib/branding";
 import { appendThreatLogEntry } from "@/app/lib/threat-log-store";
+import { dedupeVlmAnalysisLines } from "@/app/lib/vlm-analysis-lines";
 import type { VerifiedWatchThreatPayload } from "@/app/lib/watch-verification";
 import { useRouteActivity } from "@/components/RouteActivityProvider";
 import { ThreatModal } from "@/components/threat";
@@ -42,6 +43,10 @@ export function OperationsDesk(): React.JSX.Element {
       const description =
         payload.watchResult.description ?? "Verified threat detected.";
       const verification = payload.verification;
+      const vlmLines = dedupeVlmAnalysisLines([
+        description,
+        verification?.reason ?? "Verification confirmed the watch output.",
+      ]);
 
       appendThreatLogEntry({
         requestId: payload.requestId,
@@ -52,10 +57,7 @@ export function OperationsDesk(): React.JSX.Element {
         previewText: description,
         frameSrc: payload.frameSrc,
         frameId: `FRAME_CAP_${nowTimestampCompact()}`,
-        vlmAnalysis: [
-          description,
-          verification?.reason ?? "Verification confirmed the watch output.",
-        ],
+        vlmAnalysis: vlmLines,
         verification: {
           applied: verification?.applied ?? false,
           matchesPrompt: verification?.matchesPrompt ?? null,
@@ -78,10 +80,7 @@ export function OperationsDesk(): React.JSX.Element {
         confidence: payload.confidence,
         frameSrc: payload.frameSrc ?? undefined,
         frameId: `FRAME_CAP_${nowTimestampCompact()}`,
-        vlmAnalysis: [
-          description,
-          verification?.reason ?? "Verification confirmed the watch output.",
-        ],
+        vlmAnalysis: vlmLines,
       });
       setThreatOpen(true);
     },

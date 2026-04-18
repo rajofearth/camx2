@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  dedupeVlmAnalysisLines,
+  fnv1a32Hex,
+} from "@/app/lib/vlm-analysis-lines";
+import { VlmBullet } from "@/components/ai/chat-message";
 import { BoundingBox } from "@/components/ui/bounding-box";
 import { Button } from "@/components/ui/button";
 import { ConfidenceBar } from "@/components/ui/confidence-bar";
@@ -59,6 +64,8 @@ function ThreatModal({
   boundingBox,
 }: ThreatModalProps) {
   if (!open) return null;
+
+  const vlmLines = dedupeVlmAnalysisLines(vlmAnalysis);
 
   return (
     <div
@@ -156,12 +163,18 @@ function ThreatModal({
               </div>
 
               {/* VLM analysis */}
-              {vlmAnalysis.length > 0 && (
-                <div className="flex-1 border border-op-border bg-op-elevated p-4">
+              {vlmLines.length > 0 && (
+                <div className="flex min-h-0 flex-1 flex-col border border-op-critical/40 bg-op-elevated p-4">
                   <MonoLabel className="mb-3">VLM ANALYSIS</MonoLabel>
-                  <div className="space-y-2 font-mono text-sm leading-relaxed text-op-silver">
-                    {vlmAnalysis.map((line) => (
-                      <p key={line}>&gt; {line}</p>
+                  <div className="max-h-[min(42vh,320px)] min-h-0 space-y-3 overflow-y-auto font-mono text-sm leading-relaxed text-op-silver">
+                    {vlmLines.map((line, index) => (
+                      <VlmBullet
+                        key={`${threatId}-vlm-${fnv1a32Hex(line)}-${line.length}`}
+                        variant={index === 0 ? "critical" : "default"}
+                        className="break-words"
+                      >
+                        {line}
+                      </VlmBullet>
                     ))}
                   </div>
                 </div>

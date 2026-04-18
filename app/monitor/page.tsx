@@ -19,6 +19,7 @@ import type { CameraSourceRef } from "@/app/lib/camera-source";
 import { cocoClassName } from "@/app/lib/coco";
 import { appendThreatLogEntry } from "@/app/lib/threat-log-store";
 import type { Detection } from "@/app/lib/types";
+import { dedupeVlmAnalysisLines } from "@/app/lib/vlm-analysis-lines";
 import type { WatchResult } from "@/app/lib/watch-types";
 import { isVerifiedThreat } from "@/app/lib/watch-verification";
 import { CameraStreamSurface } from "@/components/camera/camera-stream-surface";
@@ -377,6 +378,10 @@ export default function LiveMonitorPage() {
       detections.length > 0
         ? Math.round(Math.max(...detections.map((d) => d.confidence)) * 100)
         : 90;
+    const vlmLines = dedupeVlmAnalysisLines([
+      description,
+      verification?.reason ?? "Verification confirmed the watch output.",
+    ]);
 
     appendThreatLogEntry({
       requestId: lastRequestId,
@@ -387,10 +392,7 @@ export default function LiveMonitorPage() {
       previewText: description,
       frameSrc: screenshot,
       frameId: `FRAME_CAP_${nowTimestamp().replace(/:/g, "")}`,
-      vlmAnalysis: [
-        description,
-        verification?.reason ?? "Verification confirmed the watch output.",
-      ],
+      vlmAnalysis: vlmLines,
       verification: {
         applied: verification?.applied ?? false,
         matchesPrompt: verification?.matchesPrompt ?? null,
@@ -413,10 +415,7 @@ export default function LiveMonitorPage() {
       confidence,
       frameSrc: screenshot ?? undefined,
       frameId: `FRAME_CAP_${nowTimestamp().replace(/:/g, "")}`,
-      vlmAnalysis: [
-        description,
-        verification?.reason ?? "Verification confirmed the watch output.",
-      ],
+      vlmAnalysis: vlmLines,
     });
     setThreatOpen(true);
 
