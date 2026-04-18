@@ -56,7 +56,8 @@ export function ModelSelectField({
           disabled={disabled}
           className={cn(
             "flex w-full min-w-0 items-start justify-between gap-2 border bg-op-base px-4 py-3 text-left font-mono text-sm uppercase text-op-silver outline-none transition-all focus-visible:ring-1 focus-visible:ring-op-silver disabled:cursor-not-allowed disabled:opacity-50",
-            variant === "default" && "border-op-border hover:border-op-border-active",
+            variant === "default" &&
+              "border-op-border hover:border-op-border-active",
             variant === "critical" && "border-op-critical",
           )}
         >

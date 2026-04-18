@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { promises as fs } from "node:fs";
+import type { PersistedLmJobRuntime } from "@/app/lib/lm-studio-runtime";
 import type {
   VideoWatchJob,
   VideoWatchSummary,
@@ -15,6 +16,7 @@ import {
 } from "./cache";
 import { CACHE_ROOT } from "./config";
 import { runFrameQueue } from "./frame-analysis";
+import { defaultJobRuntimeFromEnv } from "./lm-runtime-defaults";
 import { statePath, summaryPath, versionPath, videoPath } from "./paths";
 import { persistState } from "./state-persist";
 import type {
@@ -80,6 +82,7 @@ export async function loadJobFromDisk(
     cache: { fingerprint, cacheHit: true, source: "disk" },
     error: state.error,
     summary: summaryFile?.summary,
+    lmRuntime: state.lmRuntime ?? defaultJobRuntimeFromEnv(),
   };
   jobsById.set(job.id, job);
   jobsByFingerprint.set(job.fingerprint, job);
@@ -129,6 +132,7 @@ export async function createOrResumeVideoJob(input: {
   readonly videoBuffer: Buffer;
   readonly clientFingerprint?: string | null;
   readonly forceRefresh?: boolean;
+  readonly lmRuntime?: PersistedLmJobRuntime | null;
 }): Promise<VideoWatchJob> {
   await fs.mkdir(CACHE_ROOT, { recursive: true });
 
@@ -173,6 +177,9 @@ export async function createOrResumeVideoJob(input: {
     await fs.writeFile(targetVideoPath, input.videoBuffer);
   }
 
+  const runtime =
+    input.lmRuntime ?? existingJob?.lmRuntime ?? defaultJobRuntimeFromEnv();
+
   const job =
     existingJob ??
     ({
@@ -185,8 +192,10 @@ export async function createOrResumeVideoJob(input: {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       cache: { fingerprint, cacheHit: false, source: "upload" },
+      lmRuntime: runtime,
     } as InternalJob);
 
+  job.lmRuntime = runtime;
   job.sourceFileName = input.sourceFileName;
   job.updatedAt = new Date().toISOString();
   jobsById.set(job.id, job);
@@ -249,4 +258,17 @@ export async function readSummaryForJob(
   const target =
     job ?? (fingerprint ? await loadJobFromDisk(fingerprint) : null);
   return target?.summary ?? null;
+}
+
+/** LM runtime persisted for the job (memory or disk) — for chat after reload. */
+export async function getJobLmRuntimeForChat(
+  jobId: string,
+): Promise<PersistedLmJobRuntime> {
+  const mem = jobsById.get(jobId);
+  if (mem?.lmRuntime) return mem.lmRuntime;
+  const fp = await findFingerprintByJobId(jobId);
+  if (!fp) return defaultJobRuntimeFromEnv();
+  const cacheDir = await ensureCacheDir(fp);
+  const state = await readJson<PersistedState>(statePath(cacheDir));
+  return state?.lmRuntime ?? defaultJobRuntimeFromEnv();
 }

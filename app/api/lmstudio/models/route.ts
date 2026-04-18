@@ -1,25 +1,20 @@
-import type { LMStudioClient } from "@lmstudio/sdk";
 import { NextResponse } from "next/server";
 
 import { createLmStudioClientForRequest } from "@/app/lib/lmstudio-client-factory";
+import { parseLmStudioPostParams } from "@/app/lib/lmstudio-post-params";
 import {
   createRestEntryLookup,
   fetchLmStudioRestLlmCatalog,
   mergeLlmDtoWithRest,
   restEntryToDto,
 } from "@/app/lib/lmstudio-rest-catalog";
-import type { LlmModelOptionDto } from "@/app/lib/model-configuration-types";
-import { parseLmStudioPostParams } from "@/app/lib/lmstudio-post-params";
 import {
   formatLmStudioError,
   isLmStudioConnectionError,
 } from "@/app/lib/lmstudio-url";
+import type { LlmModelOptionDto } from "@/app/lib/model-configuration-types";
 
 export const runtime = "nodejs";
-
-type LoadedLlmHandle = Awaited<
-  ReturnType<LMStudioClient["llm"]["listLoaded"]>
->[number];
 
 interface ModelsBody {
   readonly baseUrl?: unknown;
@@ -178,9 +173,7 @@ export async function POST(request: Request) {
       mergedByKey.set(key, mergeLlmDtoWithRest(dto, lookupRest(key)));
     }
 
-    const sdkKeysLower = new Set(
-      [...byKey.keys()].map((k) => k.toLowerCase()),
-    );
+    const sdkKeysLower = new Set([...byKey.keys()].map((k) => k.toLowerCase()));
     for (const rest of restEntries) {
       if (sdkKeysLower.has(rest.key.toLowerCase())) continue;
       mergedByKey.set(rest.key, restEntryToDto(rest));

@@ -56,9 +56,7 @@ export function ModelCapabilityStrip({
             "material-symbols-outlined text-[18px]",
             !emphasize && "text-op-text-sec",
             emphasize && trainedForToolUse === true && "text-op-silver",
-            emphasize &&
-              trainedForToolUse === false &&
-              "text-op-text-sec",
+            emphasize && trainedForToolUse === false && "text-op-text-sec",
             emphasize && trainedForToolUse === null && "text-op-text-sec",
           )}
           title={

@@ -1,4 +1,7 @@
-import { formatLmStudioError, normalizeLmStudioWsUrl } from "@/app/lib/lmstudio-url";
+import {
+  formatLmStudioError,
+  normalizeLmStudioWsUrl,
+} from "@/app/lib/lmstudio-url";
 
 export interface LmStudioPostParams {
   readonly baseUrl: string;

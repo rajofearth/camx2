@@ -1,4 +1,5 @@
 import { promises as fs } from "node:fs";
+import type { PersistedLmJobRuntime } from "@/app/lib/lm-studio-runtime";
 import type {
   VideoWatchFrameResult,
   VideoWatchSummary,
@@ -9,8 +10,9 @@ import {
   writeFrameResult,
   writeJson,
 } from "./cache";
-import { isSceneUnchangedAnalysis, SUMMARY_MODEL_KEY } from "./config";
-import { getClient, resolveModelKey } from "./llm-client";
+import { isSceneUnchangedAnalysis } from "./config";
+import { getClientForJobRuntime, resolveModelKey } from "./llm-client";
+import { defaultJobRuntimeFromEnv } from "./lm-runtime-defaults";
 import { summaryPath, timelinePath } from "./paths";
 import { persistState } from "./state-persist";
 import type {
@@ -146,10 +148,13 @@ function buildSynthesisEvidence(
 
 export async function summarizeVideo(
   orderedResults: VideoWatchFrameResult[],
+  rt: PersistedLmJobRuntime,
 ): Promise<VideoWatchSummary> {
   const timelineText = buildCompressedTimelineText(orderedResults);
-  const resolvedSummaryModelKey = await resolveModelKey(SUMMARY_MODEL_KEY);
-  const model = await getClient().llm.model(resolvedSummaryModelKey);
+  const resolvedSummaryModelKey = await resolveModelKey(rt, rt.summaryModelKey);
+  const model = await getClientForJobRuntime(rt).llm.model(
+    resolvedSummaryModelKey,
+  );
 
   const evidence = buildSynthesisEvidence(orderedResults);
 
@@ -209,7 +214,10 @@ export async function finalizeJob(
     await writeFrameResult(cacheDir, frame);
   }
 
-  const summary = await summarizeVideo(orderedResults);
+  const summary = await summarizeVideo(
+    orderedResults,
+    job.lmRuntime ?? defaultJobRuntimeFromEnv(),
+  );
 
   await fs.writeFile(timelinePath(cacheDir), summary.timelineText, "utf8");
   job.summary = summary;

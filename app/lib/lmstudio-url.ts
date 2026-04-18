@@ -27,7 +27,9 @@ export function normalizeLmStudioWsUrl(input: string): string {
   }
 
   if (parsed.protocol !== "ws:" && parsed.protocol !== "wss:") {
-    throw new Error('LM Studio URL must use ws:// or wss:// (or http/https — we convert those).');
+    throw new Error(
+      "LM Studio URL must use ws:// or wss:// (or http/https — we convert those).",
+    );
   }
 
   if (parsed.search !== "") {

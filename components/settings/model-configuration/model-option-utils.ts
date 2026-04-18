@@ -22,7 +22,9 @@ export function mergeModelsWithSelection(
   const list = [...options];
   if (
     selectedKey &&
-    !list.some((m) => m.modelKey === selectedKey || m.identifier === selectedKey)
+    !list.some(
+      (m) => m.modelKey === selectedKey || m.identifier === selectedKey,
+    )
   ) {
     list.unshift(syntheticModel(selectedKey));
   }
@@ -99,11 +101,11 @@ export function formatModelCapabilityDetail(
 }
 
 /** Whether icons / labels should use full contrast (loaded, or catalog metadata from LM Studio). */
-export function shouldEmphasizeCapabilities(model: LlmModelOptionDto | null): boolean {
+export function shouldEmphasizeCapabilities(
+  model: LlmModelOptionDto | null,
+): boolean {
   if (!model) return false;
   return (
-    model.isLoaded ||
-    model.vision !== null ||
-    model.trainedForToolUse !== null
+    model.isLoaded || model.vision !== null || model.trainedForToolUse !== null
   );
 }

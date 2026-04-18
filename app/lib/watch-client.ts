@@ -1,3 +1,4 @@
+import { MODEL_CONFIGURATION_STORAGE_KEY } from "@/app/lib/model-configuration-shared";
 import type { WatchOk, WatchResponse } from "./watch-types";
 import { parseWatchResponse } from "./watch-types";
 
@@ -42,6 +43,12 @@ export async function fetchWatch(
     formData.append("original_frame", originalBlob);
     // Attach the processed frame for analysis. If none provided, fall back to original.
     formData.append("frame", processedBlob ?? originalBlob);
+    if (typeof window !== "undefined") {
+      const raw = window.localStorage.getItem(MODEL_CONFIGURATION_STORAGE_KEY);
+      if (raw) {
+        formData.append("model_config", raw);
+      }
+    }
 
     const response = await fetch("/api/watch", {
       method: "POST",

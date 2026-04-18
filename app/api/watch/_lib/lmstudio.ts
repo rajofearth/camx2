@@ -1,4 +1,11 @@
-import { LMStudioClient } from "@lmstudio/sdk";
+import type { LMStudioClient } from "@lmstudio/sdk";
+import {
+  getClientForJobRuntime,
+  mimeTypeToFileName,
+  resolveModelKey,
+} from "@/app/api/video-watch/_lib/llm-client";
+import type { WatchRequestRuntime } from "@/app/lib/lm-studio-runtime";
+import { watchRequestToPersistedRuntime } from "@/app/lib/lm-studio-runtime";
 import {
   WATCH_SYSTEM_PROMPT,
   WATCH_USER_MESSAGE,
@@ -12,133 +19,10 @@ import {
   WATCH_RESPONSE_SCHEMA,
 } from "./schema";
 
-const LMSTUDIO_BASE_URL =
-  process.env.LMSTUDIO_BASE_URL ?? "ws://127.0.0.1:1234";
-const TARGET_MODEL_KEY = process.env.LMSTUDIO_WATCH_MODEL ?? "lfm-2.5-ucf-1.6b";
-
 const ANALYSIS_MAX_TOKENS = 420;
 const VERIFICATION_MAX_TOKENS = 280;
 
-let cachedClient: LMStudioClient | null = null;
-let cachedResolvedModelKey: string | null = null;
-
-type LoadedLlmHandle = Awaited<
-  ReturnType<LMStudioClient["llm"]["listLoaded"]>
->[number];
-
-type VisionModel = Awaited<
-  ReturnType<ReturnType<LMStudioClient["llm"]["model"]>>
->;
-
-function getClient(): LMStudioClient {
-  if (cachedClient) return cachedClient;
-  cachedClient = new LMStudioClient({
-    baseUrl: LMSTUDIO_BASE_URL,
-    verboseErrorMessages: true,
-  });
-  return cachedClient;
-}
-
-function mimeTypeToFileName(mimeType: string): string {
-  switch (mimeType) {
-    case "image/png":
-      return "frame.png";
-    case "image/webp":
-      return "frame.webp";
-    default:
-      return "frame.jpg";
-  }
-}
-
-function isConnectionError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error);
-  const lower = message.toLowerCase();
-  return (
-    lower.includes("econnrefused") ||
-    lower.includes("connect") ||
-    lower.includes("websocket") ||
-    lower.includes("ws://") ||
-    lower.includes("wss://") ||
-    lower.includes("127.0.0.1:1234") ||
-    lower.includes("localhost") ||
-    lower.includes("failed to fetch") ||
-    lower.includes("not running")
-  );
-}
-
-async function resolveWatchModelKey(): Promise<string> {
-  const client = getClient();
-  const cached = cachedResolvedModelKey;
-
-  const loadedModels = await (async () => {
-    try {
-      return await client.llm.listLoaded();
-    } catch (error) {
-      if (isConnectionError(error)) {
-        throw new Error(
-          `LM Studio local server is not running or is unreachable at ${LMSTUDIO_BASE_URL}`,
-        );
-      }
-      throw error;
-    }
-  })();
-
-  const findLoadedTarget = (
-    candidateKey: string,
-  ): LoadedLlmHandle | undefined =>
-    loadedModels.find(
-      (model) =>
-        model.modelKey === candidateKey || model.identifier === candidateKey,
-    );
-
-  const loadedTarget = [cached, TARGET_MODEL_KEY]
-    .filter((value): value is string => !!value)
-    .map((candidateKey) => findLoadedTarget(candidateKey))
-    .find((value): value is LoadedLlmHandle => value !== undefined);
-
-  if (loadedTarget) {
-    const loadedInfo = await loadedTarget.getModelInfo();
-    if (!loadedInfo.vision) {
-      throw new Error(
-        `LM Studio model "${TARGET_MODEL_KEY}" is loaded but does not support image input`,
-      );
-    }
-    if (loadedInfo.contextLength < loadedInfo.maxContextLength) {
-      await loadedTarget.unload();
-      const reloadedModel = await client.llm.load(loadedInfo.modelKey, {
-        identifier: loadedInfo.identifier,
-        config: { contextLength: loadedInfo.maxContextLength },
-      });
-      const reloadedInfo = await reloadedModel.getModelInfo();
-      cachedResolvedModelKey = reloadedInfo.modelKey;
-      return cachedResolvedModelKey;
-    }
-    cachedResolvedModelKey = loadedInfo.modelKey;
-    return cachedResolvedModelKey;
-  }
-
-  const downloadedModels = await client.system.listDownloadedModels("llm");
-  const downloadedTarget = downloadedModels.find(
-    (model) => model.modelKey === TARGET_MODEL_KEY,
-  );
-  if (!downloadedTarget) {
-    throw new Error(
-      `Required LM Studio model "${TARGET_MODEL_KEY}" is not loaded and not available locally`,
-    );
-  }
-
-  const loadedModel = await client.llm.load(downloadedTarget.modelKey, {
-    config: { contextLength: downloadedTarget.maxContextLength },
-  });
-  const loadedInfo = await loadedModel.getModelInfo();
-  if (!loadedInfo.vision) {
-    throw new Error(
-      `LM Studio model "${TARGET_MODEL_KEY}" was loaded but does not support image input`,
-    );
-  }
-  cachedResolvedModelKey = loadedInfo.modelKey;
-  return cachedResolvedModelKey;
-}
+type VisionModel = Awaited<ReturnType<LMStudioClient["llm"]["model"]>>;
 
 function parseJsonContent(rawText: string, label: string): unknown {
   try {
@@ -195,9 +79,11 @@ export interface WatchVerificationOutput {
 
 export async function runWatchLmStudio(
   input: WatchLmStudioInput,
+  rt: WatchRequestRuntime,
 ): Promise<WatchLmStudioOutput> {
-  const client = getClient();
-  const modelKey = await resolveWatchModelKey();
+  const jobRt = watchRequestToPersistedRuntime(rt);
+  const client = getClientForJobRuntime(jobRt);
+  const modelKey = await resolveModelKey(jobRt, rt.watchModelKey);
   const model = await client.llm.model(modelKey);
 
   const image = await client.files.prepareImageBase64(
@@ -223,11 +109,14 @@ export async function runWatchLmStudio(
   const result = parseWatchModelJson(parsed);
 
   if (result.isHarm === true && result.description) {
-    const verification = await verifyWatchHarmDescription({
-      base64Image: input.base64Image,
-      mimeType: input.mimeType,
-      description: result.description,
-    });
+    const verification = await verifyWatchHarmDescription(
+      {
+        base64Image: input.base64Image,
+        mimeType: input.mimeType,
+        description: result.description,
+      },
+      rt,
+    );
 
     if (!verification.matchesPrompt) {
       return {
@@ -273,10 +162,12 @@ export async function runWatchLmStudio(
 
 export async function verifyWatchHarmDescription(
   input: WatchVerificationInput,
+  rt: WatchRequestRuntime,
 ): Promise<WatchVerificationOutput> {
   const verificationStart = performance.now();
-  const client = getClient();
-  const modelKey = await resolveWatchModelKey();
+  const jobRt = watchRequestToPersistedRuntime(rt);
+  const client = getClientForJobRuntime(jobRt);
+  const modelKey = await resolveModelKey(jobRt, rt.watchModelKey);
   const model = await client.llm.model(modelKey);
 
   const image = await client.files.prepareImageBase64(

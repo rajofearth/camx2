@@ -1,21 +1,41 @@
-import { LMStudioClient } from "@lmstudio/sdk";
-import { LMSTUDIO_BASE_URL } from "./config";
-
-let cachedClient: LMStudioClient | null = null;
-const resolvedModelKeys = new Map<string, string>();
+import type { LMStudioClient } from "@lmstudio/sdk";
+import type { PersistedLmJobRuntime } from "@/app/lib/lm-studio-runtime";
+import {
+  createLmStudioClientForRequest,
+  normalizeLmStudioSdkBaseUrl,
+} from "@/app/lib/lmstudio-client-factory";
 
 type LoadedLlmHandle = Awaited<
   ReturnType<LMStudioClient["llm"]["listLoaded"]>
 >[number];
 
-export function getClient(): LMStudioClient {
-  if (!cachedClient) {
-    cachedClient = new LMStudioClient({
-      baseUrl: LMSTUDIO_BASE_URL,
-      verboseErrorMessages: true,
-    });
+const clientByEndpoint = new Map<string, LMStudioClient>();
+const resolvedModelKeys = new Map<string, string>();
+
+function endpointCacheKey(rt: PersistedLmJobRuntime): string {
+  return `${normalizeLmStudioSdkBaseUrl(rt.baseUrl)}\u0000${rt.apiToken}`;
+}
+
+function resolveCacheKey(
+  rt: PersistedLmJobRuntime,
+  logicalKey: string,
+): string {
+  return `${endpointCacheKey(rt)}\u0000${logicalKey}`;
+}
+
+export function getClientForJobRuntime(
+  rt: PersistedLmJobRuntime,
+): LMStudioClient {
+  const k = endpointCacheKey(rt);
+  let client = clientByEndpoint.get(k);
+  if (!client) {
+    client = createLmStudioClientForRequest(
+      rt.baseUrl,
+      rt.apiToken.trim() === "" ? undefined : rt.apiToken,
+    );
+    clientByEndpoint.set(k, client);
   }
-  return cachedClient;
+  return client;
 }
 
 function isConnectionError(error: unknown): boolean {
@@ -31,18 +51,22 @@ function isConnectionError(error: unknown): boolean {
   );
 }
 
-export async function resolveModelKey(modelKey: string): Promise<string> {
-  const client = getClient();
-  const cached = resolvedModelKeys.get(modelKey);
+export async function resolveModelKey(
+  rt: PersistedLmJobRuntime,
+  modelKey: string,
+): Promise<string> {
+  const cached = resolvedModelKeys.get(resolveCacheKey(rt, modelKey));
+  const client = getClientForJobRuntime(rt);
 
   let loadedModels: LoadedLlmHandle[];
   try {
     loadedModels = await client.llm.listLoaded();
   } catch (error) {
-    if (isConnectionError(error))
+    if (isConnectionError(error)) {
       throw new Error(
-        "LM Studio local server is not running or is unreachable at ws://127.0.0.1:1234",
+        `LM Studio local server is not running or is unreachable at ${rt.baseUrl}`,
       );
+    }
     throw error;
   }
 
@@ -65,11 +89,14 @@ export async function resolveModelKey(modelKey: string): Promise<string> {
         config: { contextLength: loadedInfo.maxContextLength },
       });
       const reloadedInfo = await reloadedModel.getModelInfo();
-      resolvedModelKeys.set(modelKey, reloadedInfo.modelKey);
+      resolvedModelKeys.set(
+        resolveCacheKey(rt, modelKey),
+        reloadedInfo.modelKey,
+      );
       return reloadedInfo.modelKey;
     }
 
-    resolvedModelKeys.set(modelKey, loadedInfo.modelKey);
+    resolvedModelKeys.set(resolveCacheKey(rt, modelKey), loadedInfo.modelKey);
     return loadedInfo.modelKey;
   }
 
@@ -78,16 +105,17 @@ export async function resolveModelKey(modelKey: string): Promise<string> {
     (model) => model.modelKey === cached || model.modelKey === modelKey,
   );
 
-  if (!downloadedTarget)
+  if (!downloadedTarget) {
     throw new Error(
       `Required LM Studio model "${modelKey}" is not loaded and not available locally`,
     );
+  }
 
   const loadedModel = await client.llm.load(downloadedTarget.modelKey, {
     config: { contextLength: downloadedTarget.maxContextLength },
   });
   const loadedInfo = await loadedModel.getModelInfo();
-  resolvedModelKeys.set(modelKey, loadedInfo.modelKey);
+  resolvedModelKeys.set(resolveCacheKey(rt, modelKey), loadedInfo.modelKey);
   return loadedInfo.modelKey;
 }
 

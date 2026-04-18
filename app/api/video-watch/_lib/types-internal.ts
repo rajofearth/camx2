@@ -1,3 +1,4 @@
+import type { PersistedLmJobRuntime } from "@/app/lib/lm-studio-runtime";
 import type {
   VideoWatchJob,
   VideoWatchPhase,
@@ -34,6 +35,8 @@ export interface PersistedState {
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly error?: string;
+  /** LM Studio endpoint + model keys used for this job (from app settings when uploaded). */
+  readonly lmRuntime?: PersistedLmJobRuntime;
 }
 
 export interface PersistedSummaryFile {
@@ -53,4 +56,5 @@ export interface InternalJob {
   error?: string;
   summary?: VideoWatchSummary;
   runPromise?: Promise<void>;
+  lmRuntime?: PersistedLmJobRuntime;
 }

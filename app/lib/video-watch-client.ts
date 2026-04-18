@@ -1,3 +1,4 @@
+import { MODEL_CONFIGURATION_STORAGE_KEY } from "@/app/lib/model-configuration-shared";
 import {
   parseVideoWatchChatResponse,
   parseVideoWatchResponse,
@@ -17,6 +18,12 @@ export async function uploadVideoForWatch(
   if (clientFingerprint)
     formData.append("clientFingerprint", clientFingerprint);
   if (options?.forceRefresh) formData.append("forceRefresh", "true");
+  if (typeof window !== "undefined") {
+    const raw = window.localStorage.getItem(MODEL_CONFIGURATION_STORAGE_KEY);
+    if (raw) {
+      formData.append("model_config", raw);
+    }
+  }
 
   const res = await fetch("/api/video-watch", {
     method: "POST",

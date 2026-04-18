@@ -10,10 +10,9 @@ import {
   MIN_CHAT_PROMPT_TOKENS,
   MIN_SUMMARY_CHAR_LIMIT,
   MIN_TIMELINE_LINE_LIMIT,
-  SUMMARY_MODEL_KEY,
 } from "./config";
-import { readSummaryForJob } from "./jobs";
-import { getClient, resolveModelKey } from "./llm-client";
+import { getJobLmRuntimeForChat, readSummaryForJob } from "./jobs";
+import { getClientForJobRuntime, resolveModelKey } from "./llm-client";
 
 // Types for chat message and LLM model interface
 type LlmChatMessage = {
@@ -307,8 +306,10 @@ export async function answerQuestionAboutVideo(input: {
   const summary = await readSummaryForJob(input.jobId);
   if (!summary) throw new Error("Video analysis is not ready yet");
 
-  const resolvedSummaryModelKey = await resolveModelKey(SUMMARY_MODEL_KEY);
-  const model = (await getClient().llm.model(
+  const rt = await getJobLmRuntimeForChat(input.jobId);
+
+  const resolvedSummaryModelKey = await resolveModelKey(rt, rt.summaryModelKey);
+  const model = (await getClientForJobRuntime(rt).llm.model(
     resolvedSummaryModelKey,
   )) as ContextAwareModel;
   const conversation = normalizeChatHistory(input.messages, input.question);

@@ -1,12 +1,17 @@
 import { promises as fs } from "node:fs";
+import type { PersistedLmJobRuntime } from "@/app/lib/lm-studio-runtime";
 import type { VideoWatchFrameResult } from "@/app/lib/video-watch-types";
 import { ensureCacheDir, readAllFrameResults, writeFrameResult } from "./cache";
-import { FRAME_MODEL_KEY, TRACKING_MODEL_KEY } from "./config";
 import {
   parseNarrativeAnalysisFromResponseRaw,
   parseTrackingObjectsFromResponseRaw,
 } from "./frame-llm-parse";
-import { getClient, mimeTypeToFileName, resolveModelKey } from "./llm-client";
+import {
+  getClientForJobRuntime,
+  mimeTypeToFileName,
+  resolveModelKey,
+} from "./llm-client";
+import { defaultJobRuntimeFromEnv } from "./lm-runtime-defaults";
 import {
   applyAuthoritativePriorFields,
   PRIOR_FRAME_SENTINEL,
@@ -61,10 +66,11 @@ interface NarrativeRun {
 }
 
 async function runNarrativeAnalysis(
+  rt: PersistedLmJobRuntime,
   frame: PersistedFrameInfo,
   resolvedModelKey: string,
 ): Promise<NarrativeRun> {
-  const client = getClient();
+  const client = getClientForJobRuntime(rt);
   const model = await client.llm.model(resolvedModelKey);
   const imageBuffer = await fs.readFile(frame.imagePath);
   const image = await client.files.prepareImageBase64(
@@ -131,11 +137,12 @@ interface TrackingRun {
 }
 
 async function runTrackingAnalysis(
+  rt: PersistedLmJobRuntime,
   frame: PersistedFrameInfo,
   context: AnalyzeFrameContext,
   resolvedModelKey: string,
 ): Promise<TrackingRun> {
-  const client = getClient();
+  const client = getClientForJobRuntime(rt);
   const model = await client.llm.model(resolvedModelKey);
   const imageBuffer = await fs.readFile(frame.imagePath);
   const image = await client.files.prepareImageBase64(
@@ -222,19 +229,20 @@ export function buildFrameFailureResult(
 }
 
 export async function analyzeFrame(
+  rt: PersistedLmJobRuntime,
   frame: PersistedFrameInfo,
   context: AnalyzeFrameContext,
 ): Promise<Omit<VideoWatchFrameResult, "fromCache">> {
   const start = performance.now();
 
   const [resolvedNarrativeKey, resolvedTrackingKey] = await Promise.all([
-    resolveModelKey(FRAME_MODEL_KEY),
-    resolveModelKey(TRACKING_MODEL_KEY),
+    resolveModelKey(rt, rt.frameModelKey),
+    resolveModelKey(rt, rt.trackingModelKey),
   ]);
 
   const [narrative, tracking] = await Promise.all([
-    runNarrativeAnalysis(frame, resolvedNarrativeKey),
-    runTrackingAnalysis(frame, context, resolvedTrackingKey),
+    runNarrativeAnalysis(rt, frame, resolvedNarrativeKey),
+    runTrackingAnalysis(rt, frame, context, resolvedTrackingKey),
   ]);
 
   const latencyMs = performance.now() - start;
@@ -288,6 +296,7 @@ export async function runFrameQueue(
   job: InternalJob,
   manifest: PersistedManifest,
 ): Promise<void> {
+  const rt = job.lmRuntime ?? defaultJobRuntimeFromEnv();
   const cacheDir = await ensureCacheDir(job.fingerprint);
   const repairedOnDisk = await readAllFrameResults(cacheDir);
   const existingByIndex = new Map(
@@ -318,12 +327,14 @@ export async function runFrameQueue(
 
     let result: VideoWatchFrameResult;
     try {
-      const analyzed = await analyzeFrame(frame, { previousFrame: lastFrame });
+      const analyzed = await analyzeFrame(rt, frame, {
+        previousFrame: lastFrame,
+      });
       result = { ...analyzed, fromCache: false };
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unknown frame analysis error";
-      result = buildFrameFailureResult(frame, message, FRAME_MODEL_KEY);
+      result = buildFrameFailureResult(frame, message, rt.frameModelKey);
     }
 
     await writeFrameResult(cacheDir, result);

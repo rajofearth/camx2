@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { parseJobRuntimeFromFormField } from "./_lib/lm-runtime-defaults";
 import {
   clearVideoJobCache,
   createOrResumeVideoJob,
@@ -57,6 +58,9 @@ export async function POST(req: NextRequest): Promise<Response> {
     const video = formData.get("video");
     const clientFingerprint = formData.get("clientFingerprint");
     const forceRefresh = formData.get("forceRefresh");
+    const lmRuntime = parseJobRuntimeFromFormField(
+      formData.get("model_config"),
+    );
 
     if (!(video instanceof Blob) || video.size === 0) {
       return errorResponse(400, "BAD_REQUEST", "Missing video upload");
@@ -72,6 +76,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       clientFingerprint:
         typeof clientFingerprint === "string" ? clientFingerprint : null,
       forceRefresh: forceRefresh === "true",
+      lmRuntime,
     });
 
     return Response.json(job);

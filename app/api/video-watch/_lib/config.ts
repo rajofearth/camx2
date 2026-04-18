@@ -3,7 +3,7 @@ import path from "node:path";
 export const CACHE_ROOT = path.join(process.cwd(), "tmp", "video-watch-cache");
 
 /** Bump when analysis pipeline or persisted shape changes (invalidates disk cache). */
-export const CONFIG_VERSION = "video-watch-v14-llm-trace-faithful-cache";
+export const CONFIG_VERSION = "video-watch-v15-lm-runtime-from-settings";
 
 /** Model returns this when the frame matches the prior situation (no new actions/layout). */
 export const SCENE_UNCHANGED_SENTINEL = "[SCENE_UNCHANGED]" as const;
@@ -32,7 +32,7 @@ export const SUMMARY_MODEL_KEY =
   process.env.VIDEO_WATCH_SUMMARY_MODEL_KEY ?? "google/gemma-4-e4b";
 
 export const LMSTUDIO_BASE_URL =
-  process.env.LMSTUDIO_BASE_URL ?? "ws://127.0.0.1:1234";
+  process.env.LMSTUDIO_BASE_URL ?? "http://127.0.0.1:1234";
 
 export const CHAT_CONTEXT_BUFFER_TOKENS = 128;
 export const CHAT_MAX_RESPONSE_TOKENS =

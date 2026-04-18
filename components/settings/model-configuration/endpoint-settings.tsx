@@ -1,7 +1,5 @@
 "use client";
 
-import * as React from "react";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -22,7 +20,8 @@ export function EndpointSettings() {
   } = useModelConfiguration();
 
   const busy = pingStatus === "checking" || modelsLoading;
-  const showAlert = Boolean(modelsError) || (pingStatus === "error" && pingMessage);
+  const showAlert =
+    Boolean(modelsError) || (pingStatus === "error" && pingMessage);
 
   return (
     <ModelConfigSection
@@ -36,14 +35,16 @@ export function EndpointSettings() {
             role="alert"
           >
             {modelsError ? <p>{modelsError}</p> : null}
-            {pingStatus === "error" && pingMessage ? <p>{pingMessage}</p> : null}
+            {pingStatus === "error" && pingMessage ? (
+              <p>{pingMessage}</p>
+            ) : null}
           </div>
         )}
 
         {!showAlert && models.length > 0 && (
           <p className="font-mono text-[10px] uppercase tracking-wide text-op-text-sec">
-            {models.length} LLM model{models.length === 1 ? "" : "s"} available from
-            LM Studio.
+            {models.length} LLM model{models.length === 1 ? "" : "s"} available
+            from LM Studio.
           </p>
         )}
 

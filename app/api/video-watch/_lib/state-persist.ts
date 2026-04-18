@@ -14,6 +14,7 @@ export async function persistState(job: InternalJob): Promise<void> {
     createdAt: job.createdAt,
     updatedAt: job.updatedAt,
     error: job.error,
+    ...(job.lmRuntime ? { lmRuntime: job.lmRuntime } : {}),
   };
   await writeJson(statePath(cacheDir), state);
 }

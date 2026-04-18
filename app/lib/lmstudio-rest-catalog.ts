@@ -1,5 +1,5 @@
-import type { LlmModelOptionDto } from "@/app/lib/model-configuration-types";
 import { wsUrlToHttpOrigin } from "@/app/lib/lmstudio-url";
+import type { LlmModelOptionDto } from "@/app/lib/model-configuration-types";
 
 /** One LLM row from LM Studio `GET /api/v1/models` (HTTP REST). */
 export interface LmStudioRestLlmEntry {
@@ -60,7 +60,8 @@ function parseRestLlmEntry(raw: unknown): LmStudioRestLlmEntry | null {
   const displayName = displayNameRaw.trim() || key;
 
   const loadedInstances = o.loaded_instances ?? o.loadedInstances;
-  const isLoadedInRest = Array.isArray(loadedInstances) && loadedInstances.length > 0;
+  const isLoadedInRest =
+    Array.isArray(loadedInstances) && loadedInstances.length > 0;
 
   const maxRaw = o.max_context_length ?? o.maxContextLength;
   const maxContextLength = typeof maxRaw === "number" ? maxRaw : null;

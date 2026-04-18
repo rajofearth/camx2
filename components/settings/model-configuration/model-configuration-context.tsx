@@ -1,56 +1,15 @@
 "use client";
 
 import * as React from "react";
-
+import {
+  DEFAULT_MODEL_CONFIGURATION,
+  MODEL_CONFIGURATION_STORAGE_KEY,
+  type ModelConfigurationPersisted,
+  parseModelConfigurationJson,
+} from "@/app/lib/model-configuration-shared";
 import type { LlmModelOptionDto } from "@/app/lib/model-configuration-types";
 
-const STORAGE_KEY = "camx2.model-configuration";
-
-export interface ModelConfigurationPersisted {
-  baseUrl: string;
-  apiToken: string;
-  preferredWatchModelKey: string;
-  frameAnalysisModelKey: string;
-  summaryChatModelKey: string;
-}
-
-const defaults: ModelConfigurationPersisted = {
-  baseUrl: "ws://127.0.0.1:1234",
-  apiToken: "",
-  preferredWatchModelKey: "lfm-2.5-ucf-1.6b",
-  frameAnalysisModelKey: "lfm-ucf-400m",
-  summaryChatModelKey: "google/gemma-4-e4b",
-};
-
-function parsePersisted(raw: string | null): ModelConfigurationPersisted {
-  if (!raw) return { ...defaults };
-  try {
-    const v = JSON.parse(raw) as Partial<ModelConfigurationPersisted>;
-    return {
-      baseUrl: typeof v.baseUrl === "string" ? v.baseUrl : defaults.baseUrl,
-      apiToken: typeof v.apiToken === "string" ? v.apiToken : "",
-      preferredWatchModelKey:
-        typeof v.preferredWatchModelKey === "string"
-          ? v.preferredWatchModelKey
-          : defaults.preferredWatchModelKey,
-      frameAnalysisModelKey:
-        typeof v.frameAnalysisModelKey === "string"
-          ? v.frameAnalysisModelKey
-          : defaults.frameAnalysisModelKey,
-      summaryChatModelKey:
-        typeof v.summaryChatModelKey === "string"
-          ? v.summaryChatModelKey
-          : defaults.summaryChatModelKey,
-    };
-  } catch {
-    return { ...defaults };
-  }
-}
-
-function writePersisted(next: ModelConfigurationPersisted) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-}
+export type { ModelConfigurationPersisted };
 
 export type PingStatus = "idle" | "checking" | "ok" | "error";
 
@@ -73,6 +32,14 @@ interface ModelConfigurationContextValue {
 const ModelConfigurationContext =
   React.createContext<ModelConfigurationContextValue | null>(null);
 
+function writePersisted(next: ModelConfigurationPersisted) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(
+    MODEL_CONFIGURATION_STORAGE_KEY,
+    JSON.stringify(next),
+  );
+}
+
 export function ModelConfigurationProvider({
   children,
 }: {
@@ -80,10 +47,11 @@ export function ModelConfigurationProvider({
 }) {
   const [hydrated, setHydrated] = React.useState(false);
   const [config, setConfigState] = React.useState<ModelConfigurationPersisted>(
-    defaults,
+    DEFAULT_MODEL_CONFIGURATION,
   );
-  const [committed, setCommitted] =
-    React.useState<ModelConfigurationPersisted>(defaults);
+  const [committed, setCommitted] = React.useState<ModelConfigurationPersisted>(
+    DEFAULT_MODEL_CONFIGURATION,
+  );
   const [models, setModels] = React.useState<LlmModelOptionDto[]>([]);
   const [modelsLoading, setModelsLoading] = React.useState(false);
   const [modelsError, setModelsError] = React.useState<string | null>(null);
@@ -95,7 +63,9 @@ export function ModelConfigurationProvider({
   configRef.current = config;
 
   React.useEffect(() => {
-    const initial = parsePersisted(window.localStorage.getItem(STORAGE_KEY));
+    const initial = parseModelConfigurationJson(
+      window.localStorage.getItem(MODEL_CONFIGURATION_STORAGE_KEY),
+    );
     setConfigState(initial);
     setCommitted(initial);
     setHydrated(true);

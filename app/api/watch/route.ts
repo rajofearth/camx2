@@ -9,6 +9,7 @@ import {
   createSuccessResponse,
   generateRequestId,
 } from "./_lib/response";
+import { resolveWatchRequestRuntime } from "./_lib/watch-request-runtime";
 
 export const runtime = "nodejs";
 
@@ -42,6 +43,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     // - `original_frame` (original capture for debugging/audit) — optional
     const processedFile = formData.get("frame");
     const originalFile = formData.get("original_frame");
+    const watchRt = resolveWatchRequestRuntime(formData.get("model_config"));
 
     if (!processedFile || !(processedFile instanceof Blob)) {
       return createErrorResponse(
@@ -151,10 +153,13 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     try {
       const agentStart = performance.now();
-      const res = await runWatchLmStudio({
-        base64Image: finalBase64,
-        mimeType: finalMime,
-      });
+      const res = await runWatchLmStudio(
+        {
+          base64Image: finalBase64,
+          mimeType: finalMime,
+        },
+        watchRt,
+      );
       const agentEnd = performance.now();
       agentMs = agentEnd - agentStart;
       result = res.result;
@@ -178,10 +183,13 @@ export async function POST(req: NextRequest): Promise<Response> {
           `[WATCH] [${requestId}] Agent failed to load processed image; retrying with original image`,
         );
         const retryStart = performance.now();
-        const res2 = await runWatchLmStudio({
-          base64Image: originalBase64,
-          mimeType: originalMimeType,
-        });
+        const res2 = await runWatchLmStudio(
+          {
+            base64Image: originalBase64,
+            mimeType: originalMimeType,
+          },
+          watchRt,
+        );
         const retryEnd = performance.now();
         agentMs = retryEnd - retryStart;
         result = res2.result;
@@ -283,8 +291,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       verification: verificationApplied
         ? {
             applied: true,
-            matchesPrompt:
-              verificationMatchesPrompt ?? (result.isHarm === true),
+            matchesPrompt: verificationMatchesPrompt ?? result.isHarm === true,
             reason: verificationReason,
             modelKey: verificationModelKey,
             latencyMs: verificationMs,
