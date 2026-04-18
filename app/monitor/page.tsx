@@ -10,25 +10,18 @@
  * the grid. Detection and watch only run against the primary feed.
  */
 
-import Link from "next/link";
-import {
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useCameraDevices } from "@/app/hooks/useCameraDevices";
 import { useWebcamDetect } from "@/app/hooks/useWebcamDetect";
 import { useWebcamWatch } from "@/app/hooks/useWebcamWatch";
-import type { CameraSourceRef } from "@/app/lib/camera-source";
 import { useCameraSettings } from "@/app/lib/camera-settings-store";
+import type { CameraSourceRef } from "@/app/lib/camera-source";
 import { cocoClassName } from "@/app/lib/coco";
 import { appendThreatLogEntry } from "@/app/lib/threat-log-store";
 import type { Detection } from "@/app/lib/types";
 import type { WatchResult } from "@/app/lib/watch-types";
-import { OverlayCanvas } from "@/components/OverlayCanvas";
 import { CameraStreamSurface } from "@/components/camera/camera-stream-surface";
+import { OverlayCanvas } from "@/components/OverlayCanvas";
 import { ThreatModal } from "@/components/threat";
 import { ConfidenceBar } from "@/components/ui/confidence-bar";
 import { IntelLog, IntelLogEntry, IntelTag } from "@/components/ui/intel-log";
@@ -219,6 +212,9 @@ export default function LiveMonitorPage() {
     [rows],
   );
   const [activeCameraKey, setActiveCameraKey] = useState<string | null>(null);
+  const [sessionDetectionCounts, setSessionDetectionCounts] = useState<
+    Map<string, number>
+  >(() => new Map());
 
   useEffect(() => {
     if (enabledCameras.length === 0) {
@@ -237,10 +233,12 @@ export default function LiveMonitorPage() {
     }
   }, [activeCameraKey, enabledCameras]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: run when promoted primary camera changes
   useEffect(() => {
     setIsCameraReady(false);
     setCameraError(null);
     cameraSourceRef.current = null;
+    setSessionDetectionCounts(new Map());
   }, [activeCameraKey]);
 
   const activeCamera =
@@ -253,6 +251,7 @@ export default function LiveMonitorPage() {
   const [logEntries, setLogEntries] = useState<LogEntry[]>(SEED_LOG);
   const intelStreamScrollRef = useRef<HTMLDivElement>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll when log content changes
   useLayoutEffect(() => {
     const el = intelStreamScrollRef.current;
     if (!el) return;
@@ -279,14 +278,6 @@ export default function LiveMonitorPage() {
   } = useWebcamWatch(cameraSourceRef, isCameraReady && isWatchActive);
 
   // ── [5] SESSION detection totals (per class, cumulative for this primary feed) ──
-  const [sessionDetectionCounts, setSessionDetectionCounts] = useState<
-    Map<string, number>
-  >(() => new Map());
-
-  useEffect(() => {
-    setSessionDetectionCounts(new Map());
-  }, [activeCameraKey]);
-
   useEffect(() => {
     if (!isCameraReady) return;
     const frameMap = aggregateDetections(detections);
@@ -325,7 +316,10 @@ export default function LiveMonitorPage() {
           typeof (data as { load: unknown }).load === "number"
         ) {
           setSystemLoad(
-            Math.min(100, Math.max(0, Math.round((data as { load: number }).load))),
+            Math.min(
+              100,
+              Math.max(0, Math.round((data as { load: number }).load)),
+            ),
           );
         }
       } catch {
@@ -603,7 +597,7 @@ export default function LiveMonitorPage() {
                 length: MINI_CAMERA_LIMIT - gridCameras.length,
               }).map((_, index) => (
                 <CameraStreamSurface
-                  key={"empty-mini-" + String(index)}
+                  key={`empty-mini-${String(index)}`}
                   camera={null}
                 />
               ))}
@@ -611,7 +605,7 @@ export default function LiveMonitorPage() {
         </div>
 
         {/* ── BOTTOM ROW: Panels ── */}
-        <div className="flex h-48 shrink-0 gap-2">
+        <div className="flex h-60 shrink-0 gap-2">
           {/* Intel Stream panel */}
           <div className="flex flex-1 flex-col overflow-hidden rounded-sm border border-op-border bg-op-surface">
             <div className="flex h-8 shrink-0 items-center justify-between border-b border-op-border bg-op-surface px-3">
@@ -646,57 +640,50 @@ export default function LiveMonitorPage() {
 
           {/* Active Detections panel */}
           <div className="flex w-[30%] flex-col overflow-hidden rounded-sm border border-op-border bg-op-surface">
-            <div className="flex h-8 shrink-0 items-center justify-between border-b border-op-border bg-op-surface px-3">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[16px] text-op-text-sec">
+            <div className="flex h-9 shrink-0 items-center gap-3 border-b border-op-border bg-op-surface px-3">
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <span className="material-symbols-outlined shrink-0 text-[16px] text-op-text-sec">
                   frame_inspect
                 </span>
-                <MonoLabel>ACTIVE_DETECTIONS</MonoLabel>
+                <MonoLabel className="truncate">ACTIVE_DETECTIONS</MonoLabel>
+              </div>
+              <div
+                className="flex max-w-[min(200px,42%)] shrink-0 items-center gap-2"
+                title="Host CPU (machine running the Next.js server)"
+              >
+                <MonoLabel size="2xs" className="shrink-0 text-op-text-sec">
+                  CPU
+                </MonoLabel>
+                <ConfidenceBar
+                  value={systemLoad}
+                  showLabel
+                  variant="silver"
+                  className="min-w-[7rem] flex-1"
+                />
               </div>
             </div>
 
-            <div className="flex flex-1 flex-col gap-2 p-3">
-              <DetectionRow
-                icon="person"
-                label="PERSON"
-                count={personCount}
-                active={personCount > 0}
-              />
-              <DetectionRow
-                icon="directions_car"
-                label="VEHICLE"
-                count={vehicleCount}
-                active={vehicleCount > 0}
-              />
-              <DetectionRow
-                icon="warning_circle"
-                label="ANOMALY"
-                count={anomalyCount}
-                active={anomalyCount > 0}
-              />
-
-              {/* System load */}
-              <div className="mt-auto">
-                <div className="mb-1 flex items-end justify-between">
-                  <MonoLabel>SYSTEM_LOAD</MonoLabel>
-                  <MonoLabel variant="silver">{systemLoad}%</MonoLabel>
-                </div>
-                <ConfidenceBar
-                  value={systemLoad}
-                  showLabel={false}
-                  variant="silver"
-                />
+            <div className="flex min-h-0 flex-1 flex-col gap-1.5 p-3 pt-2">
+              <MonoLabel size="2xs" className="shrink-0 text-op-text-sec">
+                SESSION_TOTALS (ALL_CLASSES)
+              </MonoLabel>
+              <div className="min-h-0 flex-1 space-y-0 overflow-y-auto pr-1">
+                {sessionCountsSorted.length === 0 ? (
+                  <MonoLabel size="xs" className="text-op-text-sec">
+                    NO_OBJECTS_ACCUMULATED_YET
+                  </MonoLabel>
+                ) : (
+                  sessionCountsSorted.map(([label, count]) => (
+                    <DetectionRow
+                      key={label}
+                      icon="label"
+                      label={label}
+                      count={count}
+                      active={count > 0}
+                    />
+                  ))
+                )}
               </div>
-
-              <Link
-                className="mt-3 inline-flex items-center gap-2 border-t border-op-border pt-3 font-mono text-[10px] uppercase tracking-widest text-op-text-sec transition-colors hover:text-op-silver"
-                href="/settings/threat-log"
-              >
-                <span className="material-symbols-outlined text-[14px]">
-                  open_in_new
-                </span>
-                View Threat Log
-              </Link>
             </div>
           </div>
         </div>
