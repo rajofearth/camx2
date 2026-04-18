@@ -32,19 +32,7 @@ export function DetectView(): React.JSX.Element {
 
   return (
     <>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "100vh",
-          width: "100%",
-          gap: "14px",
-          padding: "20px",
-          boxSizing: "border-box",
-        }}
-      >
+      <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-[14px] overflow-y-auto p-5">
         <SiteNav />
         <header style={{ textAlign: "center" }}>
           <div
@@ -58,17 +46,7 @@ export function DetectView(): React.JSX.Element {
           </div>
           <div style={{ fontSize: "14px", opacity: 0.8 }}>{SITE_TAGLINE}</div>
         </header>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            gap: "14px",
-            width: "100%",
-            maxWidth: "1400px",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
+        <div className="grid w-full max-w-[1400px] grid-cols-1 gap-[14px] sm:grid-cols-2">
           <CameraCard
             cameraIndex={0}
             label="Camera 1"

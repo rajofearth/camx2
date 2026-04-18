@@ -17,7 +17,7 @@ export default function ComponentShowcasePage() {
   const [threatOpen, setThreatOpen] = useState(false);
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex h-full min-h-0 flex-col">
       <TopNav
         actions={
           <div className="flex items-center gap-2">

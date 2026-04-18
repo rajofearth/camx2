@@ -12,7 +12,7 @@ export function AnalysisShell({
   const { buildHref } = useAnalysisSession();
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-op-base text-foreground">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-op-base text-foreground">
       <SubNav
         items={[
           {

@@ -47,7 +47,7 @@ const settingsGroups = [
 
 export default function SettingsLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-op-base">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-op-base">
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <SettingsSidebar groups={settingsGroups} />
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-op-base">

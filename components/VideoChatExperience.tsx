@@ -503,7 +503,7 @@ export function VideoChatExperience(): React.JSX.Element {
   };
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col overflow-hidden bg-[#000000] text-white antialiased">
+    <div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden bg-[#000000] text-white antialiased">
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div className="absolute top-0 left-1/2 h-150 w-25 -translate-x-1/2 rounded-full bg-blue-500/10 opacity-50 blur-[120px]" />
         <div className="absolute inset-x-0 bottom-0 h-64 bg-linear-to-t from-black via-black/80 to-transparent" />

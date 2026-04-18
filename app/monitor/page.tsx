@@ -500,15 +500,15 @@ export default function LiveMonitorPage() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-op-base">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-op-base">
       {/* TopNav provided by AppShell (centralised) */}
 
       {/* ── Main content ── */}
       <main className="flex flex-1 flex-col gap-2 overflow-hidden p-2">
         {/* ── TOP ROW: Feeds ── */}
-        <div className="flex min-h-0 flex-1 gap-2">
+        <div className="flex min-h-0 flex-1 flex-col gap-2 md:flex-row">
           {/* Primary feed (60%) */}
-          <div className="flex w-[60%] min-h-0">
+          <div className="flex min-h-[220px] w-full md:min-h-0 md:w-[60%]">
             <CameraStreamSurface
               key={activeCamera?.id ?? "no-camera"}
               camera={activeCamera}
@@ -583,7 +583,7 @@ export default function LiveMonitorPage() {
           </div>
 
           {/* Camera grid (40%) — clickable active streams */}
-          <div className="grid w-[40%] min-h-0 grid-cols-2 grid-rows-2 gap-2">
+          <div className="grid min-h-[200px] w-full grid-cols-2 grid-rows-2 gap-2 md:min-h-0 md:w-[40%]">
             {gridCameras.map((camera) => (
               <CameraStreamSurface
                 key={camera.id}
@@ -605,7 +605,7 @@ export default function LiveMonitorPage() {
         </div>
 
         {/* ── BOTTOM ROW: Panels ── */}
-        <div className="flex h-60 shrink-0 gap-2">
+        <div className="flex min-h-0 shrink-0 flex-col gap-2 sm:h-60 sm:flex-row">
           {/* Intel Stream panel */}
           <div className="flex flex-1 flex-col overflow-hidden rounded-sm border border-op-border bg-op-surface">
             <div className="flex h-8 shrink-0 items-center justify-between border-b border-op-border bg-op-surface px-3">
@@ -639,7 +639,7 @@ export default function LiveMonitorPage() {
           </div>
 
           {/* Active Detections panel */}
-          <div className="flex w-[30%] flex-col overflow-hidden rounded-sm border border-op-border bg-op-surface">
+          <div className="flex min-h-[200px] w-full flex-col overflow-hidden rounded-sm border border-op-border bg-op-surface sm:min-h-0 sm:w-[30%]">
             <div className="flex h-9 shrink-0 items-center gap-3 border-b border-op-border bg-op-surface px-3">
               <div className="flex min-w-0 flex-1 items-center gap-2">
                 <span className="material-symbols-outlined shrink-0 text-[16px] text-op-text-sec">
