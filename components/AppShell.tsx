@@ -2,11 +2,34 @@
 
 import type React from "react";
 import { RouteActivityProvider } from "./RouteActivityProvider";
+import {
+  TopNav,
+  NavIconButton,
+  NavAvatar,
+  defaultNavItems,
+  ThemeSwitcher,
+} from "./shell";
 
 export function AppShell({
   children,
 }: {
   readonly children: React.ReactNode;
 }): React.JSX.Element {
-  return <RouteActivityProvider>{children}</RouteActivityProvider>;
+  return (
+    <RouteActivityProvider>
+      <TopNav
+        items={defaultNavItems}
+        actions={
+          <div className="flex items-center gap-1">
+            <NavIconButton icon="notifications" />
+            <ThemeSwitcher />
+            <div className="ml-1">
+              <NavAvatar />
+            </div>
+          </div>
+        }
+      />
+      {children}
+    </RouteActivityProvider>
+  );
 }

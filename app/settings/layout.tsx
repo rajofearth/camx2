@@ -1,17 +1,6 @@
 import type { ReactNode } from "react";
 
-import {
-  NavAvatar,
-  NavIconButton,
-  SettingsSidebar,
-  TopNav,
-} from "@/components/shell";
-
-const topNavItems = [
-  { href: "/monitor", label: "LIVE MONITOR" },
-  { href: "/analysis", label: "ANALYSIS & QUERY", exact: false },
-  { href: "/settings/camera-management", label: "SETTINGS", exact: false },
-];
+import { SettingsSidebar } from "@/components/shell";
 
 const settingsGroups = [
   {
@@ -59,19 +48,6 @@ const settingsGroups = [
 export default function SettingsLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-op-base">
-      <TopNav
-        items={topNavItems}
-        actions={
-          <>
-            <NavIconButton icon="notifications" />
-            <NavIconButton icon="sensors" />
-            <div className="ml-1">
-              <NavAvatar />
-            </div>
-          </>
-        }
-      />
-
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <SettingsSidebar groups={settingsGroups} />
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-op-base">

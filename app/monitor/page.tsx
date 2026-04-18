@@ -179,7 +179,7 @@ function MiniCameraCell({ label }: { label: string }) {
   return (
     <div className="relative flex flex-col overflow-hidden rounded-sm border border-op-border bg-op-surface">
       {/* Gradient label overlay */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-between bg-gradient-to-b from-black/80 to-transparent p-1.5">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-between bg-linear-to-b from-black/80 to-transparent p-1.5">
         <span className="bg-black/50 px-1 font-mono text-[9px] text-op-silver">
           {label}
         </span>
@@ -509,26 +509,7 @@ export default function LiveMonitorPage() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-op-base">
-      {/* ── Top Nav ── */}
-      <TopNav
-        actions={
-          <div className="flex items-center gap-1">
-            <NavIconButton
-              icon="remove_red_eye"
-              title={
-                isWatchActive ? "Deactivate VLM watch" : "Activate VLM watch"
-              }
-              onClick={toggleWatch}
-              className={isWatchActive ? "text-op-warning" : undefined}
-            />
-            <NavIconButton icon="notifications" badge={threatOpen} />
-            <NavIconButton icon="shield_with_heart" />
-            <div className="ml-1">
-              <NavAvatar />
-            </div>
-          </div>
-        }
-      />
+      {/* TopNav provided by AppShell (centralised) */}
 
       {/* ── Main content ── */}
       <main className="flex flex-1 flex-col gap-2 overflow-hidden p-2">
