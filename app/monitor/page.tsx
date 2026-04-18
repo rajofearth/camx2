@@ -11,7 +11,13 @@
  */
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useCameraDevices } from "@/app/hooks/useCameraDevices";
 import { useWebcamDetect } from "@/app/hooks/useWebcamDetect";
 import { useWebcamWatch } from "@/app/hooks/useWebcamWatch";
@@ -245,6 +251,13 @@ export default function LiveMonitorPage() {
     .slice(0, MINI_CAMERA_LIMIT);
 
   const [logEntries, setLogEntries] = useState<LogEntry[]>(SEED_LOG);
+  const intelStreamScrollRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const el = intelStreamScrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [logEntries]);
   const [threatOpen, setThreatOpen] = useState(false);
   const [threatData, setThreatData] = useState<ThreatState | null>(null);
   const [systemLoad, setSystemLoad] = useState(0);
@@ -265,32 +278,67 @@ export default function LiveMonitorPage() {
     error: _watchError,
   } = useWebcamWatch(cameraSourceRef, isCameraReady && isWatchActive);
 
-  // ── [5] DETECT_COUNTS: aggregate by class ────────────────────────────────
-  const detectionsByClass = useMemo(
-    () => aggregateDetections(detections),
-    [detections],
-  );
-  const personCount = detectionsByClass.get("PERSON") ?? 0;
-  const vehicleCount =
-    (detectionsByClass.get("CAR") ?? 0) +
-    (detectionsByClass.get("TRUCK") ?? 0) +
-    (detectionsByClass.get("BUS") ?? 0) +
-    (detectionsByClass.get("MOTORCYCLE") ?? 0);
-  const anomalyCount = [...detectionsByClass.entries()]
-    .filter(
-      ([k]) => !["PERSON", "CAR", "TRUCK", "BUS", "MOTORCYCLE"].includes(k),
-    )
-    .reduce((sum, [, v]) => sum + v, 0);
+  // ── [5] SESSION detection totals (per class, cumulative for this primary feed) ──
+  const [sessionDetectionCounts, setSessionDetectionCounts] = useState<
+    Map<string, number>
+  >(() => new Map());
+
+  useEffect(() => {
+    setSessionDetectionCounts(new Map());
+  }, [activeCameraKey]);
+
+  useEffect(() => {
+    if (!isCameraReady) return;
+    const frameMap = aggregateDetections(detections);
+    if (frameMap.size === 0) return;
+    setSessionDetectionCounts((prev) => {
+      const next = new Map(prev);
+      for (const [label, n] of frameMap) {
+        next.set(label, (next.get(label) ?? 0) + n);
+      }
+      return next;
+    });
+  }, [detections, isCameraReady]);
+
+  const sessionCountsSorted = useMemo(() => {
+    return [...sessionDetectionCounts.entries()].sort((a, b) => {
+      if (b[1] !== a[1]) return b[1] - a[1];
+      return a[0].localeCompare(b[0]);
+    });
+  }, [sessionDetectionCounts]);
 
   // ── [6] VLM_STATUS ───────────────────────────────────────────────────────
   const vlmStatus = deriveVlmStatus(watchResult, isWatchProcessing);
 
-  // ── [5] SYSTEM_LOAD proxy ─────────────────────────────────────────────────
+  // ── Host CPU load (Next server process sees machine-wide CPU via os.cpus()) ──
   useEffect(() => {
-    if (detectLatency !== null) {
-      setSystemLoad(Math.min(99, Math.round((detectLatency / 1000) * 100)));
-    }
-  }, [detectLatency]);
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const res = await fetch("/api/system/cpu", { cache: "no-store" });
+        if (!res.ok || cancelled) return;
+        const data: unknown = await res.json();
+        if (
+          typeof data === "object" &&
+          data !== null &&
+          "load" in data &&
+          typeof (data as { load: unknown }).load === "number"
+        ) {
+          setSystemLoad(
+            Math.min(100, Math.max(0, Math.round((data as { load: number }).load))),
+          );
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    void poll();
+    const id = setInterval(() => void poll(), 1600);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
 
   // ── [3] INTEL_LOG: push detection events ─────────────────────────────────
   const lastDetectionCountRef = useRef(0);
@@ -576,7 +624,10 @@ export default function LiveMonitorPage() {
               <MonoLabel>AUTO_SCROLL: ON</MonoLabel>
             </div>
 
-            <div className="flex-1 overflow-y-auto bg-op-base/20 p-3">
+            <div
+              ref={intelStreamScrollRef}
+              className="flex-1 overflow-y-auto bg-op-base/20 p-3"
+            >
               <IntelLog>
                 {logEntries.map((entry, _i) => (
                   <IntelLogEntry
