@@ -147,6 +147,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     let verificationModelKey = "";
     let verificationReason = "";
     let verificationApplied = false;
+    let verificationMatchesPrompt: boolean | null = null;
 
     try {
       const agentStart = performance.now();
@@ -164,6 +165,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       verificationRawText = res.verification?.rawText ?? "";
       verificationModelKey = res.verification?.modelKey ?? "";
       verificationReason = res.verification?.reason ?? "";
+      verificationMatchesPrompt = res.verification?.matchesPrompt ?? null;
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
       // If the agent failed to load the processed image, retry once with the original capture.
@@ -190,6 +192,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         verificationRawText = res2.verification?.rawText ?? "";
         verificationModelKey = res2.verification?.modelKey ?? "";
         verificationReason = res2.verification?.reason ?? "";
+        verificationMatchesPrompt = res2.verification?.matchesPrompt ?? null;
       } else {
         // Not a recoverable load error or we already used the original; rethrow.
         throw err;
@@ -280,12 +283,13 @@ export async function POST(req: NextRequest): Promise<Response> {
       verification: verificationApplied
         ? {
             applied: true,
-            matchesPrompt: result.isHarm === true,
+            matchesPrompt:
+              verificationMatchesPrompt ?? (result.isHarm === true),
             reason: verificationReason,
             modelKey: verificationModelKey,
             latencyMs: verificationMs,
             rawText: verificationRawText,
-            overturned: result.isHarm !== true,
+            overturned: verificationMatchesPrompt === false,
           }
         : null,
     } as unknown as Parameters<typeof createSuccessResponse>[2]);

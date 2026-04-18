@@ -24,7 +24,6 @@ export function DetectView(): React.JSX.Element {
 
   const handleCloseAlert = () => {
     setIsAlertOpen(false);
-    // Clear alert data after a short delay to allow animation
     setTimeout(() => {
       setAlertData(null);
     }, 300);

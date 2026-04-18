@@ -22,7 +22,7 @@ export const WATCH_RESPONSE_SCHEMA = {
     description: {
       type: ["string", "null"],
       description:
-        "Brief, exact reason. Required if isHarm is true. Must be empty or null if isHarm is false/empty.",
+        "When isHarm is true: required. Factual, serious language covering visible hazards (weapons, violence, fire, medical emergency, etc.), key actors/roles without invented identities, and spatial context. Use CRITICAL/HIGH when severity warrants. Never downplay visible weapons or active emergencies.",
     },
   },
   required: ["isHarm", "description"],

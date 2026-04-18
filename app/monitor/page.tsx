@@ -20,6 +20,7 @@ import { cocoClassName } from "@/app/lib/coco";
 import { appendThreatLogEntry } from "@/app/lib/threat-log-store";
 import type { Detection } from "@/app/lib/types";
 import type { WatchResult } from "@/app/lib/watch-types";
+import { isVerifiedThreat } from "@/app/lib/watch-verification";
 import { CameraStreamSurface } from "@/components/camera/camera-stream-surface";
 import { OverlayCanvas } from "@/components/OverlayCanvas";
 import { ThreatModal } from "@/components/threat";
@@ -132,24 +133,6 @@ function deriveVlmStatus(
   return "NOMINAL";
 }
 
-function isVerifiedThreat(
-  watchResult: WatchResult | null,
-  verificationMeta:
-    | {
-        applied?: boolean;
-        matchesPrompt?: boolean | null;
-        overturned?: boolean;
-      }
-    | null
-    | undefined,
-): boolean {
-  if (watchResult?.isHarm !== true || !watchResult.description) return false;
-  if (!verificationMeta?.applied) return false;
-  if (verificationMeta.overturned === true) return false;
-  if (verificationMeta.matchesPrompt === false) return false;
-  return true;
-}
-
 /** Detection count row inside the Active Detections panel. */
 function DetectionRow({
   icon,
@@ -203,7 +186,7 @@ export default function LiveMonitorPage() {
 
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [isWatchActive] = useState(false);
+  const [isWatchActive] = useState(true);
 
   const { devices } = useCameraDevices();
   const { rows } = useCameraSettings(devices);
@@ -379,11 +362,13 @@ export default function LiveMonitorPage() {
     );
   }, [watchResult]);
 
-  const lastLoggedThreatRequestIdRef = useRef<string | null>(null);
+  const lastHandledVerifiedRequestIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (!lastRequestId) return;
-    if (lastLoggedThreatRequestIdRef.current === lastRequestId) return;
+    if (lastHandledVerifiedRequestIdRef.current === lastRequestId) return;
     if (!isVerifiedThreat(watchResult, lastMeta?.verification)) return;
+
+    lastHandledVerifiedRequestIdRef.current = lastRequestId;
 
     const screenshot = cameraSourceRef.current?.getScreenshot() ?? null;
     const verification = lastMeta?.verification ?? null;
@@ -420,7 +405,21 @@ export default function LiveMonitorPage() {
       ],
     });
 
-    lastLoggedThreatRequestIdRef.current = lastRequestId;
+    setThreatData({
+      threatId: `THT-${uid().toUpperCase()}`,
+      cameraId: activeCameraId,
+      timestamp: `${new Date().toISOString().replace("T", " ").slice(0, 19)}Z`,
+      classification: description,
+      confidence,
+      frameSrc: screenshot ?? undefined,
+      frameId: `FRAME_CAP_${nowTimestamp().replace(/:/g, "")}`,
+      vlmAnalysis: [
+        description,
+        verification?.reason ?? "Verification confirmed the watch output.",
+      ],
+    });
+    setThreatOpen(true);
+
     setLogEntries((prev) =>
       appendLogEntry(prev, {
         id: uid(),
@@ -434,29 +433,6 @@ export default function LiveMonitorPage() {
       }),
     );
   }, [activeCameraId, detections, lastMeta, lastRequestId, watchResult]);
-
-  // ── [4] THREAT_MODAL: trigger on harm ────────────────────────────────────
-  useEffect(() => {
-    if (watchResult?.isHarm !== true || !watchResult.description) return;
-    if (threatOpen) return; // don't stack modals
-
-    const screenshot = cameraSourceRef.current?.getScreenshot() ?? undefined;
-
-    setThreatData({
-      threatId: `THT-${uid().toUpperCase()}`,
-      cameraId: activeCameraId,
-      timestamp: `${new Date().toISOString().replace("T", " ").slice(0, 19)}Z`,
-      classification: watchResult.description,
-      confidence:
-        detections.length > 0
-          ? Math.round(Math.max(...detections.map((d) => d.confidence)) * 100)
-          : 90,
-      frameSrc: screenshot,
-      frameId: `FRAME_CAP_${nowTimestamp().replace(/:/g, "")}`,
-      vlmAnalysis: [watchResult.description],
-    });
-    setThreatOpen(true);
-  }, [activeCameraId, watchResult, threatOpen, detections]);
 
   // ── Camera event handlers ─────────────────────────────────────────────────
   const handlePrimaryReady = () => {

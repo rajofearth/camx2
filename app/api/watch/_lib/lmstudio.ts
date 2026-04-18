@@ -1,17 +1,23 @@
 import { LMStudioClient } from "@lmstudio/sdk";
 import {
+  WATCH_SYSTEM_PROMPT,
+  WATCH_USER_MESSAGE,
+  WATCH_VERIFICATION_SYSTEM_PROMPT,
+  watchVerificationUserMessage,
+} from "./prompts";
+import {
   parseWatchHarmVerificationJson,
   parseWatchModelJson,
   WATCH_HARM_VERIFICATION_SCHEMA,
   WATCH_RESPONSE_SCHEMA,
 } from "./schema";
 
-const WATCH_ANALYSIS_PROMPT =
-  "Analyze this frame with absolute strictness and extreme caution. Detect ANY potential harm: self-harm, weapons, accidents, threats, blood, violence, or life-endangering elements (even if not active). CRITICAL RULE: If you detect ANY lethal items, weapons, or potentially fatal scenarios, you MUST mark it as harm immediately, no matter if the context is unclear, ambiguous, or seemingly benign. Context does not excuse lethal objects. Be paranoid; never optimistic. If there is any doubt whatsoever, flag as harmful. (Exception: Clear, obvious toy guns are safe).";
-
 const LMSTUDIO_BASE_URL =
   process.env.LMSTUDIO_BASE_URL ?? "ws://127.0.0.1:1234";
 const TARGET_MODEL_KEY = process.env.LMSTUDIO_WATCH_MODEL ?? "lfm-2.5-ucf-1.6b";
+
+const ANALYSIS_MAX_TOKENS = 420;
+const VERIFICATION_MAX_TOKENS = 280;
 
 let cachedClient: LMStudioClient | null = null;
 let cachedResolvedModelKey: string | null = null;
@@ -20,14 +26,16 @@ type LoadedLlmHandle = Awaited<
   ReturnType<LMStudioClient["llm"]["listLoaded"]>
 >[number];
 
+type VisionModel = Awaited<
+  ReturnType<ReturnType<LMStudioClient["llm"]["model"]>>
+>;
+
 function getClient(): LMStudioClient {
   if (cachedClient) return cachedClient;
-
   cachedClient = new LMStudioClient({
     baseUrl: LMSTUDIO_BASE_URL,
     verboseErrorMessages: true,
   });
-
   return cachedClient;
 }
 
@@ -45,7 +53,6 @@ function mimeTypeToFileName(mimeType: string): string {
 function isConnectionError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
   const lower = message.toLowerCase();
-
   return (
     lower.includes("econnrefused") ||
     lower.includes("connect") ||
@@ -91,27 +98,21 @@ async function resolveWatchModelKey(): Promise<string> {
 
   if (loadedTarget) {
     const loadedInfo = await loadedTarget.getModelInfo();
-
     if (!loadedInfo.vision) {
       throw new Error(
         `LM Studio model "${TARGET_MODEL_KEY}" is loaded but does not support image input`,
       );
     }
-
     if (loadedInfo.contextLength < loadedInfo.maxContextLength) {
       await loadedTarget.unload();
-
       const reloadedModel = await client.llm.load(loadedInfo.modelKey, {
         identifier: loadedInfo.identifier,
-        config: {
-          contextLength: loadedInfo.maxContextLength,
-        },
+        config: { contextLength: loadedInfo.maxContextLength },
       });
       const reloadedInfo = await reloadedModel.getModelInfo();
       cachedResolvedModelKey = reloadedInfo.modelKey;
       return cachedResolvedModelKey;
     }
-
     cachedResolvedModelKey = loadedInfo.modelKey;
     return cachedResolvedModelKey;
   }
@@ -120,7 +121,6 @@ async function resolveWatchModelKey(): Promise<string> {
   const downloadedTarget = downloadedModels.find(
     (model) => model.modelKey === TARGET_MODEL_KEY,
   );
-
   if (!downloadedTarget) {
     throw new Error(
       `Required LM Studio model "${TARGET_MODEL_KEY}" is not loaded and not available locally`,
@@ -128,20 +128,43 @@ async function resolveWatchModelKey(): Promise<string> {
   }
 
   const loadedModel = await client.llm.load(downloadedTarget.modelKey, {
-    config: {
-      contextLength: downloadedTarget.maxContextLength,
-    },
+    config: { contextLength: downloadedTarget.maxContextLength },
   });
   const loadedInfo = await loadedModel.getModelInfo();
-
   if (!loadedInfo.vision) {
     throw new Error(
       `LM Studio model "${TARGET_MODEL_KEY}" was loaded but does not support image input`,
     );
   }
-
   cachedResolvedModelKey = loadedInfo.modelKey;
   return cachedResolvedModelKey;
+}
+
+function parseJsonContent(rawText: string, label: string): unknown {
+  try {
+    return JSON.parse(rawText);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown JSON error";
+    throw new Error(`${label}: ${message}`);
+  }
+}
+
+async function respondStructuredJson(
+  model: VisionModel,
+  messages: Parameters<VisionModel["respond"]>[0],
+  jsonSchema: Record<string, unknown>,
+  maxTokens: number,
+): Promise<string> {
+  const response = await model.respond(messages, {
+    maxTokens,
+    temperature: 0,
+    structured: { type: "json", jsonSchema },
+  });
+  const rawText = response?.content?.trim();
+  if (!rawText) {
+    throw new Error("LM Studio returned empty response");
+  }
+  return rawText;
 }
 
 export interface WatchLmStudioInput {
@@ -182,38 +205,21 @@ export async function runWatchLmStudio(
     input.base64Image,
   );
 
-  const response = await model.respond(
+  const rawText = await respondStructuredJson(
+    model,
     [
-      {
-        role: "system",
-        content: WATCH_ANALYSIS_PROMPT,
-      },
+      { role: "system", content: WATCH_SYSTEM_PROMPT },
       {
         role: "user",
-        content: "Analyze this CCTV frame.",
+        content: WATCH_USER_MESSAGE,
         images: [image],
       },
     ],
-    {
-      maxTokens: 200,
-      temperature: 0,
-      structured: { type: "json", jsonSchema: WATCH_RESPONSE_SCHEMA },
-    },
+    WATCH_RESPONSE_SCHEMA as unknown as Record<string, unknown>,
+    ANALYSIS_MAX_TOKENS,
   );
 
-  const rawText = response?.content?.trim();
-  if (!rawText) {
-    throw new Error("LM Studio returned empty response");
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(rawText);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown JSON error";
-    throw new Error(`LM Studio returned invalid JSON: ${message}`);
-  }
-
+  const parsed = parseJsonContent(rawText, "LM Studio returned invalid JSON");
   const result = parseWatchModelJson(parsed);
 
   if (result.isHarm === true && result.description) {
@@ -225,10 +231,7 @@ export async function runWatchLmStudio(
 
     if (!verification.matchesPrompt) {
       return {
-        result: {
-          isHarm: false,
-          description: null,
-        },
+        result: { isHarm: false, description: null },
         rawText: JSON.stringify(
           {
             analysis: parsed,
@@ -281,41 +284,24 @@ export async function verifyWatchHarmDescription(
     input.base64Image,
   );
 
-  const response = await model.respond(
+  const rawText = await respondStructuredJson(
+    model,
     [
-      {
-        role: "system",
-        content: `You are validating a previous CCTV harm analysis result against the original watch prompt. Original watch prompt: "${WATCH_ANALYSIS_PROMPT}" Only decide whether the provided harm description actually fits what is visibly present in this image and matches the kinds of harms required by that prompt. Be strict and factual. Return matchesPrompt=true only when the description clearly matches visible harmful content in the image under that prompt. If the description is exaggerated, unsupported, unrelated, speculative, or does not fit the prompt, return matchesPrompt=false.`,
-      },
+      { role: "system", content: WATCH_VERIFICATION_SYSTEM_PROMPT },
       {
         role: "user",
-        content: `Check whether this harm description actually fits the image and the watch prompt.\n\nDescription: ${input.description}`,
+        content: watchVerificationUserMessage(input.description),
         images: [image],
       },
     ],
-    {
-      maxTokens: 200,
-      temperature: 0,
-      structured: {
-        type: "json",
-        jsonSchema: WATCH_HARM_VERIFICATION_SCHEMA,
-      },
-    },
+    WATCH_HARM_VERIFICATION_SCHEMA as unknown as Record<string, unknown>,
+    VERIFICATION_MAX_TOKENS,
   );
 
-  const rawText = response?.content?.trim();
-  if (!rawText) {
-    throw new Error("LM Studio returned empty verification response");
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(rawText);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown JSON error";
-    throw new Error(`LM Studio returned invalid verification JSON: ${message}`);
-  }
-
+  const parsed = parseJsonContent(
+    rawText,
+    "LM Studio returned invalid verification JSON",
+  );
   const result = parseWatchHarmVerificationJson(parsed);
   return {
     matchesPrompt: result.matchesPrompt,

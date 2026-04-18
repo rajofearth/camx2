@@ -9,7 +9,11 @@ import { useWebcamWatch } from "@/app/hooks/useWebcamWatch";
 import type { CameraSourceRef } from "@/app/lib/camera-source";
 import type { DetectionModel } from "@/app/lib/types";
 import type { WatchResult } from "@/app/lib/watch-types";
-import { OverlayCanvas } from "./OverlayCanvas";
+import {
+  isVerifiedThreat,
+  type VerifiedWatchThreatPayload,
+} from "@/app/lib/watch-verification";
+import { OverlayCanvas } from "@/components/OverlayCanvas";
 
 function formatMs(value: number | null | undefined): string {
   return typeof value === "number" ? `${value.toFixed(0)}ms` : "—";
@@ -59,23 +63,24 @@ function getWatchStatusTone(result: WatchResult | null): {
 const VIDEO_WIDTH = 640;
 const VIDEO_HEIGHT = 480;
 
-export interface CameraCardProps {
+export interface OperationsCameraCardProps {
   readonly label: string;
   readonly cameraIndex: number;
   readonly isPaused?: boolean;
-  readonly onHarmDetected?: (result: WatchResult, cameraLabel: string) => void;
+  /** Fires once per watch request when verification confirms a harm classification. */
+  readonly onVerifiedThreat?: (payload: VerifiedWatchThreatPayload) => void;
 }
 
 function formatDetectionModel(model: DetectionModel): string {
   return model === "yolo" ? "YOLO" : "RF-DETR";
 }
 
-export function CameraCard({
+export function OperationsCameraCard({
   label,
   cameraIndex,
   isPaused = false,
-  onHarmDetected,
-}: CameraCardProps): React.JSX.Element {
+  onVerifiedThreat,
+}: OperationsCameraCardProps): React.JSX.Element {
   const webcamRef = useRef<InstanceType<typeof Webcam> | null>(null);
   const cameraSourceRef = useRef<CameraSourceRef | null>(null);
   // If a local video file is selected for testing, `localVideoRef` points at
@@ -107,7 +112,7 @@ export function CameraCard({
       return;
     }
 
-    const storageKey = `camx2.camera-card.${cameraIndex}`;
+    const storageKey = `camx2.operations.card.${cameraIndex}`;
 
     try {
       const stored = window.sessionStorage.getItem(storageKey);
@@ -149,7 +154,7 @@ export function CameraCard({
       return;
     }
 
-    const storageKey = `camx2.camera-card.${cameraIndex}`;
+    const storageKey = `camx2.operations.card.${cameraIndex}`;
     const snapshot = {
       selectedDeviceId,
       isCameraActive,
@@ -220,14 +225,44 @@ export function CameraCard({
     error: watchError,
   } = useWebcamWatch(cameraSourceRef, isWatchActive && isCameraRunning);
 
+  const lastEmittedVerifiedRequestIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (watchLatest && onHarmDetected) {
-      const isHarm = watchLatest.isHarm === true;
-      if (isHarm && watchLatest.description) {
-        onHarmDetected(watchLatest, label);
-      }
+    if (!isWatchActive) {
+      lastEmittedVerifiedRequestIdRef.current = null;
     }
-  }, [watchLatest, onHarmDetected, label]);
+  }, [isWatchActive]);
+
+  useEffect(() => {
+    if (!onVerifiedThreat || !watchRequestId || !watchLatest) return;
+    if (lastEmittedVerifiedRequestIdRef.current === watchRequestId) return;
+    if (!isVerifiedThreat(watchLatest, watchMeta?.verification)) return;
+
+    lastEmittedVerifiedRequestIdRef.current = watchRequestId;
+
+    const screenshot = cameraSourceRef.current?.getScreenshot() ?? null;
+    const confidence =
+      detections.length > 0
+        ? Math.round(Math.max(...detections.map((d) => d.confidence)) * 100)
+        : 90;
+
+    onVerifiedThreat({
+      requestId: watchRequestId,
+      cameraLabel: label,
+      cameraId: label,
+      watchResult: watchLatest,
+      verification: watchMeta?.verification ?? null,
+      frameSrc: screenshot,
+      confidence,
+    });
+  }, [
+    detections,
+    label,
+    onVerifiedThreat,
+    watchLatest,
+    watchMeta?.verification,
+    watchRequestId,
+  ]);
 
   const toggleDetection = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
