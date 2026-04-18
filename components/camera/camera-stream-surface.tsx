@@ -3,12 +3,12 @@
 import type React from "react";
 import { useEffect, useMemo, useRef } from "react";
 import Webcam from "react-webcam";
+import type { CameraSettingsRow } from "@/app/lib/camera-settings-store";
 import type { CameraSourceRef } from "@/app/lib/camera-source";
 import {
   buildCameraPlaybackDescriptor,
   describeCameraStreamSource,
 } from "@/app/lib/camera-stream";
-import type { CameraSettingsRow } from "@/app/lib/camera-settings-store";
 import { MonoLabel } from "@/components/ui/mono-label";
 import { StatusDot } from "@/components/ui/status-dot";
 import { cn } from "@/lib/utils";
@@ -96,10 +96,6 @@ export function CameraStreamSurface({
   const imageRef = useRef<HTMLImageElement | null>(null);
 
   const isDeviceSource = camera?.sourceType === "device";
-  const streamDescriptor = useMemo(
-    () => (camera ? describeCameraStreamSource(camera.sourceUrl) : null),
-    [camera],
-  );
   const playback = useMemo(() => {
     if (!camera || camera.sourceType === "device") {
       return null;
@@ -179,7 +175,7 @@ export function CameraStreamSurface({
         sourceRef.current = null;
       }
     };
-  }, [camera, isDeviceSource, sourceRef, streamKey]);
+  }, [camera, isDeviceSource, sourceRef]);
 
   const handleClick = () => {
     if (!camera || !onSelect) return;
@@ -323,6 +319,7 @@ export function CameraStreamSurface({
                 />
               ) : (
                 <>
+                  {/* biome-ignore lint/performance/noImgElement: Relayed MJPEG/API stream and canvas drawImage need a native HTMLImageElement ref. */}
                   <img
                     key={`${streamKey}::img`}
                     ref={imageRef}

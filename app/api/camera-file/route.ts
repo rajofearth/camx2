@@ -1,3 +1,4 @@
+import type { Stats } from "node:fs";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { extname } from "node:path";
@@ -101,7 +102,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     return jsonError(400, message);
   }
 
-  let details;
+  let details: Stats;
   try {
     details = await stat(filePath);
   } catch {

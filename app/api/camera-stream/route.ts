@@ -3,8 +3,8 @@ import { access } from "node:fs/promises";
 import ffmpegStatic from "ffmpeg-static";
 import type { NextRequest } from "next/server";
 import {
-  type ServerCameraSourceDescriptor,
   resolveAccessibleCameraSourceFromQuery,
+  type ServerCameraSourceDescriptor,
 } from "@/app/lib/camera-stream-server";
 
 export const runtime = "nodejs";

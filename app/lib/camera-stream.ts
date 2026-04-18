@@ -134,7 +134,7 @@ export function buildCameraStreamRelayUrl(source: string): string {
   const params = new URLSearchParams({
     source: normalizedSource,
   });
-  return "/api/camera-stream?" + params.toString();
+  return `/api/camera-stream?${params.toString()}`;
 }
 
 export function buildCameraFilePlaybackUrl(source: string): string {
@@ -142,7 +142,7 @@ export function buildCameraFilePlaybackUrl(source: string): string {
   const params = new URLSearchParams({
     source: normalizedSource,
   });
-  return "/api/camera-file?" + params.toString();
+  return `/api/camera-file?${params.toString()}`;
 }
 
 export function buildCameraPlaybackDescriptor(
