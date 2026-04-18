@@ -2,9 +2,8 @@
 
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { MonoLabel } from "@/components/ui/mono-label";
+import { cn } from "@/lib/utils";
 
 function formatVideoTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) {
@@ -111,9 +110,7 @@ export function AnalysisVideoPlayer({
     videoElement.pause();
   };
 
-  const handleTimelineChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleTimelineChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const videoElement = videoRef.current;
     if (!videoElement) {
       return;
@@ -146,7 +143,7 @@ export function AnalysisVideoPlayer({
       )}
     >
       <div className="relative flex min-h-0 flex-1 items-center justify-center bg-black">
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between bg-gradient-to-b from-black/80 via-black/35 to-transparent px-3 py-2">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between bg-linear-to-b from-black/80 via-black/35 to-transparent px-3 py-2">
           <MonoLabel variant="silver">{title}</MonoLabel>
           <div className="inline-flex items-center gap-1.5 border border-op-critical/40 bg-op-base/80 px-2 py-1">
             <span className="size-2 animate-pulse rounded-full bg-op-critical" />
@@ -155,13 +152,16 @@ export function AnalysisVideoPlayer({
         </div>
 
         {src ? (
-          <video
-            ref={videoRef}
-            src={src}
-            className="h-full w-full object-contain grayscale"
-            playsInline
-            preload="metadata"
-          />
+          <>
+            {/* biome-ignore lint/a11y/useMediaCaption: analysis preview videos are user-supplied evidence clips without authored caption tracks */}
+            <video
+              ref={videoRef}
+              src={src}
+              className="h-full w-full object-contain grayscale"
+              playsInline
+              preload="metadata"
+            />
+          </>
         ) : (
           <div className="flex h-full min-h-80 w-full items-center justify-center">
             <div className="flex flex-col items-center gap-3 text-center">
@@ -175,7 +175,9 @@ export function AnalysisVideoPlayer({
           </div>
         )}
 
-        {src ? <div className="pointer-events-none absolute inset-0">{overlays}</div> : null}
+        {src ? (
+          <div className="pointer-events-none absolute inset-0">{overlays}</div>
+        ) : null}
       </div>
 
       {/* Scrubber Console – h-12 compact strip matching reference */}
@@ -192,7 +194,7 @@ export function AnalysisVideoPlayer({
             <div
               key={marker}
               className={`absolute top-0 h-full bg-op-critical pointer-events-none ${
-                i === 0 ? "w-px" : i === 1 ? "w-[3px]" : "w-[1px]"
+                i === 0 ? "w-px" : i === 1 ? "w-1.75" : "w-px"
               }`}
               style={{ left: `${marker}%` }}
             />
@@ -215,7 +217,9 @@ export function AnalysisVideoPlayer({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => { void togglePlayback(); }}
+              onClick={() => {
+                void togglePlayback();
+              }}
               disabled={!src}
               className="text-foreground hover:text-op-silver disabled:opacity-40 flex items-center"
             >
@@ -247,15 +251,21 @@ export function AnalysisVideoPlayer({
               className="text-op-text-sec hover:text-foreground disabled:opacity-40"
               title="Speed (not implemented)"
             >
-              <span className="material-symbols-outlined text-[16px]">speed</span>
+              <span className="material-symbols-outlined text-[16px]">
+                speed
+              </span>
             </button>
             <button
               type="button"
-              onClick={() => { void toggleFullscreen(); }}
+              onClick={() => {
+                void toggleFullscreen();
+              }}
               disabled={!src}
               className="text-op-text-sec hover:text-foreground disabled:opacity-40"
             >
-              <span className="material-symbols-outlined text-[16px]">fullscreen</span>
+              <span className="material-symbols-outlined text-[16px]">
+                fullscreen
+              </span>
             </button>
           </div>
         </div>

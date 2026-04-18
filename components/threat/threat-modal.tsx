@@ -1,41 +1,38 @@
-"use client"
+"use client";
 
-import * as React from "react"
-
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { ConfidenceBar } from "@/components/ui/confidence-bar"
-import { BoundingBox } from "@/components/ui/bounding-box"
-import { MonoLabel } from "@/components/ui/mono-label"
+import { BoundingBox } from "@/components/ui/bounding-box";
+import { Button } from "@/components/ui/button";
+import { ConfidenceBar } from "@/components/ui/confidence-bar";
+import { MonoLabel } from "@/components/ui/mono-label";
 
 interface ThreatModalProps {
-  open: boolean
-  onDismiss?: () => void
-  onFlag?: () => void
-  onAcknowledge?: () => void
-  onDispatch?: () => void
+  open: boolean;
+  onDismiss?: () => void;
+  onFlag?: () => void;
+  onAcknowledge?: () => void;
+  onDispatch?: () => void;
 
   /** Threat metadata */
-  threatId: string
-  cameraId: string
-  timestamp: string
-  classification: string
-  confidence: number
+  threatId: string;
+  cameraId: string;
+  timestamp: string;
+  classification: string;
+  confidence: number;
 
   /** Frame capture */
-  frameSrc?: string
-  frameId?: string
+  frameSrc?: string;
+  frameId?: string;
 
   /** VLM analysis text */
-  vlmAnalysis?: string[]
+  vlmAnalysis?: string[];
 
   /** Optional bounding box on the frame */
   boundingBox?: {
-    top: string
-    left: string
-    width: string
-    height: string
-  }
+    top: string;
+    left: string;
+    width: string;
+    height: string;
+  };
 }
 
 /**
@@ -61,7 +58,7 @@ function ThreatModal({
   vlmAnalysis = [],
   boundingBox,
 }: ThreatModalProps) {
-  if (!open) return null
+  if (!open) return null;
 
   return (
     <div
@@ -95,7 +92,9 @@ function ThreatModal({
             </div>
 
             <div className="rounded-sm border border-op-critical bg-op-critical/10 px-4 py-1.5">
-              <MonoLabel variant="critical">CONFIDENCE: {confidence}%</MonoLabel>
+              <MonoLabel variant="critical">
+                CONFIDENCE: {confidence}%
+              </MonoLabel>
             </div>
           </div>
 
@@ -104,6 +103,7 @@ function ThreatModal({
             {/* Frame capture */}
             <div className="relative flex-1 overflow-hidden border border-op-border bg-op-base">
               {frameSrc ? (
+                // biome-ignore lint/performance/noImgElement: threat frames use dynamic screenshot and preview URLs that should render without Next.js image optimization
                 <img
                   src={frameSrc}
                   alt="Threat frame"
@@ -160,8 +160,8 @@ function ThreatModal({
                 <div className="flex-1 border border-op-border bg-op-elevated p-4">
                   <MonoLabel className="mb-3">VLM ANALYSIS</MonoLabel>
                   <div className="space-y-2 font-mono text-sm leading-relaxed text-op-silver">
-                    {vlmAnalysis.map((line, i) => (
-                      <p key={i}>&gt; {line}</p>
+                    {vlmAnalysis.map((line) => (
+                      <p key={line}>&gt; {line}</p>
                     ))}
                   </div>
                 </div>
@@ -187,7 +187,7 @@ function ThreatModal({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export { ThreatModal }
+export { ThreatModal };

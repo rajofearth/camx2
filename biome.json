@@ -33,6 +33,7 @@
         "useOptionalChain": "off"
       },
       "suspicious": {
+        "noCommentText": "off",
         "noUnknownAtRules": "off"
       }
     },

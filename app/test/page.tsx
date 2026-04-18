@@ -1,17 +1,17 @@
-'use client'
+"use client";
 
-import { TopNav, NavAvatar, NavIconButton } from "@/components/shell";
+import { useState } from "react";
+import { CameraFeed } from "@/components/camera";
+import { NavAvatar, NavIconButton, TopNav } from "@/components/shell";
+import { ThreatModal } from "@/components/threat";
+import { BoundingBox } from "@/components/ui/bounding-box";
 import {
   Panel,
+  PanelContent,
   PanelHeader,
   PanelLabel,
-  PanelContent,
 } from "@/components/ui/panel";
 import { StatusDot } from "@/components/ui/status-dot";
-import { BoundingBox } from "@/components/ui/bounding-box";
-import { CameraFeed } from "@/components/camera";
-import { ThreatModal } from "@/components/threat";
-import { useState } from "react";
 
 export default function ComponentShowcasePage() {
   const [threatOpen, setThreatOpen] = useState(false);
@@ -51,31 +51,45 @@ export default function ComponentShowcasePage() {
               </div>
               <div className="flex flex-wrap items-center gap-8 mb-8">
                 <div className="flex flex-col gap-1">
-                  <span className="font-mono text-xs text-muted-foreground">nominal</span>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    nominal
+                  </span>
                   <StatusDot variant="nominal" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="font-mono text-xs text-muted-foreground">warning</span>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    warning
+                  </span>
                   <StatusDot variant="warning" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="font-mono text-xs text-muted-foreground">critical</span>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    critical
+                  </span>
                   <StatusDot variant="critical" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="font-mono text-xs text-muted-foreground">silver</span>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    silver
+                  </span>
                   <StatusDot variant="silver" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="font-mono text-xs text-muted-foreground">muted</span>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    muted
+                  </span>
                   <StatusDot variant="muted" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="font-mono text-xs text-muted-foreground">pulse</span>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    pulse
+                  </span>
                   <StatusDot variant="critical" pulse />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="font-mono text-xs text-muted-foreground">lg</span>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    lg
+                  </span>
                   <StatusDot variant="nominal" size="lg" />
                 </div>
               </div>
@@ -127,6 +141,7 @@ export default function ComponentShowcasePage() {
             {/* ThreatModal demo trigger */}
             <div className="mt-10">
               <button
+                type="button"
                 className="px-4 py-2 font-mono rounded bg-op-critical text-white hover:bg-op-critical/80 transition"
                 onClick={() => setThreatOpen(true)}
               >
@@ -135,7 +150,22 @@ export default function ComponentShowcasePage() {
             </div>
           </PanelContent>
         </Panel>
-        <ThreatModal open={threatOpen} onDismiss={() => setThreatOpen(false)} onFlag={() => {}} onAcknowledge={() => {}} onDispatch={() => {}} threatId="1" cameraId="1" timestamp="2026-04-17T12:00:00Z" classification="Harm" confidence={0.95} frameSrc="https://via.placeholder.com/150" frameId="1" vlmAnalysis={["Harm detected"]} boundingBox={{ top: "100", left: "100", width: "100", height: "100" }} />
+        <ThreatModal
+          open={threatOpen}
+          onDismiss={() => setThreatOpen(false)}
+          onFlag={() => {}}
+          onAcknowledge={() => {}}
+          onDispatch={() => {}}
+          threatId="1"
+          cameraId="1"
+          timestamp="2026-04-17T12:00:00Z"
+          classification="Harm"
+          confidence={0.95}
+          frameSrc="https://via.placeholder.com/150"
+          frameId="1"
+          vlmAnalysis={["Harm detected"]}
+          boundingBox={{ top: "100", left: "100", width: "100", height: "100" }}
+        />
       </main>
     </div>
   );

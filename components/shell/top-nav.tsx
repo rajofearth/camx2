@@ -1,29 +1,30 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import type * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 interface NavItem {
-  href: string
-  label: string
+  href: string;
+  label: string;
   /** Exact match (default) vs prefix match */
-  exact?: boolean
+  exact?: boolean;
 }
 
 interface TopNavProps extends React.ComponentProps<"nav"> {
-  items?: NavItem[]
+  items?: NavItem[];
   /** Right-side slot: notifications, avatar, etc. */
-  actions?: React.ReactNode
+  actions?: React.ReactNode;
 }
 
 const defaultNavItems: NavItem[] = [
   { href: "/monitor", label: "LIVE MONITOR" },
   { href: "/analysis", label: "ANALYSIS & QUERY", exact: false },
   { href: "/settings", label: "SETTINGS" },
-]
+];
 
 /**
  * TopNav — primary application navigation bar.
@@ -32,8 +33,13 @@ const defaultNavItems: NavItem[] = [
  * Active link: silver text + bottom border + bg-elevated
  * Inactive link: muted text, hover bg-elevated
  */
-function TopNav({ items = defaultNavItems, actions, className, ...props }: TopNavProps) {
-  const pathname = usePathname()
+function TopNav({
+  items = defaultNavItems,
+  actions,
+  className,
+  ...props
+}: TopNavProps) {
+  const pathname = usePathname();
 
   return (
     <nav
@@ -57,9 +63,10 @@ function TopNav({ items = defaultNavItems, actions, className, ...props }: TopNa
         {/* Nav links */}
         <div className="hidden h-full items-center md:flex">
           {items.map((item) => {
-            const isActive = item.exact !== false
-              ? pathname === item.href
-              : pathname.startsWith(item.href)
+            const isActive =
+              item.exact !== false
+                ? pathname === item.href
+                : pathname.startsWith(item.href);
 
             return (
               <Link
@@ -74,17 +81,15 @@ function TopNav({ items = defaultNavItems, actions, className, ...props }: TopNa
               >
                 {item.label}
               </Link>
-            )
+            );
           })}
         </div>
       </div>
 
       {/* Right: actions slot */}
-      {actions && (
-        <div className="flex items-center gap-1">{actions}</div>
-      )}
+      {actions && <div className="flex items-center gap-1">{actions}</div>}
     </nav>
-  )
+  );
 }
 
 /**
@@ -92,12 +97,17 @@ function TopNav({ items = defaultNavItems, actions, className, ...props }: TopNa
  * Renders a Material Symbol icon.
  */
 interface NavIconButtonProps extends React.ComponentProps<"button"> {
-  icon: string
+  icon: string;
   /** Optional notification dot */
-  badge?: boolean
+  badge?: boolean;
 }
 
-function NavIconButton({ icon, badge = false, className, ...props }: NavIconButtonProps) {
+function NavIconButton({
+  icon,
+  badge = false,
+  className,
+  ...props
+}: NavIconButtonProps) {
   return (
     <button
       data-slot="nav-icon-button"
@@ -112,15 +122,15 @@ function NavIconButton({ icon, badge = false, className, ...props }: NavIconButt
         <span className="absolute right-1 top-1 size-1.5 rounded-full bg-op-warning" />
       )}
     </button>
-  )
+  );
 }
 
 /**
  * NavAvatar — small user avatar for the top nav.
  */
 interface NavAvatarProps extends React.ComponentProps<"div"> {
-  src?: string
-  fallback?: string
+  src?: string;
+  fallback?: string;
 }
 
 function NavAvatar({ src, fallback, className, ...props }: NavAvatarProps) {
@@ -134,9 +144,12 @@ function NavAvatar({ src, fallback, className, ...props }: NavAvatarProps) {
       {...props}
     >
       {src ? (
-        <img
+        <Image
           src={src}
           alt={fallback ?? "User"}
+          width={24}
+          height={24}
+          unoptimized
           className="h-full w-full object-cover grayscale opacity-80"
         />
       ) : (
@@ -147,8 +160,8 @@ function NavAvatar({ src, fallback, className, ...props }: NavAvatarProps) {
         </span>
       )}
     </div>
-  )
+  );
 }
 
-export { TopNav, NavIconButton, NavAvatar, defaultNavItems }
-export type { NavItem }
+export { TopNav, NavIconButton, NavAvatar, defaultNavItems };
+export type { NavItem };

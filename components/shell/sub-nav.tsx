@@ -1,21 +1,21 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 interface SubNavItem {
-  href: string
-  label: string
-  exact?: boolean
+  href: string;
+  label: string;
+  exact?: boolean;
 }
 
 interface SubNavProps extends React.ComponentProps<"div"> {
-  items: SubNavItem[]
+  items: SubNavItem[];
   /** Show "/" separator between items */
-  separator?: boolean
+  separator?: boolean;
 }
 
 /**
@@ -26,7 +26,7 @@ interface SubNavProps extends React.ComponentProps<"div"> {
  * Inactive tab: muted text, hover silver
  */
 function SubNav({ items, separator = true, className, ...props }: SubNavProps) {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   return (
     <div
@@ -42,7 +42,7 @@ function SubNav({ items, separator = true, className, ...props }: SubNavProps) {
           const isActive =
             item.exact === false
               ? pathname.startsWith(item.href)
-              : pathname === item.href
+              : pathname === item.href;
 
           return (
             <React.Fragment key={item.href}>
@@ -61,11 +61,11 @@ function SubNav({ items, separator = true, className, ...props }: SubNavProps) {
                 {item.label}
               </Link>
             </React.Fragment>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }
 
 /**
@@ -73,12 +73,18 @@ function SubNav({ items, separator = true, className, ...props }: SubNavProps) {
  * Useful for client-side-only tab switching without URL changes.
  */
 interface SubNavTabsProps extends React.ComponentProps<"div"> {
-  items: Array<{ value: string; label: string }>
-  value: string
-  onValueChange: (value: string) => void
+  items: Array<{ value: string; label: string }>;
+  value: string;
+  onValueChange: (value: string) => void;
 }
 
-function SubNavTabs({ items, value, onValueChange, className, ...props }: SubNavTabsProps) {
+function SubNavTabs({
+  items,
+  value,
+  onValueChange,
+  className,
+  ...props
+}: SubNavTabsProps) {
   return (
     <div
       data-slot="sub-nav-tabs"
@@ -90,9 +96,10 @@ function SubNavTabs({ items, value, onValueChange, className, ...props }: SubNav
     >
       <div className="flex h-full items-center gap-1">
         {items.map((item) => {
-          const isActive = item.value === value
+          const isActive = item.value === value;
           return (
             <button
+              type="button"
               key={item.value}
               onClick={() => onValueChange(item.value)}
               className={cn(
@@ -104,12 +111,12 @@ function SubNavTabs({ items, value, onValueChange, className, ...props }: SubNav
             >
               {item.label}
             </button>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }
 
-export { SubNav, SubNavTabs }
-export type { SubNavItem }
+export { SubNav, SubNavTabs };
+export type { SubNavItem };

@@ -28,7 +28,7 @@ import { appendThreatLogEntry } from "@/app/lib/threat-log-store";
 import type { Detection } from "@/app/lib/types";
 import type { WatchResult } from "@/app/lib/watch-types";
 import { OverlayCanvas } from "@/components/OverlayCanvas";
-import { NavAvatar, NavIconButton, TopNav } from "@/components/shell";
+
 import { ThreatModal } from "@/components/threat";
 import { ConfidenceBar } from "@/components/ui/confidence-bar";
 import { IntelLog, IntelLogEntry, IntelTag } from "@/components/ui/intel-log";
@@ -482,7 +482,7 @@ export default function LiveMonitorPage() {
     setIsCameraReady(false);
   }, []);
 
-  const toggleWatch = useCallback(() => {
+  const _toggleWatch = useCallback(() => {
     setIsWatchActive((v) => {
       const next = !v;
       setLogEntries((prev) => [
@@ -531,7 +531,7 @@ export default function LiveMonitorPage() {
                   value={selectedDeviceId ?? ""}
                   onChange={handleDeviceChange}
                   disabled={isLoadingDevices}
-                  className="mx-2 flex-1 max-w-[200px] truncate border border-op-border bg-op-base px-1.5 py-0.5 font-mono text-[10px] text-op-silver outline-none"
+                  className="mx-2 flex-1 max-w-50 truncate border border-op-border bg-op-base px-1.5 py-0.5 font-mono text-[10px] text-op-silver outline-none"
                 >
                   {isLoadingDevices ? (
                     <option>Loading…</option>

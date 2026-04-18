@@ -1,18 +1,24 @@
-import * as React from "react"
+import type * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 interface PageHeaderProps extends React.ComponentProps<"header"> {
-  title: string
-  subtitle?: React.ReactNode
-  actions?: React.ReactNode
+  title: string;
+  subtitle?: React.ReactNode;
+  actions?: React.ReactNode;
 }
 
 /**
  * PageHeader — page title bar with subtitle and right-side action buttons.
  * Used at the top of main content areas (Camera Management, Threat Log, etc.).
  */
-function PageHeader({ title, subtitle, actions, className, ...props }: PageHeaderProps) {
+function PageHeader({
+  title,
+  subtitle,
+  actions,
+  className,
+  ...props
+}: PageHeaderProps) {
   return (
     <header
       data-slot="page-header"
@@ -31,11 +37,9 @@ function PageHeader({ title, subtitle, actions, className, ...props }: PageHeade
         )}
       </div>
 
-      {actions && (
-        <div className="flex items-center gap-3">{actions}</div>
-      )}
+      {actions && <div className="flex items-center gap-3">{actions}</div>}
     </header>
-  )
+  );
 }
 
-export { PageHeader }
+export { PageHeader };

@@ -3,11 +3,11 @@
 import type React from "react";
 import { RouteActivityProvider } from "./RouteActivityProvider";
 import {
-  TopNav,
-  NavIconButton,
-  NavAvatar,
   defaultNavItems,
+  NavAvatar,
+  NavIconButton,
   ThemeSwitcher,
+  TopNav,
 } from "./shell";
 
 export function AppShell({

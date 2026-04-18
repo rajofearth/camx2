@@ -1,8 +1,7 @@
+export { ChatInput, ChatInputAction } from "./chat-input";
 export {
+  AggregateConfidence,
   ChatMessage,
   VlmBullet,
   VlmDataTable,
-  AggregateConfidence,
-} from "./chat-message"
-
-export { ChatInput, ChatInputAction } from "./chat-input"
+} from "./chat-message";

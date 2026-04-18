@@ -1,1 +1,1 @@
-export { CameraFeed } from "./camera-feed"
+export { CameraFeed } from "./camera-feed";

@@ -1,1 +1,1 @@
-export { ThreatModal } from "./threat-modal"
+export { ThreatModal } from "./threat-modal";

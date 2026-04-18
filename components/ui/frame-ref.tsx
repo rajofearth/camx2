@@ -1,16 +1,16 @@
-import * as React from "react"
+import * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 interface FrameRefProps extends React.ComponentProps<"div"> {
   /** Frame identifier label (e.g. "LDK_CAM_04_A") */
-  id: string
+  id: string;
   /** Thumbnail image src */
-  src?: string
+  src?: string;
   /** Alt text for thumbnail */
-  alt?: string
+  alt?: string;
   /** Border color on thumbnail overlay — matches threat variant */
-  variant?: "default" | "warning" | "critical"
+  variant?: "default" | "warning" | "critical";
 }
 
 /**
@@ -27,10 +27,10 @@ function FrameRef({
   ...props
 }: FrameRefProps) {
   const overlayColor = {
-    default:  "border-op-silver",
-    warning:  "border-op-warning",
+    default: "border-op-silver",
+    warning: "border-op-warning",
     critical: "border-op-critical",
-  }[variant]
+  }[variant];
 
   return (
     <div
@@ -46,6 +46,7 @@ function FrameRef({
       {/* Thumbnail */}
       <div className="relative size-16 h-10 shrink-0 overflow-hidden bg-op-border">
         {src && (
+          // biome-ignore lint/performance/noImgElement: frame references use dynamic screenshot and preview URLs that should render without Next.js image optimization
           <img
             src={src}
             alt={alt}
@@ -69,7 +70,7 @@ function FrameRef({
         open_in_new
       </span>
     </div>
-  )
+  );
 }
 
-export { FrameRef }
+export { FrameRef };

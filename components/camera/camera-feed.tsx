@@ -1,21 +1,20 @@
-import * as React from "react"
-
-import { cn } from "@/lib/utils"
-import { StatusDot } from "@/components/ui/status-dot"
-import { MonoLabel } from "@/components/ui/mono-label"
+import type * as React from "react";
+import { MonoLabel } from "@/components/ui/mono-label";
+import { StatusDot } from "@/components/ui/status-dot";
+import { cn } from "@/lib/utils";
 
 interface CameraFeedProps extends React.ComponentProps<"div"> {
-  cameraId: string
+  cameraId: string;
   /** Optional image src for the feed */
-  src?: string
+  src?: string;
   /** Show LIVE indicator */
-  live?: boolean
+  live?: boolean;
   /** VLM analysis status */
-  vlmStatus?: "NOMINAL" | "ANALYZING" | "THREAT" | "OFFLINE"
+  vlmStatus?: "NOMINAL" | "ANALYZING" | "THREAT" | "OFFLINE";
   /** Overlay children (bounding boxes, etc.) */
-  overlays?: React.ReactNode
+  overlays?: React.ReactNode;
   /** Compact mini-card for grid view */
-  mini?: boolean
+  mini?: boolean;
 }
 
 /**
@@ -47,7 +46,7 @@ function CameraFeed({
         {...props}
       >
         {/* Gradient label overlay */}
-        <div className="absolute inset-x-0 top-0 z-10 flex justify-between bg-gradient-to-b from-black/80 to-transparent p-1.5">
+        <div className="absolute inset-x-0 top-0 z-10 flex justify-between bg-linear-to-b from-black/80 to-transparent p-1.5">
           <span className="bg-black/50 px-1 font-mono text-[9px] text-op-silver">
             {cameraId}
           </span>
@@ -55,6 +54,7 @@ function CameraFeed({
 
         {/* Feed / placeholder */}
         {src ? (
+          // biome-ignore lint/performance/noImgElement: camera feeds use dynamic runtime stream and preview URLs that should render without Next.js image optimization
           <img
             src={src}
             alt={`Camera ${cameraId}`}
@@ -70,15 +70,15 @@ function CameraFeed({
 
         {overlays}
       </div>
-    )
+    );
   }
 
   const vlmColor = {
-    NOMINAL:   "text-op-silver",
+    NOMINAL: "text-op-silver",
     ANALYZING: "text-op-warning",
-    THREAT:    "text-op-critical",
-    OFFLINE:   "text-op-text-sec",
-  }[vlmStatus ?? "NOMINAL"]
+    THREAT: "text-op-critical",
+    OFFLINE: "text-op-text-sec",
+  }[vlmStatus ?? "NOMINAL"];
 
   return (
     <div
@@ -110,6 +110,7 @@ function CameraFeed({
       {/* Video area */}
       <div className="group relative flex-1 bg-black">
         {src ? (
+          // biome-ignore lint/performance/noImgElement: camera feeds use dynamic runtime stream and preview URLs that should render without Next.js image optimization
           <img
             src={src}
             alt={`Camera ${cameraId}`}
@@ -144,7 +145,7 @@ function CameraFeed({
         {children}
       </div>
     </div>
-  )
+  );
 }
 
-export { CameraFeed }
+export { CameraFeed };

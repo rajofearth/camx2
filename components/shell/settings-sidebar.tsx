@@ -1,25 +1,25 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import type * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 interface SidebarItem {
-  href: string
-  label: string
-  icon: string
+  href: string;
+  label: string;
+  icon: string;
 }
 
 interface SidebarGroup {
-  heading?: string
-  items: SidebarItem[]
+  heading?: string;
+  items: SidebarItem[];
 }
 
 interface SettingsSidebarProps extends React.ComponentProps<"aside"> {
-  groups: SidebarGroup[]
-  width?: "sm" | "default"
+  groups: SidebarGroup[];
+  width?: "sm" | "default";
 }
 
 /**
@@ -35,7 +35,7 @@ function SettingsSidebar({
   className,
   ...props
 }: SettingsSidebarProps) {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   return (
     <aside
@@ -48,7 +48,10 @@ function SettingsSidebar({
       {...props}
     >
       {groups.map((group, gi) => (
-        <div key={gi} className={cn("px-4 py-4", gi > 0 && "border-t border-op-border")}>
+        <div
+          key={`${group.heading ?? "group"}:${group.items.map((item) => item.href).join("|")}`}
+          className={cn("px-4 py-4", gi > 0 && "border-t border-op-border")}
+        >
           {group.heading && (
             <h2 className="mb-3 font-mono text-[10px] uppercase tracking-widest text-op-text-sec">
               {group.heading}
@@ -56,7 +59,8 @@ function SettingsSidebar({
           )}
           <nav className="space-y-px">
             {group.items.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href)
+              const isActive =
+                pathname === item.href || pathname.startsWith(item.href);
 
               return (
                 <Link
@@ -65,7 +69,7 @@ function SettingsSidebar({
                   className={cn(
                     "group flex items-center gap-3 rounded-sm px-3 py-2 text-sm transition-colors duration-75",
                     isActive
-                      ? "border-l-2 border-op-silver bg-op-elevated pl-[10px] font-medium text-op-silver"
+                      ? "border-l-2 border-op-silver bg-op-elevated pl-2.5 font-medium text-op-silver"
                       : "border-l-2 border-transparent text-foreground hover:bg-op-elevated",
                   )}
                 >
@@ -86,14 +90,14 @@ function SettingsSidebar({
                   </span>
                   {item.label}
                 </Link>
-              )
+              );
             })}
           </nav>
         </div>
       ))}
     </aside>
-  )
+  );
 }
 
-export { SettingsSidebar }
-export type { SidebarGroup, SidebarItem }
+export { SettingsSidebar };
+export type { SidebarGroup, SidebarItem };

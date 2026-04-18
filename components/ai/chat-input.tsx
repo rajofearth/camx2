@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 interface ChatInputProps {
-  value?: string
-  onChange?: (value: string) => void
-  onSubmit?: (value: string) => void
-  placeholder?: string
-  disabled?: boolean
+  value?: string;
+  onChange?: (value: string) => void;
+  onSubmit?: (value: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
   /** Extra actions to show below the input */
-  actions?: React.ReactNode
-  className?: string
+  actions?: React.ReactNode;
+  className?: string;
 }
 
 /**
@@ -33,28 +33,28 @@ function ChatInput({
   actions,
   className,
 }: ChatInputProps) {
-  const [internal, setInternal] = React.useState("")
-  const controlled = value !== undefined
-  const text = controlled ? value : internal
+  const [internal, setInternal] = React.useState("");
+  const controlled = value !== undefined;
+  const text = controlled ? value : internal;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!controlled) setInternal(e.target.value)
-    onChange?.(e.target.value)
-  }
+    if (!controlled) setInternal(e.target.value);
+    onChange?.(e.target.value);
+  };
 
   const handleSubmit = () => {
     if (text.trim()) {
-      onSubmit?.(text.trim())
-      if (!controlled) setInternal("")
+      onSubmit?.(text.trim());
+      if (!controlled) setInternal("");
     }
-  }
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-      e.preventDefault()
-      handleSubmit()
+      e.preventDefault();
+      handleSubmit();
     }
-  }
+  };
 
   return (
     <div
@@ -64,7 +64,9 @@ function ChatInput({
       {/* Input row */}
       <div className="relative flex items-center border border-op-border bg-op-base transition-colors focus-within:border-op-silver">
         {/* > prefix */}
-        <span className="pl-3 pr-2 font-mono font-bold text-op-silver">&gt;</span>
+        <span className="pl-3 pr-2 font-mono font-bold text-op-silver">
+          &gt;
+        </span>
 
         <input
           type="text"
@@ -77,6 +79,7 @@ function ChatInput({
         />
 
         <button
+          type="button"
           onClick={handleSubmit}
           disabled={disabled || !text.trim()}
           className="flex items-center pl-2 pr-3 text-op-text-sec transition-colors hover:text-op-silver disabled:opacity-40"
@@ -101,25 +104,26 @@ function ChatInput({
         </span>
       </div>
     </div>
-  )
+  );
 }
 
 interface ChatInputActionProps {
-  icon: string
-  label: string
-  onClick?: () => void
+  icon: string;
+  label: string;
+  onClick?: () => void;
 }
 
 function ChatInputAction({ icon, label, onClick }: ChatInputActionProps) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className="flex items-center gap-1 font-mono text-[10px] text-op-text-sec uppercase tracking-wider transition-colors hover:text-op-silver"
     >
       <span className="material-symbols-outlined text-[12px]">{icon}</span>
       {label}
     </button>
-  )
+  );
 }
 
-export { ChatInput, ChatInputAction }
+export { ChatInput, ChatInputAction };

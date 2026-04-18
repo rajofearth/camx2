@@ -1,20 +1,17 @@
 "use client";
 
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type React from "react";
 import {
   createContext,
   startTransition,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
-import {
-  usePathname,
-  useRouter,
-  useSearchParams,
-} from "next/navigation";
 import {
   askVideoWatchQuestion,
   clearVideoWatchCache,
@@ -301,7 +298,10 @@ export function AnalysisSessionProvider({
       fingerprint: clientFingerprint,
       sourceFileName: job.sourceFileName,
     };
-    window.localStorage.setItem(PERSISTED_SESSION_KEY, JSON.stringify(persisted));
+    window.localStorage.setItem(
+      PERSISTED_SESSION_KEY,
+      JSON.stringify(persisted),
+    );
   }, [clientFingerprint, isHydrated, job]);
 
   useEffect(() => {
@@ -360,94 +360,100 @@ export function AnalysisSessionProvider({
     })();
   }, [isHydrated, job, searchParams]);
 
-  const clearLocalCacheEntry = (fingerprint: string | null) => {
+  const clearLocalCacheEntry = useCallback((fingerprint: string | null) => {
     if (!fingerprint) {
       return;
     }
 
     window.localStorage.removeItem(`${LOCAL_CACHE_PREFIX}${fingerprint}`);
-  };
+  }, []);
 
-  const resetSession = ({
-    keepSelectedVideo = false,
-  }: {
-    readonly keepSelectedVideo?: boolean;
-  } = {}) => {
-    setJob(null);
-    setMessages([]);
-    setError(null);
-    setUploadPhase("idle");
-    setAnalysisStartedAt(null);
-    setIsReplyProcessing(false);
-    if (!keepSelectedVideo) {
-      setSelectedVideo(null);
-    }
-  };
+  const resetSession = useCallback(
+    ({
+      keepSelectedVideo = false,
+    }: {
+      readonly keepSelectedVideo?: boolean;
+    } = {}) => {
+      setJob(null);
+      setMessages([]);
+      setError(null);
+      setUploadPhase("idle");
+      setAnalysisStartedAt(null);
+      setIsReplyProcessing(false);
+      if (!keepSelectedVideo) {
+        setSelectedVideo(null);
+      }
+    },
+    [],
+  );
 
-  const uploadSelectedVideo = async (
-    file: File,
-    fingerprint: string,
-    options?: { readonly forceRefresh?: boolean },
-  ) => {
-    setUploadPhase("uploading");
-    const uploaded = await uploadVideoForWatch(file, fingerprint, options);
-    if (!uploaded.ok) {
-      setError(uploaded.message);
-      setUploadPhase("error");
-      return;
-    }
-
-    setJob(uploaded);
-    setUploadPhase(uploaded.status);
-    setError(uploaded.error ?? null);
-    window.localStorage.setItem(
-      `${LOCAL_CACHE_PREFIX}${fingerprint}`,
-      uploaded.jobId,
-    );
-  };
-
-  const attachVideo = async (
-    file: File,
-    options?: { readonly forceFresh?: boolean },
-  ) => {
-    setSelectedVideo(file);
-    setJob(null);
-    setMessages([]);
-    setError(null);
-    setUploadPhase("checking_cache");
-    setAnalysisStartedAt(null);
-    setIsReplyProcessing(false);
-
-    try {
-      const fingerprint = await hashFileSha256(file);
-      setClientFingerprint(fingerprint);
-
-      if (!options?.forceFresh) {
-        const cachedStatus = await fetchVideoWatchStatus({ fingerprint });
-        if (cachedStatus.ok) {
-          setJob(cachedStatus);
-          setUploadPhase(cachedStatus.status);
-          setError(cachedStatus.error ?? null);
-          window.localStorage.setItem(
-            `${LOCAL_CACHE_PREFIX}${fingerprint}`,
-            cachedStatus.jobId,
-          );
-          return;
-        }
+  const uploadSelectedVideo = useCallback(
+    async (
+      file: File,
+      fingerprint: string,
+      options?: { readonly forceRefresh?: boolean },
+    ) => {
+      setUploadPhase("uploading");
+      const uploaded = await uploadVideoForWatch(file, fingerprint, options);
+      if (!uploaded.ok) {
+        setError(uploaded.message);
+        setUploadPhase("error");
+        return;
       }
 
-      await uploadSelectedVideo(file, fingerprint, {
-        forceRefresh: options?.forceFresh,
-      });
-    } catch (uploadError) {
-      const message =
-        uploadError instanceof Error ? uploadError.message : "Upload failed";
-      setError(message);
-      setUploadPhase("error");
-    }
-  };
+      setJob(uploaded);
+      setUploadPhase(uploaded.status);
+      setError(uploaded.error ?? null);
+      window.localStorage.setItem(
+        `${LOCAL_CACHE_PREFIX}${fingerprint}`,
+        uploaded.jobId,
+      );
+    },
+    [],
+  );
 
-  const clearCache = async () => {
+  const attachVideo = useCallback(
+    async (file: File, options?: { readonly forceFresh?: boolean }) => {
+      setSelectedVideo(file);
+      setJob(null);
+      setMessages([]);
+      setError(null);
+      setUploadPhase("checking_cache");
+      setAnalysisStartedAt(null);
+      setIsReplyProcessing(false);
+
+      try {
+        const fingerprint = await hashFileSha256(file);
+        setClientFingerprint(fingerprint);
+
+        if (!options?.forceFresh) {
+          const cachedStatus = await fetchVideoWatchStatus({ fingerprint });
+          if (cachedStatus.ok) {
+            setJob(cachedStatus);
+            setUploadPhase(cachedStatus.status);
+            setError(cachedStatus.error ?? null);
+            window.localStorage.setItem(
+              `${LOCAL_CACHE_PREFIX}${fingerprint}`,
+              cachedStatus.jobId,
+            );
+            return;
+          }
+        }
+
+        await uploadSelectedVideo(file, fingerprint, {
+          forceRefresh: options?.forceFresh,
+        });
+      } catch (uploadError) {
+        const message =
+          uploadError instanceof Error ? uploadError.message : "Upload failed";
+        setError(message);
+        setUploadPhase("error");
+      }
+    },
+    [uploadSelectedVideo],
+  );
+
+  const clearCache = useCallback(async () => {
     if (!clientFingerprint && !job?.jobId) {
       return;
     }
@@ -476,16 +482,17 @@ export function AnalysisSessionProvider({
     } finally {
       setIsCacheActionPending(false);
     }
-  };
+  }, [clientFingerprint, clearLocalCacheEntry, job?.jobId, resetSession]);
 
-  const runFreshAnalysis = async () => {
+  const runFreshAnalysis = useCallback(async () => {
     if (!selectedVideo) {
       return;
     }
 
     setIsCacheActionPending(true);
     try {
-      const fingerprint = clientFingerprint ?? (await hashFileSha256(selectedVideo));
+      const fingerprint =
+        clientFingerprint ?? (await hashFileSha256(selectedVideo));
       setClientFingerprint(fingerprint);
       clearLocalCacheEntry(fingerprint);
       window.localStorage.removeItem(PERSISTED_SESSION_KEY);
@@ -503,9 +510,15 @@ export function AnalysisSessionProvider({
     } finally {
       setIsCacheActionPending(false);
     }
-  };
+  }, [
+    clientFingerprint,
+    clearLocalCacheEntry,
+    resetSession,
+    selectedVideo,
+    uploadSelectedVideo,
+  ]);
 
-  const refreshJob = async () => {
+  const refreshJob = useCallback(async () => {
     if (!job?.jobId) {
       return;
     }
@@ -520,89 +533,95 @@ export function AnalysisSessionProvider({
     setJob(next);
     setUploadPhase(next.status);
     setError(next.error ?? null);
-  };
+  }, [job?.jobId]);
 
-  const sendMessage = async (question: string) => {
-    const trimmedQuestion = question.trim();
-    if (!trimmedQuestion || !isVideoReady || !job || isReplyProcessing) {
-      return;
-    }
+  const sendMessage = useCallback(
+    async (question: string) => {
+      const trimmedQuestion = question.trim();
+      if (!trimmedQuestion || !isVideoReady || !job || isReplyProcessing) {
+        return;
+      }
 
-    const timestamp = Date.now();
-    const userMessage: AnalysisChatMessage = {
-      id: `${timestamp}`,
-      role: "user",
-      content: trimmedQuestion,
-    };
-    const thinkingMessage: AnalysisChatMessage = {
-      id: `${timestamp + 1}`,
-      role: "assistant",
-      content: "",
-      isThinking: true,
-    };
+      const timestamp = Date.now();
+      const userMessage: AnalysisChatMessage = {
+        id: `${timestamp}`,
+        role: "user",
+        content: trimmedQuestion,
+      };
+      const thinkingMessage: AnalysisChatMessage = {
+        id: `${timestamp + 1}`,
+        role: "assistant",
+        content: "",
+        isThinking: true,
+      };
 
-    setMessages((current) => [...current, userMessage, thinkingMessage]);
-    setIsReplyProcessing(true);
+      setMessages((current) => [...current, userMessage, thinkingMessage]);
+      setIsReplyProcessing(true);
 
-    try {
-      const conversation: VideoWatchChatMessage[] = [
-        ...messages
-          .filter((message) => !message.isThinking)
-          .map(({ content, role }) => ({ content, role })),
-        {
-          role: userMessage.role,
-          content: userMessage.content,
-        },
-      ];
-      const response = await askVideoWatchQuestion({
-        jobId: job.jobId,
-        question: trimmedQuestion,
-        messages: conversation,
-      });
+      try {
+        const conversation: VideoWatchChatMessage[] = [
+          ...messages
+            .filter((message) => !message.isThinking)
+            .map(({ content, role }) => ({ content, role })),
+          {
+            role: userMessage.role,
+            content: userMessage.content,
+          },
+        ];
+        const response = await askVideoWatchQuestion({
+          jobId: job.jobId,
+          question: trimmedQuestion,
+          messages: conversation,
+        });
 
-      setMessages((current) =>
-        current.map((message) =>
-          message.id === thinkingMessage.id
-            ? {
-                ...message,
-                isThinking: false,
-                content:
-                  response.ok === true
-                    ? response.answer
-                    : `I couldn't answer that yet: ${response.message}`,
-              }
-            : message,
-        ),
-      );
-    } catch (chatError) {
-      const message =
-        chatError instanceof Error ? chatError.message : "Chat failed";
-      setMessages((current) =>
-        current.map((messageItem) =>
-          messageItem.id === thinkingMessage.id
-            ? {
-                ...messageItem,
-                isThinking: false,
-                content: `I couldn't answer that yet: ${message}`,
-              }
-            : messageItem,
-        ),
-      );
-    } finally {
-      setIsReplyProcessing(false);
-    }
-  };
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === thinkingMessage.id
+              ? {
+                  ...message,
+                  isThinking: false,
+                  content:
+                    response.ok === true
+                      ? response.answer
+                      : `I couldn't answer that yet: ${response.message}`,
+                }
+              : message,
+          ),
+        );
+      } catch (chatError) {
+        const message =
+          chatError instanceof Error ? chatError.message : "Chat failed";
+        setMessages((current) =>
+          current.map((messageItem) =>
+            messageItem.id === thinkingMessage.id
+              ? {
+                  ...messageItem,
+                  isThinking: false,
+                  content: `I couldn't answer that yet: ${message}`,
+                }
+              : messageItem,
+          ),
+        );
+      } finally {
+        setIsReplyProcessing(false);
+      }
+    },
+    [isReplyProcessing, isVideoReady, job, messages],
+  );
 
-  const buildHref = (targetPathname: string) => {
-    const jobId = job?.jobId ?? searchParams.get("jobId");
-    if (!jobId) {
-      return targetPathname;
-    }
+  const buildHref = useCallback(
+    (targetPathname: string) => {
+      const jobId = job?.jobId ?? searchParams.get("jobId");
+      if (!jobId) {
+        return targetPathname;
+      }
 
-    const params = new URLSearchParams();
-    params.set("jobId", jobId);
-    return `${targetPathname}?${params.toString()}`;
-  };
+      const params = new URLSearchParams();
+      params.set("jobId", jobId);
+      return `${targetPathname}?${params.toString()}`;
+    },
+    [job?.jobId, searchParams],
+  );
 
   const value = useMemo<AnalysisSessionContextValue>(
     () => ({
@@ -636,6 +655,9 @@ export function AnalysisSessionProvider({
     [
       activeJobId,
       analyzedFrames,
+      attachVideo,
+      buildHref,
+      clearCache,
       clientFingerprint,
       error,
       etaLabel,
@@ -647,9 +669,12 @@ export function AnalysisSessionProvider({
       job,
       messages,
       phaseLabel,
+      refreshJob,
+      runFreshAnalysis,
       selectedVideo,
       selectedVideoName,
       selectedVideoUrl,
+      sendMessage,
       totalFrames,
       uploadPhase,
     ],

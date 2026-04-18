@@ -1,15 +1,36 @@
 "use client";
 
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useAnalysisSession } from "@/components/analysis/video-watch-session";
 
 // ─── Mock sessions (left sidebar) ────────────────────────────────────────────
 
 const MOCK_SESSIONS = [
-  { id: "s1", title: "Anomalies at Bay Entrance", ts: "14:22:05Z", msgCount: 4, active: true, dot: "nominal" },
-  { id: "s2", title: "Vehicle Count Analysis", ts: "11:45:12Z", msgCount: 12, active: false, dot: null },
-  { id: "s3", title: "Suspicious Behavior Log", ts: "09:12:00Z", msgCount: 2, active: false, dot: null },
+  {
+    id: "s1",
+    title: "Anomalies at Bay Entrance",
+    ts: "14:22:05Z",
+    msgCount: 4,
+    active: true,
+    dot: "nominal",
+  },
+  {
+    id: "s2",
+    title: "Vehicle Count Analysis",
+    ts: "11:45:12Z",
+    msgCount: 12,
+    active: false,
+    dot: null,
+  },
+  {
+    id: "s3",
+    title: "Suspicious Behavior Log",
+    ts: "09:12:00Z",
+    msgCount: 2,
+    active: false,
+    dot: null,
+  },
 ] as const;
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -29,11 +50,6 @@ export default function AnalysisQueryPage(): React.JSX.Element {
 
   const [inputValue, setInputValue] = useState("");
   const [videoExpanded, setVideoExpanded] = useState(true);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
 
   const handleSend = () => {
     const trimmed = inputValue.trim();
@@ -54,28 +70,31 @@ export default function AnalysisQueryPage(): React.JSX.Element {
     : "CAM_04";
 
   const systemStatus =
-    uploadPhase === "completed" ? "SYS.READY"
-    : uploadPhase === "error" ? "SYS.ERROR"
-    : uploadPhase === "idle" ? "SYS.IDLE"
-    : "SYS.PROCESSING";
+    uploadPhase === "completed"
+      ? "SYS.READY"
+      : uploadPhase === "error"
+        ? "SYS.ERROR"
+        : uploadPhase === "idle"
+          ? "SYS.IDLE"
+          : "SYS.PROCESSING";
 
   const statusDotClass =
-    uploadPhase === "completed" ? "bg-op-nominal"
-    : uploadPhase === "error" ? "bg-op-critical"
-    : "bg-op-warning";
+    uploadPhase === "completed"
+      ? "bg-op-nominal"
+      : uploadPhase === "error"
+        ? "bg-op-critical"
+        : "bg-op-warning";
 
   const placeholder = isVideoReady
     ? "Query the intelligence layer..."
     : uploadPhase === "idle"
-    ? "Upload a video on the Analysis tab first..."
-    : "Analysis in progress, please wait...";
+      ? "Upload a video on the Analysis tab first..."
+      : "Analysis in progress, please wait...";
 
   return (
     <div className="flex-1 flex overflow-hidden h-full">
-
       {/* ── Left Sidebar: Session Management ─────────────── */}
       <aside className="w-72 border-r border-op-border bg-op-surface flex-col h-full shrink-0 hidden lg:flex">
-
         {/* Header */}
         <div className="p-4 border-b border-op-border flex justify-between items-center bg-op-elevated shrink-0">
           <h2 className="font-mono text-base font-medium text-foreground">
@@ -123,7 +142,7 @@ export default function AnalysisQueryPage(): React.JSX.Element {
                   {s.title}
                 </span>
                 <span
-                  className="material-symbols-outlined text-[16px] flex-shrink-0"
+                  className="material-symbols-outlined text-[16px] shrink-0"
                   style={{
                     color: s.active ? "#C0C0C0" : "#5C5C5C",
                     fontVariationSettings: '"wght" 300',
@@ -154,22 +173,26 @@ export default function AnalysisQueryPage(): React.JSX.Element {
 
       {/* ── Center Column: Chat ────────────────────────────── */}
       <main className="flex-1 min-w-0 flex flex-col bg-op-surface border-x border-op-border">
-
         {/* Status bar */}
         <div className="h-10 border-b border-op-border flex items-center px-4 justify-between bg-op-elevated shrink-0">
           <div className="flex items-center space-x-2">
             <span className={`w-2 h-2 rounded-full ${statusDotClass}`} />
-            <span className="font-mono text-xs text-op-text-sec">{systemStatus}</span>
+            <span className="font-mono text-xs text-op-text-sec">
+              {systemStatus}
+            </span>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="font-mono text-xs text-op-text-sec">VLM_MODE: ON</span>
-            <span className="font-mono text-xs text-op-text-sec hidden sm:inline">MODEL: SEC-L-V3</span>
+            <span className="font-mono text-xs text-op-text-sec">
+              VLM_MODE: ON
+            </span>
+            <span className="font-mono text-xs text-op-text-sec hidden sm:inline">
+              MODEL: SEC-L-V3
+            </span>
           </div>
         </div>
 
         {/* Chat history */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6 flex flex-col min-h-0">
-
           {/* Empty state */}
           {messages.length === 0 && !isReplyProcessing && (
             <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4">
@@ -179,9 +202,11 @@ export default function AnalysisQueryPage(): React.JSX.Element {
               >
                 neurology
               </span>
-              <div className="font-mono text-sm text-op-text-sec">SYSTEM WAITING FOR QUERY</div>
+              <div className="font-mono text-sm text-op-text-sec">
+                SYSTEM WAITING FOR QUERY
+              </div>
               {isVideoReady && (
-                <div className="flex flex-wrap justify-center gap-2 max-w-[500px] mt-4">
+                <div className="flex flex-wrap justify-center gap-2 max-w-125 mt-4">
                   {[
                     "Summarize all events in this footage",
                     "What objects were detected?",
@@ -190,7 +215,9 @@ export default function AnalysisQueryPage(): React.JSX.Element {
                     <button
                       key={q}
                       type="button"
-                      onClick={() => { setInputValue(q); }}
+                      onClick={() => {
+                        setInputValue(q);
+                      }}
                       className="bg-op-elevated border border-op-border hover:border-op-border-active text-op-silver px-3 py-1.5 font-mono text-xs duration-75"
                     >
                       {q}
@@ -200,7 +227,8 @@ export default function AnalysisQueryPage(): React.JSX.Element {
               )}
               {!isVideoReady && uploadPhase === "idle" && (
                 <p className="font-mono text-xs text-op-text-muted max-w-xs">
-                  Navigate to the Video Analysis tab, upload a video, and wait for analysis to complete before querying.
+                  Navigate to the Video Analysis tab, upload a video, and wait
+                  for analysis to complete before querying.
                 </p>
               )}
             </div>
@@ -267,17 +295,26 @@ export default function AnalysisQueryPage(): React.JSX.Element {
             </div>
           )}
 
-          <div ref={messagesEndRef} />
+          <div
+            key={messages.length}
+            ref={(node) => {
+              node?.scrollIntoView({ behavior: "smooth" });
+            }}
+          />
         </div>
 
         {/* Input area */}
         <div className="p-4 border-t border-op-border bg-op-surface shrink-0">
           <div className="relative flex items-center border border-op-border bg-op-base focus-within:border-op-silver duration-75">
-            <div className="pl-3 pr-2 text-op-silver font-mono font-bold">&gt;</div>
+            <div className="pl-3 pr-2 text-op-silver font-mono font-bold">
+              &gt;
+            </div>
             <input
               type="text"
               value={inputValue}
-              onChange={(e) => { setInputValue(e.target.value); }}
+              onChange={(e) => {
+                setInputValue(e.target.value);
+              }}
               onKeyDown={handleKeyDown}
               disabled={!isVideoReady || isReplyProcessing}
               placeholder={placeholder}
@@ -286,7 +323,9 @@ export default function AnalysisQueryPage(): React.JSX.Element {
             <button
               type="button"
               onClick={handleSend}
-              disabled={!isVideoReady || isReplyProcessing || !inputValue.trim()}
+              disabled={
+                !isVideoReady || isReplyProcessing || !inputValue.trim()
+              }
               className="pr-3 pl-2 text-op-text-sec hover:text-op-silver duration-75 flex items-center disabled:opacity-30"
             >
               <span
@@ -304,25 +343,30 @@ export default function AnalysisQueryPage(): React.JSX.Element {
                 type="button"
                 className="text-[0.65rem] font-mono text-op-text-sec hover:text-op-silver flex items-center space-x-1 transition-colors"
               >
-                <span className="material-symbols-outlined text-[12px]">attachment</span>
+                <span className="material-symbols-outlined text-[12px]">
+                  attachment
+                </span>
                 <span>ADD REF</span>
               </button>
               <button
                 type="button"
                 className="text-[0.65rem] font-mono text-op-text-sec hover:text-op-silver flex items-center space-x-1 transition-colors"
               >
-                <span className="material-symbols-outlined text-[12px]">history</span>
+                <span className="material-symbols-outlined text-[12px]">
+                  history
+                </span>
                 <span>HISTORY</span>
               </button>
             </div>
-            <span className="text-[0.65rem] font-mono text-op-text-muted">CMD+ENTER TO SEND</span>
+            <span className="text-[0.65rem] font-mono text-op-text-muted">
+              CMD+ENTER TO SEND
+            </span>
           </div>
         </div>
       </main>
 
       {/* ── Right Panel: Context Sources ───────────────────── */}
-      <aside className="w-[220px] bg-op-surface border-l border-op-border flex-col flex-shrink-0 hidden xl:flex">
-
+      <aside className="w-55 bg-op-surface border-l border-op-border flex-col shrink-0 hidden xl:flex">
         {/* Header */}
         <div className="h-10 border-b border-op-border flex items-center px-3 bg-op-elevated shrink-0">
           <span className="font-mono text-xs text-op-text-sec tracking-tight">
@@ -331,12 +375,13 @@ export default function AnalysisQueryPage(): React.JSX.Element {
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 space-y-4">
-
           {/* Active video preview */}
           {selectedVideoUrl && (
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <div className="text-[0.65rem] font-mono text-op-text-sec">ACTIVE VIDEO</div>
+                <div className="text-[0.65rem] font-mono text-op-text-sec">
+                  ACTIVE VIDEO
+                </div>
                 <button
                   type="button"
                   onClick={() => setVideoExpanded((v) => !v)}
@@ -365,7 +410,9 @@ export default function AnalysisQueryPage(): React.JSX.Element {
 
           {/* Active Ingestion */}
           <div>
-            <div className="text-[0.65rem] font-mono text-op-text-sec mb-2">ACTIVE INGESTION</div>
+            <div className="text-[0.65rem] font-mono text-op-text-sec mb-2">
+              ACTIVE INGESTION
+            </div>
             {job ? (
               <>
                 <div className="text-sm font-mono text-op-silver">
@@ -377,8 +424,12 @@ export default function AnalysisQueryPage(): React.JSX.Element {
               </>
             ) : (
               <>
-                <div className="text-sm font-mono text-op-silver">47 RECORDINGS</div>
-                <div className="text-[0.65rem] font-mono text-op-text-sec mt-1">TIME WINDOW: 4H 00M</div>
+                <div className="text-sm font-mono text-op-silver">
+                  47 RECORDINGS
+                </div>
+                <div className="text-[0.65rem] font-mono text-op-text-sec mt-1">
+                  TIME WINDOW: 4H 00M
+                </div>
               </>
             )}
           </div>
@@ -421,17 +472,25 @@ export default function AnalysisQueryPage(): React.JSX.Element {
 
           {/* VLM Parameters */}
           <div className="border border-op-border bg-op-base p-2">
-            <div className="text-[0.65rem] font-mono text-op-text-sec mb-1">VLM PARAMETERS</div>
+            <div className="text-[0.65rem] font-mono text-op-text-sec mb-1">
+              VLM PARAMETERS
+            </div>
             <div className="flex justify-between items-center mt-1">
-              <span className="font-mono text-[0.65rem] text-op-text-sec">TEMP</span>
+              <span className="font-mono text-[0.65rem] text-op-text-sec">
+                TEMP
+              </span>
               <span className="font-mono text-xs text-op-silver">0.2</span>
             </div>
             <div className="flex justify-between items-center mt-1">
-              <span className="font-mono text-[0.65rem] text-op-text-sec">TOP_K</span>
+              <span className="font-mono text-[0.65rem] text-op-text-sec">
+                TOP_K
+              </span>
               <span className="font-mono text-xs text-op-silver">40</span>
             </div>
             <div className="flex justify-between items-center mt-1 pt-1 border-t border-op-border">
-              <span className="font-mono text-[0.65rem] text-op-text-sec">TOKENS</span>
+              <span className="font-mono text-[0.65rem] text-op-text-sec">
+                TOKENS
+              </span>
               <span className="font-mono text-xs text-op-silver">1,402</span>
             </div>
           </div>

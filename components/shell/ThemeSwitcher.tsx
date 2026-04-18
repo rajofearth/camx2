@@ -19,8 +19,12 @@ const STORAGE_KEY = "camx.theme";
 export function ThemeSwitcher({ className }: { className?: string }) {
   const [theme, setTheme] = React.useState<ThemeChoice>(() => {
     try {
-      const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-      if (stored === "light" || stored === "dark" || stored === "system") return stored;
+      const stored =
+        typeof window !== "undefined"
+          ? localStorage.getItem(STORAGE_KEY)
+          : null;
+      if (stored === "light" || stored === "dark" || stored === "system")
+        return stored;
     } catch {
       // ignore storage errors
     }
@@ -43,7 +47,9 @@ export function ThemeSwitcher({ className }: { className?: string }) {
         html.classList.add("dark");
       } else {
         // system: mirror prefers-color-scheme at any time
-        const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+        const prefersLight = window.matchMedia(
+          "(prefers-color-scheme: light)",
+        ).matches;
         if (prefersLight) {
           html.classList.add("light");
         } else {
@@ -66,7 +72,7 @@ export function ThemeSwitcher({ className }: { className?: string }) {
     let listener: ((e: MediaQueryListEvent) => void) | null = null;
     if (theme === "system") {
       mql = window.matchMedia("(prefers-color-scheme: light)");
-      listener = (e: MediaQueryListEvent) => {
+      listener = (_e: MediaQueryListEvent) => {
         // re-apply to reflect the new system state
         applyThemeChoice("system");
       };
@@ -74,7 +80,6 @@ export function ThemeSwitcher({ className }: { className?: string }) {
       if (typeof mql.addEventListener === "function") {
         mql.addEventListener("change", listener);
       } else if (typeof mql.addListener === "function") {
-        // @ts-ignore - legacy API
         mql.addListener(listener);
       }
     }
@@ -84,7 +89,6 @@ export function ThemeSwitcher({ className }: { className?: string }) {
         if (typeof mql.removeEventListener === "function") {
           mql.removeEventListener("change", listener);
         } else if (typeof mql.removeListener === "function") {
-          // @ts-ignore - legacy API
           mql.removeListener(listener);
         }
       }
