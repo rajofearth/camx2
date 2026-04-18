@@ -1,13 +1,15 @@
 import { createReadStream } from "node:fs";
-import { access, stat } from "node:fs/promises";
-import { extname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { stat } from "node:fs/promises";
+import { extname } from "node:path";
+import { Readable } from "node:stream";
 import type { NextRequest } from "next/server";
+import { resolveAccessibleCameraSourceFromQuery } from "@/app/lib/camera-stream-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const DEFAULT_CHUNK_SIZE = 1024 * 1024;
+
 const VIDEO_MIME_TYPES: Record<string, string> = {
   ".mp4": "video/mp4",
   ".m4v": "video/x-m4v",
@@ -16,88 +18,6 @@ const VIDEO_MIME_TYPES: Record<string, string> = {
   ".ogv": "video/ogg",
   ".mov": "video/quicktime",
 };
-
-function stripWrappingQuotes(value: string): string {
-  if (
-    (value.startsWith('"') && value.endsWith('"')) ||
-    (value.startsWith("'") && value.endsWith("'"))
-  ) {
-    return value.slice(1, -1).trim();
-  }
-
-  return value;
-}
-
-function isHttpSource(value: string): boolean {
-  return /^https?:\/\//i.test(value);
-}
-
-function isRtspSource(value: string): boolean {
-  return /^rtsp:\/\//i.test(value);
-}
-
-function isFileUrlSource(value: string): boolean {
-  return /^file:\/\//i.test(value);
-}
-
-function isWindowsAbsolutePath(value: string): boolean {
-  return /^[a-zA-Z]:[\\/]/.test(value);
-}
-
-function isUncPath(value: string): boolean {
-  return /^\\\\/.test(value);
-}
-
-function isLikelyLocalPath(value: string): boolean {
-  return (
-    isWindowsAbsolutePath(value) ||
-    isUncPath(value) ||
-    value.startsWith("/") ||
-    value.startsWith("./") ||
-    value.startsWith("../")
-  );
-}
-
-async function resolveLocalFilePath(rawSource: string | null): Promise<string> {
-  const source = stripWrappingQuotes(rawSource?.trim() ?? "");
-  if (!source) {
-    throw new Error("Missing required 'source' query parameter.");
-  }
-
-  if (isHttpSource(source) || isRtspSource(source)) {
-    throw new Error(
-      "Unsupported source for camera-file route. Use a local filesystem path or file:// URL.",
-    );
-  }
-
-  let resolvedPath: string;
-  if (isFileUrlSource(source)) {
-    try {
-      resolvedPath = fileURLToPath(source);
-    } catch {
-      throw new Error("The specified file:// source could not be resolved.");
-    }
-  } else if (isLikelyLocalPath(source)) {
-    resolvedPath = resolve(source);
-  } else {
-    throw new Error(
-      "Unsupported source. Use a local filesystem path or file:// URL.",
-    );
-  }
-
-  try {
-    await access(resolvedPath);
-  } catch {
-    throw new Error("The specified local file path could not be accessed.");
-  }
-
-  const details = await stat(resolvedPath);
-  if (!details.isFile()) {
-    throw new Error("The specified source is not a readable file.");
-  }
-
-  return resolvedPath;
-}
 
 function getMimeType(filePath: string): string {
   const extension = extname(filePath).toLowerCase();
@@ -150,44 +70,31 @@ function jsonError(status: number, message: string): Response {
   );
 }
 
-function streamFromNodeReadStream(
+function createFileStream(
   filePath: string,
   start: number,
   end: number,
 ): ReadableStream<Uint8Array> {
-  const nodeStream = createReadStream(filePath, { start, end });
-
-  return new ReadableStream<Uint8Array>({
-    start(controller) {
-      nodeStream.on("data", (chunk: string | Buffer) => {
-        controller.enqueue(
-          typeof chunk === "string"
-            ? new TextEncoder().encode(chunk)
-            : new Uint8Array(chunk),
-        );
-      });
-
-      nodeStream.once("end", () => {
-        controller.close();
-      });
-
-      nodeStream.once("error", (error) => {
-        controller.error(error);
-      });
-    },
-    cancel() {
-      nodeStream.destroy();
-    },
-  });
+  return Readable.toWeb(
+    createReadStream(filePath, { start, end }),
+  ) as ReadableStream<Uint8Array>;
 }
 
 export async function GET(req: NextRequest): Promise<Response> {
   let filePath: string;
 
   try {
-    filePath = await resolveLocalFilePath(
+    const descriptor = await resolveAccessibleCameraSourceFromQuery(
       req.nextUrl.searchParams.get("source"),
     );
+
+    if (descriptor.kind !== "file" || !descriptor.filePath) {
+      throw new Error(
+        "Unsupported source for camera-file route. Use a local filesystem path or file:// URL.",
+      );
+    }
+
+    filePath = descriptor.filePath;
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Invalid local file request.";
@@ -199,6 +106,10 @@ export async function GET(req: NextRequest): Promise<Response> {
     details = await stat(filePath);
   } catch {
     return jsonError(404, "The requested local file could not be read.");
+  }
+
+  if (!details.isFile()) {
+    return jsonError(400, "The specified source is not a readable file.");
   }
 
   const fileSize = details.size;
@@ -213,8 +124,9 @@ export async function GET(req: NextRequest): Promise<Response> {
   });
 
   if (!rangeHeader) {
-    const stream = streamFromNodeReadStream(filePath, 0, fileSize - 1);
+    const stream = createFileStream(filePath, 0, fileSize - 1);
     baseHeaders.set("Content-Length", String(fileSize));
+
     return new Response(stream, {
       status: 200,
       headers: baseHeaders,
@@ -234,7 +146,7 @@ export async function GET(req: NextRequest): Promise<Response> {
 
   const { start, end } = parsedRange;
   const chunkSize = end - start + 1;
-  const stream = streamFromNodeReadStream(filePath, start, end);
+  const stream = createFileStream(filePath, start, end);
 
   baseHeaders.set("Content-Length", String(chunkSize));
   baseHeaders.set("Content-Range", `bytes ${start}-${end}/${fileSize}`);

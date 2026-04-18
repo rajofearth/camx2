@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef } from "react";
 import Webcam from "react-webcam";
 import type { CameraSourceRef } from "@/app/lib/camera-source";
 import {
-  canPlayCameraStreamDirectly,
+  buildCameraPlaybackDescriptor,
   describeCameraStreamSource,
 } from "@/app/lib/camera-stream";
 import type { CameraSettingsRow } from "@/app/lib/camera-settings-store";
@@ -22,7 +22,6 @@ export interface CameraStreamSurfaceProps {
   readonly isSelected?: boolean;
   readonly isReady?: boolean;
   readonly error?: string | null;
-  readonly relaySrc?: string | null;
   readonly sourceRef?: React.RefObject<CameraSourceRef | null>;
   readonly onSelect?: (cameraId: string) => void;
   readonly onReady?: () => void;
@@ -50,16 +49,6 @@ function getSourceKindLabel(camera: CameraSettingsRow | null): string {
   return descriptor.protocolLabel;
 }
 
-function isDirectVideoUrl(camera: CameraSettingsRow | null): boolean {
-  if (!camera || camera.sourceType === "device") return false;
-
-  const descriptor = describeCameraStreamSource(camera.sourceUrl);
-  return (
-    canPlayCameraStreamDirectly(camera.sourceUrl) ||
-    (descriptor.kind === "file" && descriptor.isLikelyVideoFile)
-  );
-}
-
 function getStatusLabel(
   camera: CameraSettingsRow | null,
   isReady: boolean,
@@ -74,7 +63,7 @@ function getStatusLabel(
 
 function getPlaceholderMessage(
   camera: CameraSettingsRow | null,
-  relaySrc: string | null | undefined,
+  hasPlaybackSource: boolean,
   error: string | null | undefined,
 ): string {
   if (!camera) return "No camera assigned to this slot.";
@@ -83,7 +72,7 @@ function getPlaceholderMessage(
   if (camera.sourceType === "device") {
     return "Waiting for local device stream.";
   }
-  if (relaySrc) {
+  if (hasPlaybackSource) {
     return "Connecting to managed stream source.";
   }
   return "No stream source is available for this camera.";
@@ -95,7 +84,6 @@ export function CameraStreamSurface({
   isSelected = false,
   isReady = false,
   error = null,
-  relaySrc = null,
   sourceRef,
   onSelect,
   onReady,
@@ -108,17 +96,31 @@ export function CameraStreamSurface({
   const imageRef = useRef<HTMLImageElement | null>(null);
 
   const isDeviceSource = camera?.sourceType === "device";
-  const streamDescriptor = camera
-    ? describeCameraStreamSource(camera.sourceUrl)
-    : null;
-  const isDirectUrlSource = isDirectVideoUrl(camera);
+  const streamDescriptor = useMemo(
+    () => (camera ? describeCameraStreamSource(camera.sourceUrl) : null),
+    [camera],
+  );
+  const playback = useMemo(() => {
+    if (!camera || camera.sourceType === "device") {
+      return null;
+    }
+
+    return buildCameraPlaybackDescriptor(camera.sourceUrl);
+  }, [camera]);
+  const playbackSrc = playback?.src ?? null;
+  const usesVideoElement = playback?.useVideoElement ?? false;
   const selectedDeviceId = isDeviceSource ? camera.sourceKey : null;
   const statusLabel = getStatusLabel(camera, isReady, error);
   const sourceKindLabel = getSourceKindLabel(camera);
-  const placeholderMessage = getPlaceholderMessage(camera, relaySrc, error);
+  const placeholderMessage = getPlaceholderMessage(
+    camera,
+    playbackSrc !== null,
+    error,
+  );
 
   const streamKey = useMemo(() => {
     if (!camera) return "empty";
+
     return [
       camera.id,
       camera.sourceType,
@@ -144,6 +146,7 @@ export function CameraStreamSurface({
       const imageEl = imageRef.current;
       const videoEl = videoRef.current;
       const sourceEl = videoEl ?? imageEl;
+
       if (!sourceEl) return null;
 
       const width = videoEl?.videoWidth ?? imageEl?.naturalWidth ?? VIDEO_W;
@@ -176,7 +179,7 @@ export function CameraStreamSurface({
         sourceRef.current = null;
       }
     };
-  }, [camera, isDeviceSource, sourceRef, relaySrc, streamKey]);
+  }, [camera, isDeviceSource, sourceRef, streamKey]);
 
   const handleClick = () => {
     if (!camera || !onSelect) return;
@@ -296,11 +299,11 @@ export function CameraStreamSurface({
                 filter: isPrimary ? "grayscale(30%)" : "grayscale(45%)",
               }}
             />
-          ) : relaySrc ? (
+          ) : playbackSrc ? (
             <div className="relative h-full w-full">
-              {isDirectUrlSource ? (
+              {usesVideoElement ? (
                 <video
-                  key={streamKey + "::video"}
+                  key={`${streamKey}::video`}
                   ref={videoRef}
                   autoPlay
                   loop
@@ -311,11 +314,7 @@ export function CameraStreamSurface({
                   onCanPlay={handleVideoReady}
                   onLoadedData={handleVideoReady}
                   onError={handleVideoError}
-                  src={
-                    streamDescriptor?.kind === "file"
-                      ? `/api/camera-file?source=${encodeURIComponent(camera.sourceUrl)}`
-                      : relaySrc
-                  }
+                  src={playbackSrc}
                   className="h-full w-full object-cover"
                   style={{
                     opacity: 0.92,
@@ -324,14 +323,13 @@ export function CameraStreamSurface({
                 />
               ) : (
                 <>
-                  {/* biome-ignore lint/performance/noImgElement: camera relay feeds are dynamic runtime stream URLs that should not be optimized */}
                   <img
-                    key={streamKey + "::img"}
+                    key={`${streamKey}::img`}
                     ref={imageRef}
                     alt={camera.cameraId}
                     onLoad={handleImageReady}
                     onError={handleImageError}
-                    src={relaySrc}
+                    src={playbackSrc}
                     className="h-full w-full object-cover"
                     style={{
                       opacity: 0.92,

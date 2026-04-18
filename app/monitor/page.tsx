@@ -16,11 +16,7 @@ import { useCameraDevices } from "@/app/hooks/useCameraDevices";
 import { useWebcamDetect } from "@/app/hooks/useWebcamDetect";
 import { useWebcamWatch } from "@/app/hooks/useWebcamWatch";
 import type { CameraSourceRef } from "@/app/lib/camera-source";
-import {
-  type CameraSettingsRow,
-  useCameraSettings,
-} from "@/app/lib/camera-settings-store";
-import { buildCameraPlaybackDescriptor } from "@/app/lib/camera-stream";
+import { useCameraSettings } from "@/app/lib/camera-settings-store";
 import { cocoClassName } from "@/app/lib/coco";
 import { appendThreatLogEntry } from "@/app/lib/threat-log-store";
 import type { Detection } from "@/app/lib/types";
@@ -63,6 +59,7 @@ type VlmStatus = "NOMINAL" | "ANALYZING" | "THREAT" | "OFFLINE";
 // ---------------------------------------------------------------------------
 
 const MINI_CAMERA_LIMIT = 4;
+const MAX_LOG_ENTRIES = 50;
 
 /** Seed entries shown before real events arrive. */
 const SEED_LOG: LogEntry[] = [
@@ -96,6 +93,13 @@ function nowTimestamp(): string {
 
 function uid(): string {
   return Math.random().toString(36).slice(2, 9);
+}
+
+function appendLogEntry(
+  entries: readonly LogEntry[],
+  entry: LogEntry,
+): LogEntry[] {
+  return [...entries.slice(-(MAX_LOG_ENTRIES - 1)), entry];
 }
 
 // ---------------------------------------------------------------------------
@@ -145,16 +149,6 @@ function isVerifiedThreat(
   if (verificationMeta.overturned === true) return false;
   if (verificationMeta.matchesPrompt === false) return false;
   return true;
-}
-
-function buildRelaySrc(camera: CameraSettingsRow | null): string | null {
-  if (!camera || camera.sourceType === "device") return null;
-  return buildCameraPlaybackDescriptor(camera.sourceUrl).src;
-}
-
-function isDirectVideoUrl(camera: CameraSettingsRow | null): boolean {
-  if (!camera || camera.sourceType === "device") return false;
-  return buildCameraPlaybackDescriptor(camera.sourceUrl).useVideoElement;
 }
 
 /** Detection count row inside the Active Detections panel. */
@@ -246,8 +240,6 @@ export default function LiveMonitorPage() {
   const activeCamera =
     enabledCameras.find((camera) => camera.id === activeCameraKey) ?? null;
   const activeCameraId = activeCamera?.cameraId ?? "NO_CAMERA";
-  const activeRelaySrc = buildRelaySrc(activeCamera);
-  const activeIsDirectVideoUrl = isDirectVideoUrl(activeCamera);
   const gridCameras = enabledCameras
     .filter((camera) => camera.id !== activeCameraKey)
     .slice(0, MINI_CAMERA_LIMIT);
@@ -302,6 +294,7 @@ export default function LiveMonitorPage() {
 
   // ── [3] INTEL_LOG: push detection events ─────────────────────────────────
   const lastDetectionCountRef = useRef(0);
+  const lastReadyCameraIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (detections.length === 0) return;
     if (detections.length === lastDetectionCountRef.current) return;
@@ -313,9 +306,8 @@ export default function LiveMonitorPage() {
     const label = classLabel(topDet.class);
     const conf = Math.round(topDet.confidence * 100);
 
-    setLogEntries((prev) => [
-      ...prev.slice(-49), // keep last 50 entries
-      {
+    setLogEntries((prev) =>
+      appendLogEntry(prev, {
         id: uid(),
         timestamp: nowTimestamp(),
         source: activeCameraId.slice(0, 6),
@@ -325,16 +317,15 @@ export default function LiveMonitorPage() {
             {detections.length > 1 && ` +${detections.length - 1} more.`}
           </>
         ),
-      },
-    ]);
+      }),
+    );
   }, [activeCameraId, detections]);
 
   // ── [3] INTEL_LOG: push VLM watch events ─────────────────────────────────
   useEffect(() => {
     if (!watchResult) return;
-    setLogEntries((prev) => [
-      ...prev.slice(-49),
-      {
+    setLogEntries((prev) =>
+      appendLogEntry(prev, {
         id: uid(),
         timestamp: nowTimestamp(),
         source: "VLM",
@@ -342,8 +333,8 @@ export default function LiveMonitorPage() {
           watchResult.isHarm === true
             ? `· HARM DETECTED — ${watchResult.description ?? "No description."}`
             : "· Frame assessed. No threat identified.",
-      },
-    ]);
+      }),
+    );
   }, [watchResult]);
 
   const lastLoggedThreatRequestIdRef = useRef<string | null>(null);
@@ -388,9 +379,8 @@ export default function LiveMonitorPage() {
     });
 
     lastLoggedThreatRequestIdRef.current = lastRequestId;
-    setLogEntries((prev) => [
-      ...prev.slice(-49),
-      {
+    setLogEntries((prev) =>
+      appendLogEntry(prev, {
         id: uid(),
         timestamp: nowTimestamp(),
         source: "SYS",
@@ -399,8 +389,8 @@ export default function LiveMonitorPage() {
             · Verified threat archived in <IntelTag>THREAT_LOG</IntelTag>.
           </>
         ),
-      },
-    ]);
+      }),
+    );
   }, [activeCameraId, detections, lastMeta, lastRequestId, watchResult]);
 
   // ── [4] THREAT_MODAL: trigger on harm ────────────────────────────────────
@@ -430,24 +420,31 @@ export default function LiveMonitorPage() {
   const handlePrimaryReady = () => {
     setCameraError(null);
     setIsCameraReady(true);
-    setLogEntries((prev) => [
-      ...prev,
-      {
+
+    if (lastReadyCameraIdRef.current === activeCameraId) {
+      return;
+    }
+
+    lastReadyCameraIdRef.current = activeCameraId;
+    setLogEntries((prev) =>
+      appendLogEntry(prev, {
         id: uid(),
         timestamp: nowTimestamp(),
         source: "SYS",
         message: `· Camera ${activeCameraId} online.`,
-      },
-    ]);
+      }),
+    );
   };
 
   const handlePrimaryError = (message: string) => {
+    lastReadyCameraIdRef.current = null;
     setCameraError(message);
     setIsCameraReady(false);
   };
 
   const handlePromoteCamera = (cameraId: string) => {
     if (cameraId === activeCameraKey) return;
+    lastReadyCameraIdRef.current = null;
     setActiveCameraKey(cameraId);
   };
 
@@ -478,7 +475,6 @@ export default function LiveMonitorPage() {
               isReady={isCameraReady}
               onError={handlePrimaryError}
               onReady={handlePrimaryReady}
-              relaySrc={activeRelaySrc}
               sourceRef={cameraSourceRef}
               overlays={
                 <>
@@ -552,7 +548,6 @@ export default function LiveMonitorPage() {
                 camera={camera}
                 isSelected={false}
                 onSelect={handlePromoteCamera}
-                relaySrc={buildRelaySrc(camera)}
               />
             ))}
             {gridCameras.length < MINI_CAMERA_LIMIT &&
@@ -670,39 +665,36 @@ export default function LiveMonitorPage() {
           vlmAnalysis={threatData.vlmAnalysis}
           onDismiss={() => setThreatOpen(false)}
           onFlag={() => {
-            setLogEntries((prev) => [
-              ...prev,
-              {
+            setLogEntries((prev) =>
+              appendLogEntry(prev, {
                 id: uid(),
                 timestamp: nowTimestamp(),
                 source: "OPR",
                 message: `· Threat ${threatData.threatId} flagged for review.`,
-              },
-            ]);
+              }),
+            );
             setThreatOpen(false);
           }}
           onAcknowledge={() => {
-            setLogEntries((prev) => [
-              ...prev,
-              {
+            setLogEntries((prev) =>
+              appendLogEntry(prev, {
                 id: uid(),
                 timestamp: nowTimestamp(),
                 source: "OPR",
                 message: `· Threat ${threatData.threatId} acknowledged.`,
-              },
-            ]);
+              }),
+            );
             setThreatOpen(false);
           }}
           onDispatch={() => {
-            setLogEntries((prev) => [
-              ...prev,
-              {
+            setLogEntries((prev) =>
+              appendLogEntry(prev, {
                 id: uid(),
                 timestamp: nowTimestamp(),
                 source: "OPR",
                 message: `· DISPATCH initiated for ${threatData.threatId}.`,
-              },
-            ]);
+              }),
+            );
             setThreatOpen(false);
           }}
         />

@@ -1,17 +1,22 @@
 import { spawn } from "node:child_process";
 import { access } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
 import ffmpegStatic from "ffmpeg-static";
 import type { NextRequest } from "next/server";
-import { describeCameraStreamSource } from "@/app/lib/camera-stream";
+import {
+  type ServerCameraSourceDescriptor,
+  resolveAccessibleCameraSourceFromQuery,
+} from "@/app/lib/camera-stream-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const BOUNDARY = "camx2frame";
+const LOOPABLE_HTTP_VIDEO_PATTERN = /\.(mp4|webm|mov|m4v|ogg)(\?|#|$)/i;
 
 async function resolveFfmpegPath(): Promise<string> {
-  if (process.env.FFMPEG_PATH) return process.env.FFMPEG_PATH;
+  if (process.env.FFMPEG_PATH) {
+    return process.env.FFMPEG_PATH;
+  }
 
   try {
     const child = spawn("ffmpeg", ["-version"], {
@@ -22,8 +27,12 @@ async function resolveFfmpegPath(): Promise<string> {
     await new Promise<void>((resolve, reject) => {
       child.once("error", reject);
       child.once("close", (code) => {
-        if (code === 0) resolve();
-        else reject(new Error("ffmpeg not available on PATH"));
+        if (code === 0) {
+          resolve();
+          return;
+        }
+
+        reject(new Error("ffmpeg not available on PATH"));
       });
     });
 
@@ -42,116 +51,61 @@ async function resolveFfmpegPath(): Promise<string> {
   );
 }
 
-function isHttpSource(value: string): boolean {
-  return /^https?:\/\//i.test(value);
-}
-
-function isRtspSource(value: string): boolean {
-  return /^rtsp:\/\//i.test(value);
-}
-
-function isFileUrlSource(value: string): boolean {
-  return /^file:\/\//i.test(value);
-}
-
-function stripWrappingQuotes(value: string): string {
-  if (
-    (value.startsWith('"') && value.endsWith('"')) ||
-    (value.startsWith("'") && value.endsWith("'"))
-  ) {
-    return value.slice(1, -1).trim();
-  }
-
-  return value;
-}
-
-async function normalizeSource(rawSource: string | null): Promise<string> {
-  const source = stripWrappingQuotes(rawSource?.trim() ?? "");
-  if (!source) {
-    throw new Error("Missing required 'source' query parameter.");
-  }
-
-  const descriptor = describeCameraStreamSource(source);
-
-  if (descriptor.kind === "http" || descriptor.kind === "https") {
-    if (!isHttpSource(source)) {
-      throw new Error("Unsupported HTTP stream source.");
-    }
-    return source;
-  }
-
-  if (descriptor.kind === "rtsp") {
-    if (!isRtspSource(source)) {
-      throw new Error("Unsupported RTSP stream source.");
-    }
-    return source;
-  }
-
-  if (descriptor.kind === "file") {
-    if (isFileUrlSource(source)) {
-      try {
-        const filePath = fileURLToPath(source);
-        await access(filePath);
-        return filePath;
-      } catch {
-        throw new Error("The specified file:// source could not be resolved.");
-      }
-    }
-
-    try {
-      await access(source);
-      return source;
-    } catch {
-      throw new Error("The specified local file path could not be accessed.");
-    }
-  }
-
-  throw new Error(
-    "Unsupported source. Use an rtsp:// URL, http(s):// URL, file:// URL, or a local filesystem path.",
+function isLoopEligibleHttpVideo(source: string): boolean {
+  const normalized = source.toLowerCase();
+  return (
+    !normalized.includes(".m3u8") && LOOPABLE_HTTP_VIDEO_PATTERN.test(source)
   );
 }
 
-function buildInputArgs(source: string): string[] {
-  if (isRtspSource(source)) {
-    return [
-      "-rtsp_transport",
-      "tcp",
-      "-fflags",
-      "nobuffer",
-      "-flags",
-      "low_delay",
-      "-i",
-      source,
-    ];
+function buildInputArgs(descriptor: ServerCameraSourceDescriptor): string[] {
+  const source = descriptor.normalizedSource;
+
+  switch (descriptor.kind) {
+    case "rtsp":
+      return [
+        "-rtsp_transport",
+        "tcp",
+        "-fflags",
+        "nobuffer",
+        "-flags",
+        "low_delay",
+        "-i",
+        source,
+      ];
+
+    case "http":
+    case "https":
+      return [
+        ...(isLoopEligibleHttpVideo(source)
+          ? ["-re", "-stream_loop", "-1"]
+          : []),
+        "-reconnect",
+        "1",
+        "-reconnect_streamed",
+        "1",
+        "-reconnect_at_eof",
+        "1",
+        "-i",
+        source,
+      ];
+
+    case "file":
+      return ["-re", "-stream_loop", "-1", "-i", source];
+
+    default:
+      throw new Error(
+        "Unsupported source. Use an rtsp:// URL, http(s):// URL, file:// URL, or a local filesystem path.",
+      );
   }
-
-  if (isHttpSource(source)) {
-    const isLoopEligibleVideoUrl =
-      !source.toLowerCase().includes(".m3u8") &&
-      /\.(mp4|webm|mov|m4v|ogg)(\?|#|$)/i.test(source);
-
-    return [
-      ...(isLoopEligibleVideoUrl ? ["-re", "-stream_loop", "-1"] : []),
-      "-reconnect",
-      "1",
-      "-reconnect_streamed",
-      "1",
-      "-reconnect_at_eof",
-      "1",
-      "-i",
-      source,
-    ];
-  }
-
-  return ["-re", "-stream_loop", "-1", "-i", source];
 }
 
-function buildFfmpegArgs(source: string): string[] {
+function buildFfmpegArgs(descriptor: ServerCameraSourceDescriptor): string[] {
   return [
     "-hide_banner",
     "-loglevel",
     "error",
-    ...buildInputArgs(source),
+    ...buildInputArgs(descriptor),
     "-an",
     "-sn",
     "-dn",
@@ -182,11 +136,20 @@ function errorResponse(status: number, message: string): Response {
 }
 
 export async function GET(req: NextRequest): Promise<Response> {
-  let source: string;
+  let descriptor: ServerCameraSourceDescriptor;
   let ffmpegPath: string;
 
   try {
-    source = await normalizeSource(req.nextUrl.searchParams.get("source"));
+    descriptor = await resolveAccessibleCameraSourceFromQuery(
+      req.nextUrl.searchParams.get("source"),
+    );
+
+    if (descriptor.kind === "device" || descriptor.kind === "unknown") {
+      throw new Error(
+        "Unsupported source. Use an rtsp:// URL, http(s):// URL, file:// URL, or a local filesystem path.",
+      );
+    }
+
     ffmpegPath = await resolveFfmpegPath();
   } catch (error) {
     const message =
@@ -194,7 +157,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     return errorResponse(400, message);
   }
 
-  const ffmpegArgs = buildFfmpegArgs(source);
+  const ffmpegArgs = buildFfmpegArgs(descriptor);
 
   try {
     const child = spawn(ffmpegPath, ffmpegArgs, {

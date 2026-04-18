@@ -1,4 +1,5 @@
 import { access } from "node:fs/promises";
+import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export type ServerCameraSourceKind =
@@ -81,7 +82,9 @@ function isLikelyVideoFileSource(value: string): boolean {
   );
 }
 
-export function normalizeCameraSourceValue(value: string | null | undefined): string {
+export function normalizeCameraSourceValue(
+  value: string | null | undefined,
+): string {
   const normalized = stripWrappingQuotes(value ?? "");
 
   if (!normalized) {
@@ -89,6 +92,16 @@ export function normalizeCameraSourceValue(value: string | null | undefined): st
   }
 
   return normalized;
+}
+
+export function normalizeCameraSourceQueryValue(
+  value: string | null | undefined,
+): string {
+  try {
+    return normalizeCameraSourceValue(value);
+  } catch {
+    throw new Error("Missing required 'source' query parameter.");
+  }
 }
 
 export function getServerCameraSourceKind(
@@ -102,7 +115,26 @@ export function getServerCameraSourceKind(
   if (isHttpsSource(lower)) return "https";
   if (isHttpSource(lower)) return "http";
   if (isFileUrlSource(lower) || isLikelyLocalPath(normalized)) return "file";
+
   return "unknown";
+}
+
+export function tryResolveLocalFilePath(source: string): string | null {
+  const normalized = normalizeCameraSourceValue(source);
+
+  if (isFileUrlSource(normalized)) {
+    try {
+      return fileURLToPath(normalized);
+    } catch {
+      return null;
+    }
+  }
+
+  if (isLikelyLocalPath(normalized)) {
+    return resolve(normalized);
+  }
+
+  return null;
 }
 
 export function describeServerCameraSource(
@@ -111,7 +143,8 @@ export function describeServerCameraSource(
   const normalizedSource = normalizeCameraSourceValue(source);
   const kind = getServerCameraSourceKind(normalizedSource);
   const isLikelyVideoFile = isLikelyVideoFileSource(normalizedSource);
-  const filePath = kind === "file" ? tryResolveLocalFilePath(normalizedSource) : null;
+  const filePath =
+    kind === "file" ? tryResolveLocalFilePath(normalizedSource) : null;
   const isDirectBrowserPlayable =
     kind === "device" ||
     ((kind === "http" || kind === "https") && isLikelyVideoFile);
@@ -129,24 +162,6 @@ export function describeServerCameraSource(
     isDirectBrowserPlayable,
     isLikelyVideoFile,
   };
-}
-
-export function tryResolveLocalFilePath(source: string): string | null {
-  const normalized = normalizeCameraSourceValue(source);
-
-  if (isFileUrlSource(normalized)) {
-    try {
-      return fileURLToPath(normalized);
-    } catch {
-      return null;
-    }
-  }
-
-  if (isLikelyLocalPath(normalized)) {
-    return normalized;
-  }
-
-  return null;
 }
 
 export async function resolveAccessibleCameraSource(
@@ -177,7 +192,15 @@ export async function resolveAccessibleCameraSource(
   return {
     ...descriptor,
     normalizedSource: descriptor.filePath,
+    filePath: descriptor.filePath,
   };
+}
+
+export async function resolveAccessibleCameraSourceFromQuery(
+  value: string | null | undefined,
+): Promise<ServerCameraSourceDescriptor> {
+  const source = normalizeCameraSourceQueryValue(value);
+  return resolveAccessibleCameraSource(source);
 }
 
 export function isServerCameraSourceFileLike(source: string): boolean {
