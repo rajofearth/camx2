@@ -34,6 +34,30 @@ export function timelineFilePath(fingerprint: string): string {
   return path.join(jobDir(fingerprint), "timeline.json");
 }
 
+export function retrievalDirPath(fingerprint: string): string {
+  return path.join(jobDir(fingerprint), "retrieval");
+}
+
+export function retrievalChunksFilePath(fingerprint: string): string {
+  return path.join(retrievalDirPath(fingerprint), "chunks.json");
+}
+
+export function retrievalEntitiesFilePath(fingerprint: string): string {
+  return path.join(retrievalDirPath(fingerprint), "entities.json");
+}
+
+export function retrievalGraphFilePath(fingerprint: string): string {
+  return path.join(retrievalDirPath(fingerprint), "graph.json");
+}
+
+export function retrievalQueryCacheFilePath(fingerprint: string): string {
+  return path.join(retrievalDirPath(fingerprint), "query-cache.json");
+}
+
+export function vectraIndexDirPath(fingerprint: string): string {
+  return path.join(jobDir(fingerprint), "vectra");
+}
+
 export function framesDirPath(fingerprint: string): string {
   return path.join(jobDir(fingerprint), "frames");
 }

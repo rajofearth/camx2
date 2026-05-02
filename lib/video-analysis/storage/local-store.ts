@@ -3,6 +3,9 @@ import path from "node:path";
 import { z } from "zod";
 import type {
   VideoAnalysisFrameArtifact,
+  VideoAnalysisGraphArtifact,
+  VideoAnalysisRetrievalChunk,
+  VideoAnalysisRetrievalEntity,
   VideoAnalysisSummaryArtifact,
   VideoAnalysisTimelineEntry,
 } from "@/types/video-analysis";
@@ -13,12 +16,21 @@ import {
   timelineEntrySchema,
 } from "../contracts/schemas";
 import type { PersistedVideoAnalysisJob } from "../domain/internal";
+import {
+  retrievalChunkSchema,
+  retrievalEntitySchema,
+  graphArtifactSchema as retrievalGraphArtifactSchema,
+} from "../retrieval/contracts";
 import { readJsonFile, writeJsonFile } from "../utils/json";
 import {
   frameArtifactPath,
   frameArtifactsDirPath,
   jobDir,
   manifestFilePath,
+  retrievalChunksFilePath,
+  retrievalDirPath,
+  retrievalEntitiesFilePath,
+  retrievalGraphFilePath,
   sourceVideoPath,
   stateFilePath,
   summaryFilePath,
@@ -155,6 +167,63 @@ export class LocalVideoAnalysisStore implements VideoAnalysisStore {
       fs,
       summaryFilePath(fingerprint),
       summaryArtifactSchema,
+    );
+  }
+
+  async saveRetrievalChunks(
+    fingerprint: string,
+    chunks: readonly VideoAnalysisRetrievalChunk[],
+  ): Promise<void> {
+    await fs.mkdir(retrievalDirPath(fingerprint), { recursive: true });
+    await writeJsonFile(fs, retrievalChunksFilePath(fingerprint), chunks);
+  }
+
+  async readRetrievalChunks(
+    fingerprint: string,
+  ): Promise<readonly VideoAnalysisRetrievalChunk[]> {
+    const schema = z.array(retrievalChunkSchema);
+    return (
+      (await readJsonFile(fs, retrievalChunksFilePath(fingerprint), schema)) ??
+      []
+    );
+  }
+
+  async saveRetrievalEntities(
+    fingerprint: string,
+    entities: readonly VideoAnalysisRetrievalEntity[],
+  ): Promise<void> {
+    await fs.mkdir(retrievalDirPath(fingerprint), { recursive: true });
+    await writeJsonFile(fs, retrievalEntitiesFilePath(fingerprint), entities);
+  }
+
+  async readRetrievalEntities(
+    fingerprint: string,
+  ): Promise<readonly VideoAnalysisRetrievalEntity[]> {
+    const schema = z.array(retrievalEntitySchema);
+    return (
+      (await readJsonFile(
+        fs,
+        retrievalEntitiesFilePath(fingerprint),
+        schema,
+      )) ?? []
+    );
+  }
+
+  async saveRetrievalGraph(
+    fingerprint: string,
+    graph: VideoAnalysisGraphArtifact,
+  ): Promise<void> {
+    await fs.mkdir(retrievalDirPath(fingerprint), { recursive: true });
+    await writeJsonFile(fs, retrievalGraphFilePath(fingerprint), graph);
+  }
+
+  async readRetrievalGraph(
+    fingerprint: string,
+  ): Promise<VideoAnalysisGraphArtifact | null> {
+    return readJsonFile(
+      fs,
+      retrievalGraphFilePath(fingerprint),
+      retrievalGraphArtifactSchema,
     );
   }
 

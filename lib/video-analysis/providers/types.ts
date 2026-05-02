@@ -1,8 +1,12 @@
 import type {
+  GraphMatch,
+  RetrievedEvidenceChunk,
   VideoAnalysisChatMessage,
   VideoAnalysisFrameArtifact,
+  VideoAnalysisResolvedTimeRange,
   VideoAnalysisSummaryArtifact,
   VideoAnalysisTimelineEntry,
+  VideoQueryContextResult,
 } from "@/types/video-analysis";
 
 export interface ProviderFrameInput {
@@ -14,6 +18,7 @@ export interface ProviderFrameInput {
 
 export interface VideoAnalysisProvider {
   readonly kind: "lmstudio";
+  embedTexts(inputs: readonly string[]): Promise<readonly number[][]>;
   analyzeFrame(
     input: ProviderFrameInput,
   ): Promise<
@@ -30,10 +35,18 @@ export interface VideoAnalysisProvider {
   summarizeTimeline(
     timeline: readonly VideoAnalysisTimelineEntry[],
   ): Promise<VideoAnalysisSummaryArtifact>;
-  answerQuestion(input: {
+  summarizeQueryContext(input: {
+    readonly question: string;
     readonly summary: VideoAnalysisSummaryArtifact;
-    readonly timeline: readonly VideoAnalysisTimelineEntry[];
+    readonly resolvedTimeRange: VideoAnalysisResolvedTimeRange | null;
+    readonly evidence: readonly RetrievedEvidenceChunk[];
+    readonly graphMatches: readonly GraphMatch[];
+    readonly conversation: readonly VideoAnalysisChatMessage[];
+    readonly insufficientEvidence: boolean;
+  }): Promise<{ readonly summary: string; readonly modelKey: string }>;
+  answerQuestion(input: {
     readonly question: string;
     readonly messages: readonly VideoAnalysisChatMessage[];
+    readonly queryContext: VideoQueryContextResult;
   }): Promise<{ readonly answer: string; readonly modelKey: string }>;
 }

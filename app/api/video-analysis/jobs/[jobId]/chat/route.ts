@@ -16,6 +16,7 @@ export async function POST(
       jobId,
       question: body.question,
       messages: body.messages ?? [],
+      timeRange: body.timeRange,
     });
     return Response.json({
       ok: true,

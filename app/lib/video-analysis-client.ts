@@ -5,6 +5,7 @@ import type {
   VideoAnalysisError,
   VideoAnalysisJob,
   VideoAnalysisJobResponse,
+  VideoAnalysisTimeRangeInput,
 } from "@/types/video-analysis";
 
 export type VideoAnalysisUiPhase =
@@ -115,6 +116,7 @@ export async function askVideoAnalysisQuestion(input: {
   readonly jobId: string;
   readonly question: string;
   readonly messages?: readonly VideoAnalysisChatMessage[];
+  readonly timeRange?: VideoAnalysisTimeRangeInput;
 }): Promise<VideoAnalysisChatResponse> {
   const response = await fetch(`/api/video-analysis/jobs/${input.jobId}/chat`, {
     method: "POST",
@@ -124,6 +126,7 @@ export async function askVideoAnalysisQuestion(input: {
     body: JSON.stringify({
       question: input.question,
       messages: input.messages ?? [],
+      timeRange: input.timeRange,
     }),
   });
   return parseVideoAnalysisChatResponse(await response.json());

@@ -11,6 +11,9 @@ export function defaultProviderConfig(): VideoAnalysisProviderConfig {
     apiToken: process.env.LM_API_TOKEN ?? "",
     frameModelKey: DEFAULT_MODEL_CONFIGURATION.frameAnalysisModelKey,
     summaryModelKey: DEFAULT_MODEL_CONFIGURATION.summaryChatModelKey,
+    embeddingModelKey:
+      process.env.LM_EMBEDDING_MODEL_KEY ??
+      DEFAULT_MODEL_CONFIGURATION.embeddingModelKey,
   };
 }
 
@@ -28,5 +31,7 @@ export function parseProviderConfigFromFormData(
     apiToken: config.apiToken,
     frameModelKey: config.frameAnalysisModelKey,
     summaryModelKey: config.summaryChatModelKey,
+    embeddingModelKey:
+      process.env.LM_EMBEDDING_MODEL_KEY ?? config.embeddingModelKey,
   };
 }

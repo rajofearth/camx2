@@ -1,15 +1,24 @@
 import { promises as fs } from "node:fs";
 import { createLmStudioClientForRequest } from "@/app/lib/lmstudio-client-factory";
 import type {
+  GraphMatch,
+  RetrievedEvidenceChunk,
   VideoAnalysisChatMessage,
   VideoAnalysisProviderConfig,
+  VideoAnalysisResolvedTimeRange,
   VideoAnalysisSummaryArtifact,
   VideoAnalysisTimelineEntry,
+  VideoQueryContextResult,
 } from "@/types/video-analysis";
 import {
   chatMessageSchema,
   frameAnalysisResponseSchema,
 } from "../contracts/schemas";
+import {
+  buildQueryContextBlock,
+  renderEvidenceChunk,
+  renderGraphMatch,
+} from "../retrieval/summarize-context";
 import { dedupeStrings, normalizeWhitespace } from "../utils/text";
 import type { ProviderFrameInput, VideoAnalysisProvider } from "./types";
 
@@ -25,42 +34,25 @@ function buildTimelineText(
     .join("\n");
 }
 
-function buildTimelineExcerpt(
-  timeline: readonly VideoAnalysisTimelineEntry[],
-  question: string,
-  maxEntries = 12,
+function renderResolvedTimeRange(
+  resolvedTimeRange: VideoAnalysisResolvedTimeRange | null,
 ): string {
-  const terms = question
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter((token) => token.length >= 3);
+  if (!resolvedTimeRange) {
+    return "No explicit time range requested.";
+  }
+  return `Requested window: ${resolvedTimeRange.startMs}ms to ${resolvedTimeRange.endMs}ms.`;
+}
 
-  const scored = timeline.map((entry, index) => {
-    const haystack =
-      `${entry.summary} ${entry.visibleObjects.join(" ")} ${entry.events.join(" ")}`.toLowerCase();
-    const score = terms.reduce(
-      (total, term) => total + (haystack.includes(term) ? 1 : 0),
-      0,
-    );
-    return { entry, index, score };
-  });
+function renderEvidenceList(
+  evidence: readonly RetrievedEvidenceChunk[],
+): string {
+  return (
+    evidence.map(renderEvidenceChunk).join("\n\n") || "No evidence retrieved."
+  );
+}
 
-  const selected = scored
-    .filter((row) => row.score > 0)
-    .sort((left, right) => right.score - left.score || left.index - right.index)
-    .slice(0, maxEntries);
-
-  const fallback = selected.length > 0 ? selected : scored.slice(-maxEntries);
-  return fallback
-    .sort((left, right) => left.index - right.index)
-    .map(({ entry }) => {
-      const range =
-        entry.startTimestampLabel === entry.endTimestampLabel
-          ? entry.startTimestampLabel
-          : `${entry.startTimestampLabel}-${entry.endTimestampLabel}`;
-      return `${range}: ${entry.summary}`;
-    })
-    .join("\n");
+function renderGraphMatchList(matches: readonly GraphMatch[]): string {
+  return matches.map(renderGraphMatch).join("\n") || "No graph matches.";
 }
 
 export class LmStudioVideoAnalysisProvider implements VideoAnalysisProvider {
@@ -197,32 +189,106 @@ export class LmStudioVideoAnalysisProvider implements VideoAnalysisProvider {
     };
   }
 
-  async answerQuestion(input: {
-    readonly summary: VideoAnalysisSummaryArtifact;
-    readonly timeline: readonly VideoAnalysisTimelineEntry[];
-    readonly question: string;
-    readonly messages: readonly VideoAnalysisChatMessage[];
-  }): Promise<{ readonly answer: string; readonly modelKey: string }> {
-    const model = await this.client.llm.model(this.config.summaryModelKey);
-    const normalizedMessages = input.messages.map((message) =>
-      chatMessageSchema.parse(message),
+  async embedTexts(inputs: readonly string[]): Promise<readonly number[][]> {
+    const model = await this.client.embedding.model(
+      this.config.embeddingModelKey,
     );
-    const excerpt = buildTimelineExcerpt(input.timeline, input.question);
+    const response = await model.embed([...inputs]);
+    const normalized = Array.isArray(response) ? response : [response];
+    return normalized.map((entry) => entry.embedding);
+  }
+
+  async summarizeQueryContext(input: {
+    readonly question: string;
+    readonly summary: VideoAnalysisSummaryArtifact;
+    readonly resolvedTimeRange: VideoAnalysisResolvedTimeRange | null;
+    readonly evidence: readonly RetrievedEvidenceChunk[];
+    readonly graphMatches: readonly GraphMatch[];
+    readonly conversation: readonly VideoAnalysisChatMessage[];
+    readonly insufficientEvidence: boolean;
+  }): Promise<{ readonly summary: string; readonly modelKey: string }> {
+    const model = await this.client.llm.model(this.config.summaryModelKey);
+    const conversationBlock =
+      input.conversation.length > 0
+        ? input.conversation
+            .slice(-4)
+            .map((message) => `${message.role}: ${message.content}`)
+            .join("\n")
+        : "No prior conversation context.";
     const response = await model.respond(
       [
         {
           role: "system",
           content: [
-            "Answer questions about analyzed CCTV footage using only the supplied evidence.",
-            "Use timestamps when supported.",
-            "If the evidence is insufficient, say so clearly.",
+            "You prepare compact retrieval summaries for a CCTV question-answering agent.",
+            "Use only the supplied evidence.",
+            "Respect the requested question and time range.",
+            "If evidence is weak, say so plainly.",
+            "Return plain text only.",
+          ].join(" "),
+        },
+        {
+          role: "user",
+          content: [
+            `Question: ${input.question}`,
+            renderResolvedTimeRange(input.resolvedTimeRange),
+            `Insufficient evidence flag: ${input.insufficientEvidence ? "yes" : "no"}`,
             "",
-            "Summary:",
+            "Global video summary:",
             input.summary.summaryText,
             "",
-            "Relevant timeline entries:",
-            excerpt || "No relevant timeline entries available.",
+            "Relevant evidence:",
+            renderEvidenceList(input.evidence),
+            "",
+            "Graph matches:",
+            renderGraphMatchList(input.graphMatches),
+            "",
+            "Recent conversation:",
+            conversationBlock,
+            "",
+            "Write a 1-2 paragraph context summary for another agent. Include timestamps when supported.",
           ].join("\n"),
+        },
+      ],
+      {
+        temperature: 0.1,
+        maxTokens: 700,
+      },
+    );
+
+    const summary = response?.content?.trim();
+    if (!summary) {
+      throw new Error("LM Studio returned empty query context summary");
+    }
+
+    return {
+      summary,
+      modelKey: this.config.summaryModelKey,
+    };
+  }
+
+  async answerQuestion(input: {
+    readonly question: string;
+    readonly messages: readonly VideoAnalysisChatMessage[];
+    readonly queryContext: VideoQueryContextResult;
+  }): Promise<{ readonly answer: string; readonly modelKey: string }> {
+    const model = await this.client.llm.model(this.config.summaryModelKey);
+    const normalizedMessages = input.messages.map((message) =>
+      chatMessageSchema.parse(message),
+    );
+    const response = await model.respond(
+      [
+        {
+          role: "system",
+          content: [
+            "Answer questions about analyzed CCTV footage using only the supplied retrieved context.",
+            "Use timestamps when supported.",
+            "If the evidence is insufficient, say so clearly.",
+          ].join("\n"),
+        },
+        {
+          role: "system",
+          content: buildQueryContextBlock(input.queryContext),
         },
         ...normalizedMessages,
         {

@@ -16,6 +16,10 @@ import { buildTimeline } from "../pipeline/build-timeline";
 import { extractVideoFrames } from "../pipeline/extract-video";
 import { LmStudioVideoAnalysisProvider } from "../providers/lmstudio-provider";
 import type { VideoAnalysisProvider } from "../providers/types";
+import {
+  ensureRetrievalArtifacts,
+  resolveVideoQueryContext,
+} from "../retrieval/query-service";
 import { LocalVideoAnalysisStore } from "../storage/local-store";
 import { sourceVideoPath } from "../storage/paths";
 import type { VideoAnalysisStore } from "../storage/types";
@@ -226,6 +230,17 @@ class VideoAnalysisApplicationService {
       await this.store.saveTimeline(job.fingerprint, timeline);
       const summary = await provider.summarizeTimeline(timeline);
       await this.store.saveSummary(job.fingerprint, summary);
+      await ensureRetrievalArtifacts({
+        fingerprint: job.fingerprint,
+        timeline,
+        store: this.store,
+        provider,
+      }).catch((error: unknown) => {
+        console.warn(
+          `[video-analysis] retrieval bootstrap failed for ${job.fingerprint}`,
+          error,
+        );
+      });
 
       await this.persist({
         ...job,
@@ -285,6 +300,7 @@ class VideoAnalysisApplicationService {
     readonly jobId: string;
     readonly question: string;
     readonly messages: readonly VideoAnalysisChatMessage[];
+    readonly timeRange?: { readonly start: string; readonly end: string };
   }): Promise<{ readonly answer: string; readonly modelKey: string }> {
     const job = await this.loadById(input.jobId);
     if (!job) {
@@ -304,12 +320,23 @@ class VideoAnalysisApplicationService {
     }
     const timeline = await this.store.readTimeline(job.fingerprint);
     const provider = this.providerFor(job.providerConfig);
-    return answerChatQuestion({
+    const queryContext = await resolveVideoQueryContext({
+      job,
+      store: this.store,
       provider,
       summary,
       timeline,
+      request: {
+        question: input.question,
+        conversation: input.messages,
+        timeRange: input.timeRange,
+      },
+    });
+    return answerChatQuestion({
+      provider,
       question: input.question,
       messages: input.messages,
+      queryContext,
     });
   }
 

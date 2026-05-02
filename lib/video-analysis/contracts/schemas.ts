@@ -6,6 +6,7 @@ export const providerConfigSchema = z.object({
   apiToken: z.string(),
   frameModelKey: z.string().min(1),
   summaryModelKey: z.string().min(1),
+  embeddingModelKey: z.string().min(1),
 });
 
 export const progressSchema = z.object({
@@ -89,6 +90,12 @@ export const chatMessageSchema = z.object({
 export const chatRequestSchema = z.object({
   question: z.string().trim().min(1),
   messages: z.array(chatMessageSchema).optional(),
+  timeRange: z
+    .object({
+      start: z.string().trim().min(1),
+      end: z.string().trim().min(1),
+    })
+    .optional(),
 });
 
 export const uploadRequestMetaSchema = z.object({

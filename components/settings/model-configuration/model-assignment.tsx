@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-
+import { Input } from "@/components/ui/input";
 import { ModelCapabilityStrip } from "./model-capability-strip";
 import { ModelConfigSection } from "./model-config-section";
 import { useModelConfiguration } from "./model-configuration-context";
@@ -139,6 +139,31 @@ export function ModelAssignment() {
                 </p>
               </div>
             )}
+          </div>
+        </div>
+
+        <div className="flex flex-col items-start gap-6 p-6 md:flex-row">
+          <div className="w-full md:w-1/3">
+            <span className="mb-1 block text-[11px] font-bold uppercase text-white">
+              Embedding Model Key
+            </span>
+            <span className="block text-[10px] uppercase text-op-text-sec">
+              Local embedding model used for GraphRAG retrieval indexing.
+            </span>
+            <p className="mt-4 font-mono text-[9px] uppercase leading-relaxed text-op-text-sec">
+              Enter the LM Studio embedding model key exactly as loaded on your
+              machine.
+            </p>
+          </div>
+          <div className="w-full md:w-2/3">
+            <Input
+              value={config.embeddingModelKey}
+              onChange={(event) =>
+                setConfig({ embeddingModelKey: event.target.value })
+              }
+              placeholder="nomic-embed-text-v1.5"
+              className="border-op-border bg-op-base font-mono text-sm text-op-silver placeholder:text-op-text-muted"
+            />
           </div>
         </div>
       </div>

@@ -8,6 +8,7 @@ export interface ModelConfigurationPersisted {
   readonly preferredWatchModelKey: string;
   readonly frameAnalysisModelKey: string;
   readonly summaryChatModelKey: string;
+  readonly embeddingModelKey: string;
 }
 
 export const DEFAULT_MODEL_CONFIGURATION: ModelConfigurationPersisted = {
@@ -16,6 +17,7 @@ export const DEFAULT_MODEL_CONFIGURATION: ModelConfigurationPersisted = {
   preferredWatchModelKey: "lfm-2.5-ucf-1.6b",
   frameAnalysisModelKey: "lfm-ucf-400m",
   summaryChatModelKey: "google/gemma-4-e4b",
+  embeddingModelKey: "nomic-embed-text-v1.5",
 };
 
 export function parseModelConfigurationJson(
@@ -40,6 +42,10 @@ export function parseModelConfigurationJson(
         typeof v.summaryChatModelKey === "string"
           ? v.summaryChatModelKey
           : d.summaryChatModelKey,
+      embeddingModelKey:
+        typeof v.embeddingModelKey === "string"
+          ? v.embeddingModelKey
+          : d.embeddingModelKey,
     };
   } catch {
     return { ...DEFAULT_MODEL_CONFIGURATION };

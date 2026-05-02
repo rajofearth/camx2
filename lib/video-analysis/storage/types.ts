@@ -1,5 +1,8 @@
 import type {
   VideoAnalysisFrameArtifact,
+  VideoAnalysisGraphArtifact,
+  VideoAnalysisRetrievalChunk,
+  VideoAnalysisRetrievalEntity,
   VideoAnalysisSummaryArtifact,
   VideoAnalysisTimelineEntry,
 } from "@/types/video-analysis";
@@ -59,5 +62,26 @@ export interface VideoAnalysisStore {
   readSummary(
     fingerprint: string,
   ): Promise<VideoAnalysisSummaryArtifact | null>;
+  saveRetrievalChunks(
+    fingerprint: string,
+    chunks: readonly VideoAnalysisRetrievalChunk[],
+  ): Promise<void>;
+  readRetrievalChunks(
+    fingerprint: string,
+  ): Promise<readonly VideoAnalysisRetrievalChunk[]>;
+  saveRetrievalEntities(
+    fingerprint: string,
+    entities: readonly VideoAnalysisRetrievalEntity[],
+  ): Promise<void>;
+  readRetrievalEntities(
+    fingerprint: string,
+  ): Promise<readonly VideoAnalysisRetrievalEntity[]>;
+  saveRetrievalGraph(
+    fingerprint: string,
+    graph: VideoAnalysisGraphArtifact,
+  ): Promise<void>;
+  readRetrievalGraph(
+    fingerprint: string,
+  ): Promise<VideoAnalysisGraphArtifact | null>;
   clearJob(fingerprint: string): Promise<void>;
 }
