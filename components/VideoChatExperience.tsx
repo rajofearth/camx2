@@ -13,17 +13,17 @@ import { AnimatePresence, motion } from "motion/react";
 import type React from "react";
 import { startTransition, useEffect, useRef, useState } from "react";
 import {
-  askVideoWatchQuestion,
-  clearVideoWatchCache,
-  fetchVideoWatchStatus,
-  uploadVideoForWatch,
-} from "@/app/lib/video-watch-client";
-import type {
-  VideoWatchChatMessage,
-  VideoWatchJob,
-  VideoWatchPhase,
-} from "@/app/lib/video-watch-types";
+  askVideoAnalysisQuestion,
+  clearVideoAnalysisJob,
+  createVideoAnalysisJob,
+  fetchVideoAnalysisJob,
+  type VideoAnalysisUiPhase,
+} from "@/app/lib/video-analysis-client";
 import GridLoader from "@/components/grid-loader";
+import type {
+  VideoAnalysisChatMessage,
+  VideoAnalysisJob,
+} from "@/types/video-analysis";
 import { SiteNav } from "./SiteNav";
 
 type ChatMessage = {
@@ -34,61 +34,27 @@ type ChatMessage = {
 };
 
 const ATTACHMENT_ITEMS = [
-  {
-    label: "Video file",
-    icon: Film,
-    action: "video",
-  },
-  {
-    label: "Snapshots",
-    icon: ImageIcon,
-    action: "snapshots",
-  },
-  {
-    label: "Notes",
-    icon: FileText,
-    action: "notes",
-  },
+  { label: "Video file", icon: Film, action: "video" },
+  { label: "Snapshots", icon: ImageIcon, action: "snapshots" },
+  { label: "Notes", icon: FileText, action: "notes" },
 ] as const;
 
-const LOCAL_CACHE_PREFIX = "video-watch:fingerprint:";
+const LOCAL_CACHE_PREFIX = "video-analysis:fingerprint:";
 
 function getPhaseLabel(
-  job: VideoWatchJob | null,
-  uploadPhase: VideoWatchPhase,
+  job: VideoAnalysisJob | null,
+  uploadPhase: VideoAnalysisUiPhase,
 ) {
-  if (uploadPhase === "checking_cache") {
-    return "Checking cache...";
-  }
-
-  if (uploadPhase === "uploading") {
-    return "Uploading video...";
-  }
-
-  if (!job) {
-    return "Upload a video file to begin";
-  }
-
-  if (job.status === "extracting") {
-    return "Extracting frames...";
-  }
-
+  if (uploadPhase === "checking_cache") return "Checking cache...";
+  if (uploadPhase === "uploading") return "Uploading video...";
+  if (!job) return "Upload a video file to begin";
+  if (job.status === "extracting") return "Extracting frames...";
   if (job.status === "analyzing") {
-    return `${job.analyzedFrames}/${job.totalFrames} frames analyzed`;
+    return `${job.progress.completedFrames}/${job.progress.totalFrames} frames analyzed`;
   }
-
-  if (job.status === "combining") {
-    return "Combining timeline...";
-  }
-
-  if (job.status === "completed") {
-    return "Ready to chat";
-  }
-
-  if (job.status === "error") {
-    return "Analysis failed";
-  }
-
+  if (job.status === "summarizing") return "Summarizing timeline...";
+  if (job.status === "completed") return "Ready to chat";
+  if (job.status === "error") return "Analysis failed";
   return "Preparing analysis...";
 }
 
@@ -104,11 +70,9 @@ function formatEtaLabel(seconds: number | null): string | null {
   if (seconds === null || !Number.isFinite(seconds) || seconds < 0) {
     return null;
   }
-
   if (seconds < 60) {
     return `${Math.max(1, Math.round(seconds))}s`;
   }
-
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.round(seconds % 60);
   return `${minutes}m ${String(remainingSeconds).padStart(2, "0")}s`;
@@ -117,41 +81,24 @@ function formatEtaLabel(seconds: number | null): string | null {
 function getInputPlaceholder(input: {
   readonly hasVideo: boolean;
   readonly isVideoReady: boolean;
-  readonly uploadPhase: VideoWatchPhase;
-  readonly jobStatus?: VideoWatchPhase;
+  readonly uploadPhase: VideoAnalysisUiPhase;
+  readonly jobStatus?: VideoAnalysisJob["status"];
 }): string {
-  if (input.isVideoReady) {
-    return "Ask about the uploaded footage...";
-  }
-
-  if (!input.hasVideo) {
+  if (input.isVideoReady) return "Ask about the uploaded footage...";
+  if (!input.hasVideo)
     return "Upload a video and wait until analysis is ready...";
-  }
-
-  if (input.uploadPhase === "checking_cache") {
-    return "Checking whether this video was already analyzed...";
-  }
-
-  if (input.uploadPhase === "uploading") {
+  if (input.uploadPhase === "checking_cache")
+    return "Checking for an existing analysis...";
+  if (input.uploadPhase === "uploading")
     return "Uploading your video for analysis...";
-  }
-
-  if (input.jobStatus === "extracting") {
+  if (input.jobStatus === "extracting")
     return "Extracting frames from your uploaded video...";
-  }
-
-  if (input.jobStatus === "analyzing") {
+  if (input.jobStatus === "analyzing")
     return "Analyzing your uploaded video frames...";
-  }
-
-  if (input.jobStatus === "combining") {
-    return "Combining frame descriptions into a timeline...";
-  }
-
-  if (input.jobStatus === "error") {
+  if (input.jobStatus === "summarizing")
+    return "Summarizing the analyzed footage...";
+  if (input.jobStatus === "error")
     return "Analysis failed. Clear cache or try a fresh run.";
-  }
-
   return "Preparing your uploaded video...";
 }
 
@@ -162,8 +109,8 @@ export function VideoChatExperience(): React.JSX.Element {
   const [isReplyProcessing, setIsReplyProcessing] = useState(false);
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
-  const [job, setJob] = useState<VideoWatchJob | null>(null);
-  const [uploadPhase, setUploadPhase] = useState<VideoWatchPhase>("idle");
+  const [job, setJob] = useState<VideoAnalysisJob | null>(null);
+  const [uploadPhase, setUploadPhase] = useState<VideoAnalysisUiPhase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [isCacheActionPending, setIsCacheActionPending] = useState(false);
   const [forceFreshUploads, setForceFreshUploads] = useState(false);
@@ -188,8 +135,8 @@ export function VideoChatExperience(): React.JSX.Element {
     uploadPhase === "uploading" ||
     (!!job && job.status !== "completed" && job.status !== "error");
   const selectedVideoName = selectedVideo?.name ?? "";
-  const analyzedFrames = job?.analyzedFrames ?? 0;
-  const totalFrames = job?.totalFrames ?? 0;
+  const analyzedFrames = job?.progress.completedFrames ?? 0;
+  const totalFrames = job?.progress.totalFrames ?? 0;
   const etaSeconds =
     job?.status === "analyzing" &&
     analysisStartedAt !== null &&
@@ -217,19 +164,13 @@ export function VideoChatExperience(): React.JSX.Element {
   const ButtonIcon = !hasVideo ? Paperclip : isAnalyzing ? Film : Paperclip;
 
   useEffect(() => {
-    if (!messages.length) {
-      return;
-    }
-
+    if (!messages.length) return;
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   useEffect(() => {
     void inputValue;
-    if (!textareaRef.current) {
-      return;
-    }
-
+    if (!textareaRef.current) return;
     textareaRef.current.style.height = "auto";
     textareaRef.current.style.height = `${Math.min(
       textareaRef.current.scrollHeight,
@@ -242,7 +183,6 @@ export function VideoChatExperience(): React.JSX.Element {
       setAnalysisStartedAt(Date.now());
       return;
     }
-
     if (job?.status !== "analyzing") {
       setAnalysisStartedAt(null);
     }
@@ -252,17 +192,15 @@ export function VideoChatExperience(): React.JSX.Element {
     if (!job || job.status === "completed" || job.status === "error") {
       return;
     }
-
     const interval = window.setInterval(async () => {
-      const next = await fetchVideoWatchStatus({ jobId: job.jobId });
+      const next = await fetchVideoAnalysisJob(job.jobId);
       if (next.ok) {
         startTransition(() => {
           setJob(next);
           setUploadPhase(next.status);
           setError(next.error ?? null);
         });
-
-        if (next.status === "completed" && clientFingerprint) {
+        if (clientFingerprint) {
           window.localStorage.setItem(
             `${LOCAL_CACHE_PREFIX}${clientFingerprint}`,
             next.jobId,
@@ -286,22 +224,17 @@ export function VideoChatExperience(): React.JSX.Element {
   };
 
   const clearLocalCacheEntry = (fingerprint: string | null) => {
-    if (!fingerprint) {
-      return;
-    }
-
+    if (!fingerprint) return;
     window.localStorage.removeItem(`${LOCAL_CACHE_PREFIX}${fingerprint}`);
   };
 
   const uploadSelectedVideo = async (
     file: File,
     fingerprint: string,
-    options?: {
-      readonly forceRefresh?: boolean;
-    },
+    options?: { readonly forceRefresh?: boolean },
   ) => {
     setUploadPhase("uploading");
-    const uploaded = await uploadVideoForWatch(file, fingerprint, options);
+    const uploaded = await createVideoAnalysisJob(file, fingerprint, options);
     if (!uploaded.ok) {
       setError(uploaded.message);
       setUploadPhase("error");
@@ -321,10 +254,7 @@ export function VideoChatExperience(): React.JSX.Element {
   ) => {
     const file = event.target.files?.[0] ?? null;
     event.target.value = "";
-
-    if (!file) {
-      return;
-    }
+    if (!file) return;
 
     setSelectedVideo(file);
     setJob(null);
@@ -339,18 +269,6 @@ export function VideoChatExperience(): React.JSX.Element {
     try {
       const fingerprint = await hashFileSha256(file);
       setClientFingerprint(fingerprint);
-
-      const cachedStatus = await fetchVideoWatchStatus({ fingerprint });
-      if (cachedStatus.ok) {
-        setJob(cachedStatus);
-        setUploadPhase(cachedStatus.status);
-        window.localStorage.setItem(
-          `${LOCAL_CACHE_PREFIX}${fingerprint}`,
-          cachedStatus.jobId,
-        );
-        return;
-      }
-
       await uploadSelectedVideo(file, fingerprint, {
         forceRefresh: forceFreshUploads,
       });
@@ -363,22 +281,14 @@ export function VideoChatExperience(): React.JSX.Element {
   };
 
   const handleClearCache = async () => {
-    if (!clientFingerprint && !job?.jobId) {
-      return;
-    }
-
+    if (!job?.jobId) return;
     setIsCacheActionPending(true);
     try {
-      const response = await clearVideoWatchCache({
-        fingerprint: clientFingerprint ?? undefined,
-        jobId: job?.jobId,
-      });
-
-      if (!response.ok) {
+      const response = await clearVideoAnalysisJob(job.jobId);
+      if (response.ok !== true) {
         setError(response.message);
         return;
       }
-
       clearLocalCacheEntry(response.fingerprint);
       setJob(null);
       setMessages([]);
@@ -397,10 +307,7 @@ export function VideoChatExperience(): React.JSX.Element {
   };
 
   const handleFreshRun = async () => {
-    if (!selectedVideo || !clientFingerprint) {
-      return;
-    }
-
+    if (!selectedVideo || !clientFingerprint) return;
     setIsCacheActionPending(true);
     try {
       clearLocalCacheEntry(clientFingerprint);
@@ -447,7 +354,7 @@ export function VideoChatExperience(): React.JSX.Element {
     setIsReplyProcessing(true);
 
     try {
-      const conversation: VideoWatchChatMessage[] = [
+      const conversation: VideoAnalysisChatMessage[] = [
         ...messages
           .filter((message) => !message.isThinking)
           .map(({ content, role }) => ({ content, role })),
@@ -456,7 +363,7 @@ export function VideoChatExperience(): React.JSX.Element {
           content: userMessage.content,
         },
       ];
-      const response = await askVideoWatchQuestion({
+      const response = await askVideoAnalysisQuestion({
         jobId: job.jobId,
         question,
         messages: conversation,
@@ -552,8 +459,8 @@ export function VideoChatExperience(): React.JSX.Element {
                     Chat with recorded footage
                   </h1>
                   <p className="mx-auto max-w-2xl text-sm leading-6 text-neutral-500">
-                    Upload a video once, let the frame pipeline build a cached
-                    timeline, and then ask questions about the footage.
+                    Upload a video once, let the analysis pipeline build a
+                    cached timeline, and then ask questions about the footage.
                   </p>
                 </div>
               </motion.div>
@@ -780,7 +687,7 @@ export function VideoChatExperience(): React.JSX.Element {
                         Fresh upload
                       </label>
 
-                      {clientFingerprint || job?.jobId ? (
+                      {job?.jobId ? (
                         <button
                           type="button"
                           onClick={() => {

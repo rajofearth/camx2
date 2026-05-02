@@ -416,7 +416,7 @@ export default function AnalysisQueryPage(): React.JSX.Element {
             {job ? (
               <>
                 <div className="text-sm font-mono text-op-silver">
-                  {job.totalFrames ?? "—"} FRAMES
+                  {job.progress.totalFrames ?? "—"} FRAMES
                 </div>
                 <div className="text-[0.65rem] font-mono text-op-text-sec mt-1 truncate">
                   SOURCE: {selectedVideoName ?? "UNKNOWN"}

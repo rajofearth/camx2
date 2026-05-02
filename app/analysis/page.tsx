@@ -30,7 +30,7 @@ function buildPipelineSteps(
       "uploading",
       "extracting",
       "analyzing",
-      "combining",
+      "summarizing",
       "completed",
     ];
     const currentIdx = order.indexOf(uploadPhase);
@@ -89,10 +89,10 @@ function buildPipelineSteps(
       icon: "memory",
       label: "VLM Context Analysis",
       stat:
-        status("combining") === "complete" || uploadPhase === "completed"
+        status("summarizing") === "complete" || uploadPhase === "completed"
           ? "done"
           : "--",
-      status: status("combining"),
+      status: status("summarizing"),
     },
     {
       id: "report",

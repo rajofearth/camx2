@@ -1,0 +1,1 @@
+export { videoAnalysisService } from "./service";

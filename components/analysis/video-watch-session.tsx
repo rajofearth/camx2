@@ -13,16 +13,16 @@ import {
   useState,
 } from "react";
 import {
-  askVideoWatchQuestion,
-  clearVideoWatchCache,
-  fetchVideoWatchStatus,
-  uploadVideoForWatch,
-} from "@/app/lib/video-watch-client";
+  askVideoAnalysisQuestion,
+  clearVideoAnalysisJob,
+  createVideoAnalysisJob,
+  fetchVideoAnalysisJob,
+  type VideoAnalysisUiPhase,
+} from "@/app/lib/video-analysis-client";
 import type {
-  VideoWatchChatMessage,
-  VideoWatchJob,
-  VideoWatchPhase,
-} from "@/app/lib/video-watch-types";
+  VideoAnalysisChatMessage,
+  VideoAnalysisJob,
+} from "@/types/video-analysis";
 
 export type AnalysisChatMessage = {
   readonly id: string;
@@ -47,7 +47,7 @@ type AnalysisSessionContextValue = {
   readonly isHydrated: boolean;
   readonly isReplyProcessing: boolean;
   readonly isVideoReady: boolean;
-  readonly job: VideoWatchJob | null;
+  readonly job: VideoAnalysisJob | null;
   readonly messages: readonly AnalysisChatMessage[];
   readonly phaseLabel: string;
   readonly selectedVideo: File | null;
@@ -55,7 +55,7 @@ type AnalysisSessionContextValue = {
   readonly selectedVideoUrl: string | null;
   readonly totalFrames: number;
   readonly analyzedFrames: number;
-  readonly uploadPhase: VideoWatchPhase;
+  readonly uploadPhase: VideoAnalysisUiPhase;
   readonly attachVideo: (
     file: File,
     options?: { readonly forceFresh?: boolean },
@@ -69,48 +69,40 @@ type AnalysisSessionContextValue = {
   readonly sendMessage: (question: string) => Promise<void>;
 };
 
-const LOCAL_CACHE_PREFIX = "video-watch:fingerprint:";
-const PERSISTED_SESSION_KEY = "video-watch:analysis-session";
+const LOCAL_CACHE_PREFIX = "video-analysis:fingerprint:";
+const PERSISTED_SESSION_KEY = "video-analysis:analysis-session";
 
 const AnalysisSessionContext =
   createContext<AnalysisSessionContextValue | null>(null);
 
 function getPhaseLabel(
-  job: VideoWatchJob | null,
-  uploadPhase: VideoWatchPhase,
+  job: VideoAnalysisJob | null,
+  uploadPhase: VideoAnalysisUiPhase,
 ): string {
   if (uploadPhase === "checking_cache") {
     return "Checking cache...";
   }
-
   if (uploadPhase === "uploading") {
     return "Uploading video...";
   }
-
   if (!job) {
     return "Upload a video file to begin";
   }
-
   if (job.status === "extracting") {
     return "Extracting frames...";
   }
-
   if (job.status === "analyzing") {
-    return `${job.analyzedFrames}/${job.totalFrames} frames analyzed`;
+    return `${job.progress.completedFrames}/${job.progress.totalFrames} frames analyzed`;
   }
-
-  if (job.status === "combining") {
-    return "Combining timeline...";
+  if (job.status === "summarizing") {
+    return "Summarizing timeline...";
   }
-
   if (job.status === "completed") {
     return "Ready to chat";
   }
-
   if (job.status === "error") {
     return "Analysis failed";
   }
-
   return "Preparing analysis...";
 }
 
@@ -118,11 +110,9 @@ function formatEtaLabel(seconds: number | null): string | null {
   if (seconds === null || !Number.isFinite(seconds) || seconds < 0) {
     return null;
   }
-
   if (seconds < 60) {
     return `${Math.max(1, Math.round(seconds))}s`;
   }
-
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.round(seconds % 60);
   return `${minutes}m ${String(remainingSeconds).padStart(2, "0")}s`;
@@ -142,7 +132,6 @@ function parsePersistedSession(
   if (!rawValue) {
     return null;
   }
-
   try {
     const parsed = JSON.parse(rawValue) as Partial<PersistedAnalysisSession>;
     if (
@@ -156,10 +145,7 @@ function parsePersistedSession(
         sourceFileName: parsed.sourceFileName,
       };
     }
-  } catch {
-    return null;
-  }
-
+  } catch {}
   return null;
 }
 
@@ -175,8 +161,8 @@ export function AnalysisSessionProvider({
   const [messages, setMessages] = useState<AnalysisChatMessage[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
   const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
-  const [job, setJob] = useState<VideoWatchJob | null>(null);
-  const [uploadPhase, setUploadPhase] = useState<VideoWatchPhase>("idle");
+  const [job, setJob] = useState<VideoAnalysisJob | null>(null);
+  const [uploadPhase, setUploadPhase] = useState<VideoAnalysisUiPhase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [isReplyProcessing, setIsReplyProcessing] = useState(false);
   const [isCacheActionPending, setIsCacheActionPending] = useState(false);
@@ -189,9 +175,8 @@ export function AnalysisSessionProvider({
   const [isHydrated, setIsHydrated] = useState(false);
 
   const restoreAttemptedRef = useRef<string | null>(null);
-
-  const analyzedFrames = job?.analyzedFrames ?? 0;
-  const totalFrames = job?.totalFrames ?? 0;
+  const analyzedFrames = job?.progress.completedFrames ?? 0;
+  const totalFrames = job?.progress.totalFrames ?? 0;
   const etaSeconds =
     job?.status === "analyzing" &&
     analysisStartedAt !== null &&
@@ -201,7 +186,6 @@ export function AnalysisSessionProvider({
         (totalFrames - analyzedFrames)
       : null;
   const etaLabel = formatEtaLabel(etaSeconds);
-
   const isVideoReady = job?.status === "completed";
   const isAnalyzing =
     uploadPhase === "checking_cache" ||
@@ -214,9 +198,7 @@ export function AnalysisSessionProvider({
   useEffect(() => {
     if (!selectedVideo) {
       setSelectedVideoUrl((currentUrl) => {
-        if (currentUrl) {
-          URL.revokeObjectURL(currentUrl);
-        }
+        if (currentUrl) URL.revokeObjectURL(currentUrl);
         return null;
       });
       return;
@@ -224,9 +206,7 @@ export function AnalysisSessionProvider({
 
     const nextUrl = URL.createObjectURL(selectedVideo);
     setSelectedVideoUrl((currentUrl) => {
-      if (currentUrl) {
-        URL.revokeObjectURL(currentUrl);
-      }
+      if (currentUrl) URL.revokeObjectURL(currentUrl);
       return nextUrl;
     });
 
@@ -244,7 +224,6 @@ export function AnalysisSessionProvider({
       setAnalysisStartedAt(Date.now());
       return;
     }
-
     if (job?.status !== "analyzing") {
       setAnalysisStartedAt(null);
     }
@@ -256,14 +235,13 @@ export function AnalysisSessionProvider({
     }
 
     const interval = window.setInterval(async () => {
-      const next = await fetchVideoWatchStatus({ jobId: job.jobId });
+      const next = await fetchVideoAnalysisJob(job.jobId);
       if (next.ok) {
         startTransition(() => {
           setJob(next);
           setUploadPhase(next.status);
           setError(next.error ?? null);
         });
-
         if (clientFingerprint) {
           window.localStorage.setItem(
             `${LOCAL_CACHE_PREFIX}${clientFingerprint}`,
@@ -287,20 +265,17 @@ export function AnalysisSessionProvider({
     if (!isHydrated) {
       return;
     }
-
     if (!job?.jobId || !clientFingerprint) {
       window.localStorage.removeItem(PERSISTED_SESSION_KEY);
       return;
     }
-
-    const persisted: PersistedAnalysisSession = {
-      jobId: job.jobId,
-      fingerprint: clientFingerprint,
-      sourceFileName: job.sourceFileName,
-    };
     window.localStorage.setItem(
       PERSISTED_SESSION_KEY,
-      JSON.stringify(persisted),
+      JSON.stringify({
+        jobId: job.jobId,
+        fingerprint: clientFingerprint,
+        sourceFileName: job.sourceFileName,
+      } satisfies PersistedAnalysisSession),
     );
   }, [clientFingerprint, isHydrated, job]);
 
@@ -308,13 +283,11 @@ export function AnalysisSessionProvider({
     if (!isHydrated) {
       return;
     }
-
     const nextJobId = job?.jobId ?? null;
     const currentJobId = searchParams.get("jobId");
     if (nextJobId === currentJobId) {
       return;
     }
-
     const nextParams = new URLSearchParams(searchParams.toString());
     if (nextJobId) {
       nextParams.set("jobId", nextJobId);
@@ -331,29 +304,24 @@ export function AnalysisSessionProvider({
     if (!isHydrated || job) {
       return;
     }
-
-    const searchJobId = searchParams.get("jobId");
     const persisted = parsePersistedSession(
       window.localStorage.getItem(PERSISTED_SESSION_KEY),
     );
-    const targetJobId = searchJobId ?? persisted?.jobId ?? null;
+    const targetJobId = searchParams.get("jobId") ?? persisted?.jobId ?? null;
     if (!targetJobId || restoreAttemptedRef.current === targetJobId) {
       return;
     }
-
     restoreAttemptedRef.current = targetJobId;
     if (persisted?.fingerprint) {
       setClientFingerprint(persisted.fingerprint);
     }
-
     void (async () => {
-      const restored = await fetchVideoWatchStatus({ jobId: targetJobId });
+      const restored = await fetchVideoAnalysisJob(targetJobId);
       if (!restored.ok) {
         setError(restored.message);
         setUploadPhase("error");
         return;
       }
-
       setJob(restored);
       setUploadPhase(restored.status);
       setError(restored.error ?? null);
@@ -364,7 +332,6 @@ export function AnalysisSessionProvider({
     if (!fingerprint) {
       return;
     }
-
     window.localStorage.removeItem(`${LOCAL_CACHE_PREFIX}${fingerprint}`);
   }, []);
 
@@ -394,7 +361,7 @@ export function AnalysisSessionProvider({
       options?: { readonly forceRefresh?: boolean },
     ) => {
       setUploadPhase("uploading");
-      const uploaded = await uploadVideoForWatch(file, fingerprint, options);
+      const uploaded = await createVideoAnalysisJob(file, fingerprint, options);
       if (!uploaded.ok) {
         setError(uploaded.message);
         setUploadPhase("error");
@@ -425,21 +392,6 @@ export function AnalysisSessionProvider({
       try {
         const fingerprint = await hashFileSha256(file);
         setClientFingerprint(fingerprint);
-
-        if (!options?.forceFresh) {
-          const cachedStatus = await fetchVideoWatchStatus({ fingerprint });
-          if (cachedStatus.ok) {
-            setJob(cachedStatus);
-            setUploadPhase(cachedStatus.status);
-            setError(cachedStatus.error ?? null);
-            window.localStorage.setItem(
-              `${LOCAL_CACHE_PREFIX}${fingerprint}`,
-              cachedStatus.jobId,
-            );
-            return;
-          }
-        }
-
         await uploadSelectedVideo(file, fingerprint, {
           forceRefresh: options?.forceFresh,
         });
@@ -454,22 +406,16 @@ export function AnalysisSessionProvider({
   );
 
   const clearCache = useCallback(async () => {
-    if (!clientFingerprint && !job?.jobId) {
+    if (!job?.jobId) {
       return;
     }
-
     setIsCacheActionPending(true);
     try {
-      const response = await clearVideoWatchCache({
-        fingerprint: clientFingerprint ?? undefined,
-        jobId: job?.jobId,
-      });
-
-      if (!response.ok) {
+      const response = await clearVideoAnalysisJob(job.jobId);
+      if (response.ok !== true) {
         setError(response.message);
         return;
       }
-
       clearLocalCacheEntry(response.fingerprint);
       window.localStorage.removeItem(PERSISTED_SESSION_KEY);
       resetSession({ keepSelectedVideo: true });
@@ -482,13 +428,12 @@ export function AnalysisSessionProvider({
     } finally {
       setIsCacheActionPending(false);
     }
-  }, [clientFingerprint, clearLocalCacheEntry, job?.jobId, resetSession]);
+  }, [clearLocalCacheEntry, job?.jobId, resetSession]);
 
   const runFreshAnalysis = useCallback(async () => {
     if (!selectedVideo) {
       return;
     }
-
     setIsCacheActionPending(true);
     try {
       const fingerprint =
@@ -511,8 +456,8 @@ export function AnalysisSessionProvider({
       setIsCacheActionPending(false);
     }
   }, [
-    clientFingerprint,
     clearLocalCacheEntry,
+    clientFingerprint,
     resetSession,
     selectedVideo,
     uploadSelectedVideo,
@@ -522,14 +467,12 @@ export function AnalysisSessionProvider({
     if (!job?.jobId) {
       return;
     }
-
-    const next = await fetchVideoWatchStatus({ jobId: job.jobId });
+    const next = await fetchVideoAnalysisJob(job.jobId);
     if (!next.ok) {
       setError(next.message);
       setUploadPhase("error");
       return;
     }
-
     setJob(next);
     setUploadPhase(next.status);
     setError(next.error ?? null);
@@ -559,7 +502,7 @@ export function AnalysisSessionProvider({
       setIsReplyProcessing(true);
 
       try {
-        const conversation: VideoWatchChatMessage[] = [
+        const conversation: VideoAnalysisChatMessage[] = [
           ...messages
             .filter((message) => !message.isThinking)
             .map(({ content, role }) => ({ content, role })),
@@ -568,7 +511,7 @@ export function AnalysisSessionProvider({
             content: userMessage.content,
           },
         ];
-        const response = await askVideoWatchQuestion({
+        const response = await askVideoAnalysisQuestion({
           jobId: job.jobId,
           question: trimmedQuestion,
           messages: conversation,
@@ -615,7 +558,6 @@ export function AnalysisSessionProvider({
       if (!jobId) {
         return targetPathname;
       }
-
       const params = new URLSearchParams();
       params.set("jobId", jobId);
       return `${targetPathname}?${params.toString()}`;
@@ -694,6 +636,5 @@ export function useAnalysisSession(): AnalysisSessionContextValue {
       "useAnalysisSession must be used inside AnalysisSessionProvider",
     );
   }
-
   return value;
 }
